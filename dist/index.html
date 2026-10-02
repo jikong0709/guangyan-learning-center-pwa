@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#075985">
+  <meta name="description" content="英語單字儲備庫：365 天國小英文單字學習任務，可安裝、可離線使用。">
+  <title>光言學習區｜教材中心</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳到主要內容</a>
+  <header class="topbar"><div class="shell topbar-inner">
+    <button class="brand" type="button" data-action="home" aria-label="返回學習儀表板"><span aria-hidden="true">📚</span><span>光言學習區</span></button>
+    <div class="top-actions"><span id="networkBadge" class="badge">連線中</span><button id="installBtn" class="btn btn-small" hidden>安裝 APP</button></div>
+  </div></header>
+  <main id="main" class="shell">
+    <section id="libraryView">
+      <div class="library-hero card"><span class="kicker">光言學習區</span><h1>教材中心</h1><p>先選擇科目，再進入對應的年級與學習任務。</p></div>
+      <div class="subject-grid">
+        <article class="subject-card card"><div class="subject-icon english" aria-hidden="true">Aa</div><div class="subject-copy"><span class="kicker">英語</span><h2>單字儲備庫</h2><p>進入後可選擇國小區或國中區；國小區已有 365 天任務。</p><button class="btn btn-primary" data-action="english">進入英語教材</button></div></article>
+        <article class="subject-card card"><div class="subject-icon math" aria-hidden="true">π</div><div class="subject-copy"><span class="kicker">數學｜國小區</span><h2>六年級互動練兵坊</h2><p>分數除法、比與比值、圓周長與圓面積；每節十題並支援動態出題。</p><a class="btn btn-primary" href="./courses/grade6-math/">進入數學教材</a></div></article>
+      </div>
+    </section>
+    <section id="dashboardView" hidden>
+      <div class="intro card"><div><span class="kicker">365 天學習任務</span><h1>英語<span>｜</span>單字儲備庫</h1><p>每天一組、一次五個字。進度只保存在這台裝置的瀏覽器。</p></div><button class="btn btn-primary" data-action="continue">繼續學習</button></div>
+      <button class="btn btn-ghost subject-back" data-action="home">← 返回教材中心</button>
+      <div class="level-tabs" role="tablist" aria-label="學習階段">
+        <button id="elementaryTab" class="level-tab active" role="tab" aria-selected="true" data-level="elementary">國小區</button>
+        <button id="juniorTab" class="level-tab" role="tab" aria-selected="false" data-level="junior">國中區</button>
+      </div>
+      <section id="elementaryPanel" role="tabpanel" aria-labelledby="elementaryTab">
+        <div class="stats" aria-label="學習摘要">
+          <article class="stat card"><strong id="completedStat">0</strong><span>完成天數／365</span></article><article class="stat card"><strong id="streakStat">0</strong><span>連續學習天數</span></article><article class="stat card"><strong id="wordsStat">0</strong><span>已學核心單字</span></article><article class="stat card"><strong id="todayStat">Day 1</strong><span>今天任務</span></article>
+        </div>
+        <div class="toolbar card">
+          <label>跳到指定任務 <input id="dayJump" type="number" min="1" max="365" inputmode="numeric" value="1"></label><button class="btn" data-action="jump">前往</button><button class="btn btn-ghost" data-action="today">回到今天</button><button class="btn btn-ghost" data-action="export">匯出進度</button><label class="btn btn-ghost file-btn">匯入進度<input id="importFile" type="file" accept="application/json" hidden></label>
+        </div>
+        <div class="range-row" id="rangeRow" aria-label="任務範圍"></div>
+        <section class="task-section"><div class="section-head"><div><span id="rangeLabel" class="kicker">Day 1–30</span><h2>每日任務</h2></div><p>○ 未開始　◐ 進行中　● 已完成</p></div><div id="dayGrid" class="day-grid"></div></section>
+      </section>
+      <section id="juniorPanel" role="tabpanel" aria-labelledby="juniorTab" hidden>
+        <div class="junior-head card"><div><span class="kicker">國中三年學習架構</span><h2>七至九年級英語任務</h2><p>各年級獨立管理單字、片語、例句閱讀與複習測驗；不與國小進度混用。</p></div><span class="structure-badge">架構已建立</span></div>
+        <div class="grade-tabs" role="tablist" aria-label="國中年級"><button class="grade-tab active" data-grade="7">七年級</button><button class="grade-tab" data-grade="8">八年級</button><button class="grade-tab" data-grade="9">九年級</button></div>
+        <div id="juniorRoadmap" class="module-grid"></div>
+        <div class="junior-note card"><strong>教材匯入規格</strong><p>每個年級可獨立加入每日任務資料，欄位包含英文、中文、詞性、音標、例句、單元與複習週期。正式教材加入前，不用假資料充數。</p></div>
+      </section>
+    </section>
+    <section id="lessonView" hidden>
+      <div class="lesson-head card"><button class="btn btn-ghost" data-action="english">← 返回英語儲備庫</button><div><span id="lessonTheme" class="kicker"></span><h1 id="lessonTitle">Day 1</h1><p id="lessonSubtitle"></p></div><div class="lesson-nav"><button class="btn" data-action="prev">上一天</button><button class="btn" data-action="next">下一天</button></div></div>
+      <div class="stepper" id="stepper" aria-label="學習步驟"></div><section id="learnPanel" class="lesson-panel card"></section><section id="spellPanel" class="lesson-panel card" hidden></section><section id="quizPanel" class="lesson-panel card" hidden></section><section id="resultPanel" class="lesson-panel card" hidden></section>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./vocabulary.js"></script><script src="./app.js"></script>
+</body></html>
+
