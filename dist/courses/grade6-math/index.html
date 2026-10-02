@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>翰林國小六年級數學互動練兵坊</title>
+    <title>翰林國小六年級全年數學互動練兵坊</title>
     <link rel="manifest" href="../../manifest.webmanifest">
     <link rel="icon" href="../../icon.svg" type="image/svg+xml">
     <!-- Tailwind CSS -->
@@ -36,7 +36,7 @@
                     <i class="fa-solid fa-graduation-cap"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg md:text-xl font-bold tracking-wide">翰林國小六上數學互動練習網</h1>
+                    <h1 class="text-lg md:text-xl font-bold tracking-wide">翰林國小六年級全年數學互動練習網</h1>
                     <p class="text-xs text-emerald-100">全真考卷模式・每節10題(5計算+5應用)・動態變數</p>
                 </div>
             </div>
@@ -82,6 +82,7 @@
         </div>
     </div>
 
+    <script src="./curriculum.js"></script>
     <script>
         const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
 
@@ -91,7 +92,7 @@
             return `${n}/${d}`;
         };
 
-        const mathCurriculum = [
+        const legacyMathCurriculum = [
             {
                 unitId: "1",
                 unitTitle: "第一單元：分數的除法",
@@ -481,6 +482,8 @@
             }
         ];
 
+        const mathCurriculum = window.buildFullCurriculum(legacyMathCurriculum);
+
         class MathApp {
             constructor() {
                 this.currentUnitIndex = 0;
@@ -611,7 +614,7 @@
                         <div class="space-y-6 animate-fade-in">
                             <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 md:p-10 text-white shadow-xl relative overflow-hidden">
                                 <div class="relative z-10">
-                                    <span class="bg-emerald-500/40 text-emerald-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">115學年度最新翰林版</span>
+                                    <span class="bg-emerald-500/40 text-emerald-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">六上＋六下完整 14 單元</span>
                                     <h2 class="text-2xl md:text-4xl font-black mb-3">翰林國小六年級數學・互動線上考卷練兵坊</h2>
                                     <p class="text-emerald-100 text-sm md:text-base max-w-2xl leading-relaxed">
                                         每節精選 10 題（含 5 題計算題與 5 題豐富應用題型）。點選下方單元進入全真考卷畫面，自主準備白紙練習、智慧計分、詳細思路與動態變數！
@@ -630,7 +633,7 @@
                             <div class="bg-white border-2 border-emerald-100 rounded-3xl p-6 md:p-8 shadow-sm hover:shadow-md transition">
                                 <div class="flex flex-wrap justify-between items-center mb-6 pb-4 border-b border-slate-100">
                                     <div>
-                                        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">第 ${uIdx + 1} 單元</span>
+                                        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">${u.semester}｜第 ${u.number} 單元</span>
                                         <h3 class="text-xl md:text-2xl font-black text-slate-800 mt-1">${u.unitTitle}</h3>
                                     </div>
                                     <button onclick="app.switchNav(${uIdx}, 0)" class="mt-2 sm:mt-0 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow flex items-center space-x-2">
@@ -895,7 +898,7 @@
                                 <div>
                                     ${hasNextUnit ? `
                                         <button onclick="app.switchNav(${nextUnitIdx}, 0)" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-bold text-sm transition shadow-lg shadow-emerald-600/20 flex items-center space-x-2">
-                                            <span>前往下一單元：${mathCurriculum[nextUnitIdx].unitTitle} (點擊進入下一單元2-1)</span>
+                                            <span>前往下一單元：${mathCurriculum[nextUnitIdx].unitTitle}</span>
                                             <i class="fa-solid fa-arrow-right"></i>
                                         </button>
                                     ` : `
