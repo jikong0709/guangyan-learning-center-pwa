@@ -52,8 +52,26 @@
       <div class="lesson-head card"><button class="btn btn-ghost" data-action="english">← 返回英語儲備庫</button><div><span id="lessonTheme" class="kicker"></span><h1 id="lessonTitle">Day 1</h1><p id="lessonSubtitle"></p></div><div class="lesson-nav"><button class="btn" data-action="prev">上一天</button><button class="btn" data-action="next">下一天</button></div></div>
       <div class="stepper" id="stepper" aria-label="學習步驟"></div><section id="learnPanel" class="lesson-panel card"></section><section id="spellPanel" class="lesson-panel card" hidden></section><section id="quizPanel" class="lesson-panel card" hidden></section><section id="resultPanel" class="lesson-panel card" hidden></section>
     </section>
+    <section class="affiliate-recommendation card" aria-labelledby="affiliateTitle" data-affiliate-carousel data-storefront-url="https://collshp.com/sberrychang?view=storefront" data-limit="12">
+      <div class="affiliate-heading">
+        <div>
+          <span class="kicker">廣告｜蝦皮分潤推薦</span>
+          <h2 id="affiliateTitle">莓好生活好物分享</h2>
+          <p>分享池商品會自動更新；左右滑動或使用箭頭查看更多。</p>
+        </div>
+        <div class="affiliate-controls" aria-label="商品輪播控制">
+          <button class="affiliate-control" type="button" data-affiliate-prev aria-label="上一組推薦商品">←</button>
+          <button class="affiliate-control" type="button" data-affiliate-next aria-label="下一組推薦商品">→</button>
+        </div>
+      </div>
+      <div class="affiliate-status" data-affiliate-status role="status" aria-live="polite">正在載入推薦商品…</div>
+      <div class="affiliate-track" data-affiliate-track role="list" aria-label="推薦商品"></div>
+      <div class="affiliate-footer">
+        <small>本區含分潤連結；若你透過連結完成符合條件的購買，我們可能獲得分潤，不影響你的購買價格。</small>
+        <a href="https://collshp.com/sberrychang?view=storefront" target="_blank" rel="sponsored noopener noreferrer">查看完整分享池 <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
   </main>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./vocabulary.js"></script><script src="./app.js"></script>
+  <script src="./vocabulary.js"></script><script src="./app.js"></script><script src="./affiliate-carousel.js"></script>
 </body></html>
-
