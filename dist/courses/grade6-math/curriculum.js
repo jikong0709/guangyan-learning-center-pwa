@@ -266,8 +266,16 @@
     });
 
     window.buildFullCurriculum = function (legacy) {
-        const fractionSections = legacy[0].sections;
-        const ratioSections = legacy[1].sections;
+        const fractionSections = legacy[0].sections.map((source, index) => ({
+            ...source,
+            sectionId: "上2-" + (index + 1),
+            title: "2-" + (index + 1) + " " + source.title.replace(/^\d+-\d+\s*/, "")
+        }));
+        const ratioSections = legacy[1].sections.map((source, index) => ({
+            ...source,
+            sectionId: "上4-" + (index + 1),
+            title: "4-" + (index + 1) + " " + source.title.replace(/^\d+-\d+\s*/, "")
+        }));
         const circumferenceSection = legacy[2].sections[0];
         const circleAreaSection = legacy[2].sections[1];
         circumferenceSection.sectionId = "上6-1";
@@ -331,5 +339,111 @@
             ])
         ];
     };
+
+    const cloneLegacySections = (sections, semester, unitNumber) => sections.map((source, index) => ({
+        sectionId: semester + "-" + unitNumber + "-" + (index + 1),
+        title: unitNumber + "-" + (index + 1) + " " + source.title.replace(/^\d+-\d+\s*/, ""),
+        generators: source.generators
+    }));
+
+    const standardSections = {
+        factor: n => [
+            section("上" + n + "-1", n + "-1 質因數分解與短除法", "factor", 0),
+            section("上" + n + "-2", n + "-2 最大公因數與最小公倍數", "factor", 1)
+        ],
+        decimal: (semester, n) => [
+            section(semester + n + "-1", n + "-1 小數除法", "decimal", 0),
+            section(semester + n + "-2", n + "-2 商的概數與生活應用", "decimal", 1)
+        ],
+        quantity: (semester, n) => [
+            section(semester + n + "-1", n + "-1 基準量與比較量", "quantity", 0),
+            section(semester + n + "-2", n + "-2 倍的關係與反求基準量", "quantity", 1)
+        ],
+        circleLength: n => [
+            section("上" + n + "-1", n + "-1 圓周率與圓周長", "sector-length", 0),
+            section("上" + n + "-2", n + "-2 扇形弧長與周長", "sector-length", 1)
+        ],
+        circleArea: (semester, n) => [
+            section(semester + n + "-1", n + "-1 圓面積與扇形面積", "sector-area", 0),
+            section(semester + n + "-2", n + "-2 複合圖形面積", "sector-area", 1)
+        ],
+        speed: (semester, n) => [
+            section(semester + n + "-1", n + "-1 距離、時間與速率", "speed", 0),
+            section(semester + n + "-2", n + "-2 速率換算與應用", "speed", 1)
+        ],
+        scale: (semester, n) => [
+            section(semester + n + "-1", n + "-1 放大圖與縮小圖", "scale", 0),
+            section(semester + n + "-2", n + "-2 比例尺", "scale", 1)
+        ],
+        mixed: n => [
+            section("下" + n + "-1", n + "-1 小數四則運算", "mixed-ops", 0),
+            section("下" + n + "-2", n + "-2 分數四則運算", "mixed-ops", 1),
+            section("下" + n + "-3", n + "-3 混合運算與簡化計算", "mixed-ops", 2)
+        ],
+        solids: n => [
+            section("下" + n + "-1", n + "-1 柱體體積", "solids", 0),
+            section("下" + n + "-2", n + "-2 柱體表面積", "solids", 1)
+        ],
+        solve: n => [
+            section("下" + n + "-1", n + "-1 年齡、平均與和差問題", "lower-solve", 0),
+            section("下" + n + "-2", n + "-2 追趕與組合問題", "lower-solve", 1)
+        ],
+        statistics: n => [
+            section("下" + n + "-1", n + "-1 圓形圖與百分率", "statistics", 0),
+            section("下" + n + "-2", n + "-2 統計圖表判讀", "statistics", 1)
+        ]
+    };
+
+    function buildKanghsuan(legacy) {
+        return [
+            unit("六上", 1, "最大公因數與最小公倍數", standardSections.factor(1)),
+            unit("六上", 2, "分數除法", cloneLegacySections(legacy[0].sections, "上", 2)),
+            unit("六上", 3, "數量關係", standardSections.quantity("上", 3)),
+            unit("六上", 4, "小數除法", standardSections.decimal("上", 4)),
+            unit("六上", 5, "比與比值", cloneLegacySections(legacy[1].sections, "上", 5)),
+            unit("六上", 6, "圓周長與扇形周長", standardSections.circleLength(6)),
+            unit("六上", 7, "圓面積與扇形面積", standardSections.circleArea("上", 7)),
+            unit("六上", 8, "認識速率", standardSections.speed("上", 8)),
+            unit("六上", 9, "放大圖、縮圖與比例尺", standardSections.scale("上", 9)),
+            unit("六下", 1, "小數與分數的計算", standardSections.mixed(1)),
+            unit("六下", 2, "速率的應用", standardSections.speed("下", 2)),
+            unit("六下", 3, "柱體體積與表面積", standardSections.solids(3)),
+            unit("六下", 4, "基準量與比較量", standardSections.quantity("下", 4)),
+            unit("六下", 5, "怎樣解題", standardSections.solve(5)),
+            unit("六下", 6, "圓形圖", standardSections.statistics(6))
+        ];
+    }
+
+    function buildNani(legacy) {
+        return [
+            unit("六上", 1, "質因數分解和短除法", standardSections.factor(1)),
+            unit("六上", 2, "分數的除法", cloneLegacySections(legacy[0].sections, "上", 2)),
+            unit("六上", 3, "小數的除法", standardSections.decimal("上", 3)),
+            unit("六上", 4, "圓周長與圓面積", [
+                section("上4-1", "4-1 圓周率與圓周長", "sector-length", 0),
+                section("上4-2", "4-2 圓面積", "sector-area", 0)
+            ]),
+            unit("六上", 5, "比和比值", cloneLegacySections(legacy[1].sections, "上", 5)),
+            unit("六上", 6, "弧長與扇形面積", [
+                section("上6-1", "6-1 扇形弧長與周長", "sector-length", 1),
+                section("上6-2", "6-2 扇形與複合圖形面積", "sector-area", 1)
+            ]),
+            unit("六上", 7, "速率", standardSections.speed("上", 7)),
+            unit("六上", 8, "數量關係", standardSections.quantity("上", 8)),
+            unit("六下", 1, "四則混合運算", standardSections.mixed(1)),
+            unit("六下", 2, "柱體的體積和表面積", standardSections.solids(2)),
+            unit("六下", 3, "基準量和比較量", standardSections.quantity("下", 3)),
+            unit("六下", 4, "放大圖、縮圖和比例尺", standardSections.scale("下", 4)),
+            unit("六下", 5, "怎樣解題", standardSections.solve(5)),
+            unit("六下", 6, "圓形圖", standardSections.statistics(6))
+        ];
+    }
+
+    window.buildVersionCurriculum = function (version, legacy) {
+        if (version === "kanghsuan") return buildKanghsuan(legacy);
+        if (version === "nani") return buildNani(legacy);
+        return window.buildFullCurriculum(legacy);
+    };
 })();
+
 
