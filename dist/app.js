@@ -47,6 +47,14 @@
     mods.forEach(function(m){html+='<article class="module-card card"><div class="icon">'+m[0]+"</div><h3>"+names[grade]+"｜"+m[1]+"</h3><p>"+m[2]+"</p><footer>資料模組已預留 · 等待正式教材</footer></article>"});
     el("#juniorRoadmap").innerHTML=html;
   }
+  function renderCourseVersions(){
+    var target=el("#mathVersionList"),catalog=window.MEIHAO_COURSE_CATALOG&&window.MEIHAO_COURSE_CATALOG.math;
+    if(!target||!catalog)return;
+    target.innerHTML=catalog.versions.map(function(version){
+      var ready=version.status==="ready";
+      return '<div class="version-item '+(ready?'is-ready':'is-planned')+'"><div><strong>'+esc(version.name)+'</strong><small>'+esc(version.note)+'</small></div>'+(ready?'<a class="version-action" href="'+esc(version.href)+'">開始學習</a>':'<span class="version-status">待加入教材</span>')+'</div>';
+    }).join("");
+  }
   function selectLevel(level){
     document.querySelectorAll(".level-tab").forEach(function(tab){var on=tab.dataset.level===level;tab.classList.toggle("active",on);tab.setAttribute("aria-selected",String(on))});
     el("#elementaryPanel").hidden=level!=="elementary";el("#juniorPanel").hidden=level!=="junior";if(level==="junior")renderJunior(Number(el(".grade-tab.active").dataset.grade));
@@ -94,7 +102,7 @@
     el("#resultPanel").innerHTML='<div class="result"><span class="kicker">Day '+currentDay+' 測驗結果</span><div class="score">'+score+" 分</div><h2>"+(pass?"通過，已記錄完成":"未達 90 分，請再複習")+"</h2><p>"+(pass?"可以前往下一天。":"拼字或意思還不熟，重考會重新排列選項。")+'</p><div class="panel-actions"><button class="btn" data-action="retry">'+(pass?"再練一次":"重新測驗")+'</button><button class="btn btn-primary" data-action="'+(currentDay===365?"english":"next")+'">'+(currentDay===365?"返回英語儲備庫":"前往下一天")+"</button></div></div>";
   }
   function speak(word){if(!("speechSynthesis" in window)){toast("此瀏覽器不支援語音播放");return}speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(word);u.lang="en-US";u.rate=.82;speechSynthesis.speak(u)}
-  function home(){if("speechSynthesis" in window)speechSynthesis.cancel();document.title="光言學習區｜教材中心";el("#lessonView").hidden=true;el("#dashboardView").hidden=true;el("#libraryView").hidden=false;window.scrollTo({top:0,behavior:"smooth"})}
+  function home(){if("speechSynthesis" in window)speechSynthesis.cancel();document.title="莓好學習區｜教材中心";el("#lessonView").hidden=true;el("#dashboardView").hidden=true;el("#libraryView").hidden=false;window.scrollTo({top:0,behavior:"smooth"})}
   function showEnglish(){if("speechSynthesis" in window)speechSynthesis.cancel();document.title="英語｜單字儲備庫";el("#libraryView").hidden=true;el("#lessonView").hidden=true;el("#dashboardView").hidden=false;renderDashboard();window.scrollTo({top:0,behavior:"smooth"})}
   function exportData(){var blob=new Blob([JSON.stringify({app:"guangyan-word-vault",exportedAt:new Date().toISOString(),state:state},null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="英語單字儲備庫_學習進度.json";a.click();URL.revokeObjectURL(url);toast("進度已匯出")}
   function importData(file){file.text().then(function(text){var data=JSON.parse(text);if(!data||data.app!=="guangyan-word-vault"||!data.state||data.state.version!==1||typeof data.state.completed!=="object")throw new Error("bad");state=Object.assign(cloneBlank(),data.state);save();renderDashboard();toast("進度匯入成功")}).catch(function(){toast("匯入失敗：檔案格式不正確")})}
@@ -109,6 +117,7 @@
   el("#installBtn").addEventListener("click",function(){if(!deferredInstall)return;deferredInstall.prompt();deferredInstall.userChoice.then(function(){deferredInstall=null;el("#installBtn").hidden=true})});
   function network(){el("#networkBadge").textContent=navigator.onLine?"線上模式":"離線模式"}window.addEventListener("online",network);window.addEventListener("offline",network);network();
   if("serviceWorker" in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("./sw.js").catch(console.warn)});
-  renderJunior(7);renderDashboard();
+  renderCourseVersions();renderJunior(7);renderDashboard();
 })();
+
 
