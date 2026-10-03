@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#075985">
-  <meta name="description" content="英語單字儲備庫：365 天國小英文單字學習任務，可安裝、可離線使用。">
-  <title>光言學習區｜教材中心</title>
+  <meta name="theme-color" content="#826b8d">
+  <meta name="description" content="莓好學習區：整合英語 365 天單字任務與國小數學多版本教材，可安裝、可離線使用。">
+  <title>莓好學習區｜教材中心</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
@@ -13,15 +13,15 @@
 <body>
   <a class="skip" href="#main">跳到主要內容</a>
   <header class="topbar"><div class="shell topbar-inner">
-    <button class="brand" type="button" data-action="home" aria-label="返回學習儀表板"><span aria-hidden="true">📚</span><span>光言學習區</span></button>
+    <button class="brand" type="button" data-action="home" aria-label="返回學習儀表板"><span aria-hidden="true">🍓</span><span>莓好學習區</span></button>
     <div class="top-actions"><span id="networkBadge" class="badge">連線中</span><button id="installBtn" class="btn btn-small" hidden>安裝 APP</button></div>
   </div></header>
   <main id="main" class="shell">
     <section id="libraryView">
-      <div class="library-hero card"><span class="kicker">光言學習區</span><h1>教材中心</h1><p>先選擇科目，再進入對應的年級與學習任務。</p></div>
+      <div class="library-hero card"><span class="kicker">莓好學習區</span><h1>教材中心</h1><p>先選擇科目，再依學習階段、年級與教材版本進入任務。</p></div>
       <div class="subject-grid">
         <article class="subject-card card"><div class="subject-icon english" aria-hidden="true">Aa</div><div class="subject-copy"><span class="kicker">英語</span><h2>單字儲備庫</h2><p>進入後可選擇國小區或國中區；國小區已有 365 天任務。</p><button class="btn btn-primary" data-action="english">進入英語教材</button></div></article>
-        <article class="subject-card card"><div class="subject-icon math" aria-hidden="true">π</div><div class="subject-copy"><span class="kicker">數學｜國小區</span><h2>六年級互動練兵坊</h2><p>分數除法、比與比值、圓周長與圓面積；每節十題並支援動態出題。</p><a class="btn btn-primary" href="./courses/grade6-math/">進入數學教材</a></div></article>
+        <article class="subject-card card subject-card-versions"><div class="subject-icon math" aria-hidden="true">π</div><div class="subject-copy"><span class="kicker">數學｜國小區</span><h2>六年級互動練兵坊</h2><p>六上＋六下完整 14 單元；每節十題並支援動態出題。請先選擇教材版本。</p><div id="mathVersionList" class="version-list" aria-label="六年級數學教材版本"></div></div></article>
       </div>
     </section>
     <section id="dashboardView" hidden>
@@ -73,5 +73,6 @@
     </section>
   </main>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./vocabulary.js"></script><script src="./app.js"></script><script src="./affiliate-carousel.js"></script>
+  <script src="./vocabulary.js"></script><script src="./course-catalog.js"></script><script src="./app.js"></script><script src="./affiliate-carousel.js"></script>
 </body></html>
+
