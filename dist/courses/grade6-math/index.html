@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>翰林國小六年級全年數學互動練兵坊</title>
+    <title>莓好學習區｜國小六年級數學</title>
     <link rel="manifest" href="../../manifest.webmanifest">
     <link rel="icon" href="../../icon.svg" type="image/svg+xml">
     <!-- Tailwind CSS -->
@@ -24,6 +24,24 @@
         .animate-fade-in {
             animation: fadeIn 0.3s ease-out forwards;
         }
+        /* 莓好學習區柔和主題：沿用教材功能，僅覆寫視覺色彩。 */
+        body { background-color: #fbf7f5; color: #504752; }
+        .bg-emerald-600 { background-color: #8f748f !important; }
+        .bg-emerald-700 { background-color: #755f7e !important; }
+        .hover\:bg-emerald-800:hover { background-color: #66516f !important; }
+        .hover\:bg-emerald-700:hover { background-color: #755f7e !important; }
+        .bg-emerald-500\/40 { background-color: rgba(214,175,187,.38) !important; }
+        .bg-emerald-100 { background-color: #f1e7ed !important; }
+        .bg-emerald-50, .bg-emerald-50\/90 { background-color: #faf3f6 !important; }
+        .hover\:bg-emerald-50:hover, .hover\:bg-emerald-100:hover { background-color: #f4e8ee !important; }
+        .text-emerald-100 { color: #f7ecf1 !important; }
+        .text-emerald-600, .text-emerald-700, .text-emerald-800, .text-emerald-900, .text-emerald-950 { color: #755f7e !important; }
+        .hover\:text-emerald-600:hover, .hover\:text-emerald-700:hover, .group:hover .group-hover\:text-emerald-800 { color: #6d5777 !important; }
+        .border-emerald-100, .border-emerald-200, .border-emerald-300, .border-emerald-400, .border-emerald-500 { border-color: #decbd5 !important; }
+        .hover\:border-emerald-300:hover, .focus\:border-emerald-600:focus { border-color: #b894a7 !important; }
+        .from-emerald-600 { --tw-gradient-from: #9b7f99 var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(155 127 153 / 0) var(--tw-gradient-to-position) !important; }
+        .to-teal-700 { --tw-gradient-to: #789786 var(--tw-gradient-to-position) !important; }
+        .shadow-emerald-600\/20 { --tw-shadow-color: rgba(117,95,126,.2) !important; }
     </style>
 </head>
 <body class="h-full flex flex-col text-slate-800">
@@ -36,7 +54,7 @@
                     <i class="fa-solid fa-graduation-cap"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg md:text-xl font-bold tracking-wide">翰林國小六年級全年數學互動練習網</h1>
+                    <h1 id="course-title" class="text-lg md:text-xl font-bold tracking-wide">國小六年級全年數學互動練習網</h1>
                     <p class="text-xs text-emerald-100">全真考卷模式・每節10題(5計算+5應用)・動態變數</p>
                 </div>
             </div>
@@ -66,6 +84,7 @@
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
         <p>請準備白紙與筆自主計算，將答案填入作答欄。點擊「看答案與思路」可核對計算過程。題目支援動態重整變數。</p>
+        <p id="curriculum-source" class="mt-2"></p>
     </footer>
 
     <!-- Custom Modal -->
@@ -482,7 +501,30 @@
             }
         ];
 
-        const mathCurriculum = window.buildFullCurriculum(legacyMathCurriculum);
+        const VERSION_INFO = {
+            hanlin: {
+                name: "翰林版",
+                sourceLabel: "使用者提供之翰林六上教材，全年章節依公開課程資料補齊",
+                sourceUrl: "https://tten.tp.edu.tw/Login/Downment?grade=6&spid=7349b91b-c5d9-446a-9ab0-fe5586d968c7&subject=Mathematics"
+            },
+            kanghsuan: {
+                name: "康軒版",
+                sourceLabel: "章節參考：均一教育平台類康軒版（113 學年度架構）",
+                sourceUrl: "https://www.junyiacademy.org/topics/k-m6a"
+            },
+            nani: {
+                name: "南一版",
+                sourceLabel: "章節參考：均一教育平台類南一版（113 學年度架構）",
+                sourceUrl: "https://www.junyiacademy.org/topics/math-6"
+            }
+        };
+        const requestedVersion = new URLSearchParams(window.location.search).get("version");
+        const versionKey = VERSION_INFO[requestedVersion] ? requestedVersion : "hanlin";
+        const versionInfo = VERSION_INFO[versionKey];
+        const mathCurriculum = window.buildVersionCurriculum(versionKey, legacyMathCurriculum);
+        document.title = versionInfo.name + "國小六年級全年數學｜莓好學習區";
+        document.getElementById("course-title").textContent = versionInfo.name + "國小六年級全年數學互動練習網";
+        document.getElementById("curriculum-source").innerHTML = '<a class="font-bold text-purple-700 underline" href="' + versionInfo.sourceUrl + '" target="_blank" rel="noopener noreferrer">' + versionInfo.sourceLabel + '</a>；本站題目為自編練習，非出版社課本原文。';
 
         class MathApp {
             constructor() {
@@ -614,8 +656,8 @@
                         <div class="space-y-6 animate-fade-in">
                             <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 md:p-10 text-white shadow-xl relative overflow-hidden">
                                 <div class="relative z-10">
-                                    <span class="bg-emerald-500/40 text-emerald-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">六上＋六下完整 14 單元</span>
-                                    <h2 class="text-2xl md:text-4xl font-black mb-3">翰林國小六年級數學・互動線上考卷練兵坊</h2>
+                                    <span class="bg-emerald-500/40 text-emerald-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">六上＋六下完整 ${mathCurriculum.length} 單元</span>
+                                    <h2 class="text-2xl md:text-4xl font-black mb-3">${versionInfo.name}國小六年級數學・互動線上考卷練兵坊</h2>
                                     <p class="text-emerald-100 text-sm md:text-base max-w-2xl leading-relaxed">
                                         每節精選 10 題（含 5 題計算題與 5 題豐富應用題型）。點選下方單元進入全真考卷畫面，自主準備白紙練習、智慧計分、詳細思路與動態變數！
                                     </p>
@@ -691,7 +733,7 @@
                     let html = breadcrumbHtml + `
                         <div class="bg-white border-2 border-slate-800 rounded-3xl p-6 md:p-10 shadow-xl relative max-w-4xl mx-auto w-full animate-fade-in">
                             <div class="text-center pb-6 mb-8 border-b-2 border-slate-800">
-                                <div class="text-xs font-bold tracking-widest text-slate-500 uppercase mb-1">翰林版國小六年級數學・全真模擬考卷</div>
+                                <div class="text-xs font-bold tracking-widest text-slate-500 uppercase mb-1">${versionInfo.name}國小六年級數學・全真模擬考卷</div>
                                 <h2 class="text-2xl md:text-3xl font-black text-slate-900">${sec.title}</h2>
                                 <div class="mt-3 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-600">
                                     <span>班級：______ 年 ______ 班</span>
@@ -944,4 +986,5 @@
     </script>
 </body>
 </html>
+
 
