@@ -539,6 +539,7 @@
                 this.currentSectionIndex = -1; // -1 means table of contents homepage
                 this.scores = {};
                 this.generatedQuestions = {};
+                this.questionMode = "mixed";
                 this.initAllQuestions();
                 this.render();
             }
@@ -552,36 +553,101 @@
                 });
             }
 
+            shuffle(items) {
+                const result = items.slice();
+                for (let i = result.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [result[i], result[j]] = [result[j], result[i]];
+                }
+                return result;
+            }
+
+            generatorPool(uIdx, preferredSectionIndex, kind) {
+                const unit = mathCurriculum[uIdx];
+                const orderedSections = unit.sections
+                    .map((sec, index) => ({ sec, index }))
+                    .sort((a, b) => {
+                        if (a.index === preferredSectionIndex) return -1;
+                        if (b.index === preferredSectionIndex) return 1;
+                        return a.index - b.index;
+                    });
+                const pool = [];
+                orderedSections.forEach(({ sec, index: sectionIndex }) => {
+                    sec.generators.forEach((generator, generatorIndex) => {
+                        const generatorKind = generatorIndex < 5 ? "calculation" : "application";
+                        if (generatorKind === kind) pool.push({ generator, sectionIndex, generatorIndex });
+                    });
+                });
+                return pool;
+            }
+
+            drawGenerators(pool, count) {
+                if (!pool.length) return [];
+                const shuffled = this.shuffle(pool);
+                const selected = [];
+                while (selected.length < count) {
+                    selected.push(shuffled[selected.length % shuffled.length]);
+                }
+                return selected;
+            }
+
+            buildQuestionSet(uIdx, preferredSectionIndex, mode) {
+                const calculations = this.generatorPool(uIdx, preferredSectionIndex, "calculation");
+                const applications = this.generatorPool(uIdx, preferredSectionIndex, "application");
+                let selected;
+                if (mode === "calculation") {
+                    selected = this.drawGenerators(calculations, 10);
+                } else if (mode === "application") {
+                    selected = this.drawGenerators(applications, 10);
+                } else {
+                    selected = this.drawGenerators(calculations, 5).concat(this.drawGenerators(applications, 5));
+                }
+                return this.shuffle(selected).map(item => item.generator());
+            }
+
+            saveFreshPaper(key, questions) {
+                const previous = this.generatedQuestions[key] || [];
+                const previousSignature = previous.map(q => q.text).join("|");
+                const nextSignature = questions.map(q => q.text).join("|");
+                if (questions.length > 1 && previousSignature === nextSignature) {
+                    questions = questions.slice(1).concat(questions[0]);
+                }
+                this.generatedQuestions[key] = questions;
+            }
+
             generateSectionQuestions(uIdx, sIdx) {
                 const key = `${uIdx}-${sIdx}`;
-                const sec = mathCurriculum[uIdx].sections[sIdx];
-                const qs = sec.generators.map(gen => gen());
-                this.generatedQuestions[key] = qs;
+                this.saveFreshPaper(key, this.buildQuestionSet(uIdx, sIdx, this.questionMode));
             }
 
             generateReviewQuestions(uIdx) {
                 const key = `${uIdx}-review`;
-                const unit = mathCurriculum[uIdx];
-                // Take select questions across sections for review
-                let qs = [];
-                unit.sections.forEach(sec => {
-                    sec.generators.forEach(gen => qs.push(gen()));
-                });
-                // Shuffle and pick 10 questions for review
-                qs = qs.sort(() => 0.5 - Math.random()).slice(0, 10);
-                this.generatedQuestions[key] = qs;
+                this.saveFreshPaper(key, this.buildQuestionSet(uIdx, -1, this.questionMode));
+            }
+
+            setQuestionMode(mode) {
+                if (!["mixed", "calculation", "application"].includes(mode)) return;
+                this.questionMode = mode;
+                const unit = mathCurriculum[this.currentUnitIndex];
+                if (this.currentSectionIndex === -1) return;
+                if (this.currentSectionIndex === unit.sections.length) {
+                    this.generateReviewQuestions(this.currentUnitIndex);
+                } else {
+                    this.generateSectionQuestions(this.currentUnitIndex, this.currentSectionIndex);
+                }
+                this.render();
             }
 
             refreshSection(uIdx, sIdx) {
                 this.generateSectionQuestions(uIdx, sIdx);
                 this.render();
-                this.showModal("提示", "本節 10 道考卷題目已成功重新整理！", "success");
+                this.showModal("題目已更新", "已依目前題型重新抽選 10 題，原作答內容也已清空。", "success");
             }
 
             refreshReview(uIdx) {
                 this.generateReviewQuestions(uIdx);
                 this.render();
-                this.showModal("提示", "總評量題目已成功重新整理！", "success");
+                this.showModal("題目已更新", "總評量已依目前題型重新抽選 10 題。", "success");
             }
 
             switchNav(uIdx, sIdx) {
@@ -723,6 +789,27 @@
                 const sec = !isReview ? unit.sections[this.currentSectionIndex] : null;
                 const key = !isReview ? `${this.currentUnitIndex}-${this.currentSectionIndex}` : `${this.currentUnitIndex}-review`;
                 const questions = this.generatedQuestions[key] || [];
+                const modeLabels = {
+                    mixed: "混合練習（5 計算＋5 應用）",
+                    calculation: "全計算題（10 題）",
+                    application: "全應用題（10 題）"
+                };
+                const modeSelectorHtml = `
+                    <div class="mb-6 rounded-2xl border-2 border-slate-200 bg-white p-4 shadow-sm" role="group" aria-label="選擇練習題型">
+                        <div class="mb-3 flex items-center gap-2 text-sm font-black text-slate-800">
+                            <i class="fa-solid fa-list-check text-emerald-600"></i>
+                            <span>選擇練習題型</span>
+                        </div>
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                            ${Object.entries(modeLabels).map(([mode, label]) => `
+                                <button type="button" onclick="app.setQuestionMode('${mode}')" aria-pressed="${this.questionMode === mode}" class="rounded-xl border-2 px-4 py-3 text-sm font-black transition ${this.questionMode === mode ? 'border-emerald-600 bg-emerald-600 text-white shadow-md' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-emerald-300 hover:bg-emerald-50'}">
+                                    ${label}
+                                </button>
+                            `).join("")}
+                        </div>
+                        <p class="mt-3 text-xs font-bold text-slate-500">切換題型或按「重新抽題」都會產生一份新的 10 題考卷。</p>
+                    </div>
+                `;
 
                 const breadcrumbHtml = `
                     <div class="flex flex-wrap items-center justify-between pb-4 mb-6 border-b-2 border-slate-200 bg-slate-100 p-4 rounded-2xl shadow-sm">
@@ -745,9 +832,11 @@
                                 <div class="mt-3 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-600">
                                     <span>班級：______ 年 ______ 班</span>
                                     <span>姓名：______________</span>
-                                    <span class="bg-slate-100 px-3 py-1 rounded font-bold text-slate-800 border border-slate-300">本卷共 10 題 (5計算 + 5應用)</span>
+                                    <span class="bg-slate-100 px-3 py-1 rounded font-bold text-slate-800 border border-slate-300">本卷共 10 題｜${modeLabels[this.questionMode]}</span>
                                 </div>
                             </div>
+
+                            ${modeSelectorHtml}
 
                             <div class="flex flex-wrap justify-between items-center mb-6 bg-slate-50 p-3.5 rounded-xl border border-slate-200 gap-2">
                                 <div class="text-xs font-bold text-slate-600">
@@ -760,7 +849,7 @@
                                     </button>
                                     <button onclick="app.refreshSection(${this.currentUnitIndex}, ${this.currentSectionIndex})" class="bg-white hover:bg-emerald-50 hover:text-emerald-600 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 border border-slate-300 shadow-sm">
                                         <i class="fa-solid fa-arrows-rotate"></i>
-                                        <span>重整本節 10 題</span>
+                                        <span>重新抽題 10 題</span>
                                     </button>
                                 </div>
                             </div>
@@ -858,9 +947,11 @@
                                 <span class="bg-amber-100 text-amber-800 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">學習成果總結算</span>
                                 <h2 class="text-2xl md:text-3xl font-black text-slate-900">${unit.reviewTitle}</h2>
                                 <div class="mt-3 text-sm text-slate-600">
-                                    本單元總評量精選 10 題綜合考題，請獨立在白紙上計算並挑戰最高分！
+                                    本單元總評量精選 10 題｜${modeLabels[this.questionMode]}，請獨立在白紙上計算並挑戰最高分！
                                 </div>
                             </div>
+
+                            ${modeSelectorHtml}
 
                             <div class="flex flex-wrap justify-between items-center mb-6 bg-amber-50 p-3.5 rounded-xl border border-amber-200 gap-2">
                                 <div class="text-xs font-bold text-amber-900">
@@ -873,7 +964,7 @@
                                     </button>
                                     <button onclick="app.refreshReview(${this.currentUnitIndex})" class="bg-white hover:bg-amber-50 hover:text-amber-700 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 border border-amber-300 shadow-sm">
                                         <i class="fa-solid fa-arrows-rotate"></i>
-                                        <span>重整總評量 10 題</span>
+                                        <span>重新抽題 10 題</span>
                                     </button>
                                 </div>
                             </div>
