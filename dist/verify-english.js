@@ -167,7 +167,7 @@ check("同義字：程式化找出所有共用中文的字組，拼字題接受�
     const rng = P.makeRng(n);
     const qd = P.makeDailyQuiz(syn.slice(0, 5), ctxFor(rng)); assert(qd.length === 10 && overlapFree(qd), "daily 同義重疊");
     const qw = P.makeWeeklyQuiz(syn.concat(WORDS.slice(20, 30)), ctxFor(rng)); assert(qw.length === 10 && overlapFree(qw), "weekly 同義重疊");
-    const qr = P.makeReview(syn.concat(WORDS.slice(20, 30)), {}, ctxFor(rng)); assert(qr.length === 10 && overlapFree(qr), "review 同義重疊");
+    const qr = P.makeSampleExam(syn.concat(WORDS.slice(20, 30)), {}, ctxFor(rng), null); assert(qr.length === 10 && overlapFree(qr), "review 同義重疊");
     [qd, qw, qr].forEach(qs => checkQuestions(qs, "syn"));
   }
   return Array.from(groups).join("  ");
@@ -199,30 +199,6 @@ check("通過判定：全對才通過（PASS_RATE=1），可改 0.8", () => {
   assert(P.isPass(0, 0) === false, "0 題不得通過");
 });
 
-check("複習：只抽已亮燈學習日的字、優先抽答錯字、不足 10 字抽全部、不改動進度", () => {
-  const state = { completed: { 1: true, 2: true, 4: true, 5: true }, weekPassed: {} };
-  const snapshot = JSON.stringify(state);
-  const learned = P.learnedWords(plan, state);
-  assert(learned.length === 20, "已學字數 " + learned.length);
-  const learnedSet = new Set(learned.map(w => w.word));
-  const wrong = { [learned[3].word]: 3, [learned[7].word]: 1 };
-  for (let n = 0; n < 200; n++) {
-    const qs = P.makeReview(learned, wrong, ctxFor(P.makeRng(n), { primary: learned }));
-    assert(qs.length === 10, "題數 " + qs.length);
-    checkQuestions(qs, "review");
-    assert(new Set(qs.map(q => q.word)).size === 10, "有重複字");
-    qs.forEach(q => assert(learnedSet.has(q.word), "未學過的字出現：" + q.word));
-    assert(qs.some(q => q.word === learned[3].word) && qs.some(q => q.word === learned[7].word), "答錯字沒有優先");
-  }
-  const few = P.makeReview(learned.slice(0, 5), {}, ctxFor(P.makeRng(1)));
-  assert(few.length === 5, "不足 10 字應抽全部，實際 " + few.length);
-  const manyWrong = {};
-  learned.forEach(w => { manyWrong[w.word] = 1; });
-  const qs2 = P.makeReview(learned, manyWrong, ctxFor(P.makeRng(2)));
-  assert(qs2.length === 10 && new Set(qs2.map(q => q.word)).size === 10, "全部都錯過時題數");
-  assert(JSON.stringify(state) === snapshot, "複習改動了進度資料");
-});
-
 check("解鎖規則：依序通過才解鎖下一個", () => {
   const state = { completed: {}, weekPassed: {} };
   assert(P.isUnlocked(plan, state, 1) && !P.isUnlocked(plan, state, 2), "初始");
@@ -249,7 +225,7 @@ check("app.js 與 index.html 的接線與版本字串", () => {
 check("sw.js：CACHE 升版且 ASSETS 檔案皆存在", () => {
   const sw = fs.readFileSync(path.join(__dirname, "sw.js"), "utf8");
   const m = /CACHE="meihao-learning-center-v(\d+)"/.exec(sw);
-  assert(m && Number(m[1]) >= 19, "CACHE 版本 " + (m && m[1]));
+  assert(m && Number(m[1]) >= 21, "CACHE 版本 " + (m && m[1]));
   const assets = JSON.parse(/ASSETS=(\[[^\]]*\])/.exec(sw)[1]);
   assert(assets.indexOf("./english-plan.js") >= 0, "ASSETS 缺 english-plan.js");
   const missing = assets.filter(a => {

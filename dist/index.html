@@ -8,7 +8,7 @@
   <title>莓好學習區｜教材中心</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=19">
+  <link rel="stylesheet" href="./styles.css?v=21">
   <link rel="stylesheet" href="./affiliate-carousel.css">
 </head>
 <body>
@@ -40,7 +40,8 @@
         <div class="stats" aria-label="學習摘要">
           <article class="stat card"><strong id="completedStat">0</strong><span>已通過學習日／73</span></article><article class="stat card"><strong id="wordsStat">0</strong><span>已學單字／365</span></article><article class="stat card"><strong id="weekStat">0</strong><span>已通過週考／15</span></article><article class="stat card"><strong id="streakStat">0</strong><span>連續學習天數</span></article>
         </div>
-        <div class="review-card card"><div><strong>🔁 複習</strong><p id="nextTaskText"></p><small>從學過的字隨機抽 10 題，曾答錯的優先；可無限次練習，不計入進度。</small></div><button class="btn btn-review" data-action="review">🔁 開始複習</button></div>
+        <p id="nextTaskText" class="next-task"></p>
+        <div class="review-card sample-card card"><div><strong>📝 進度抽考（複習）</strong><p id="sampleStatus"></p><small>依已學的字隨機抽 10 題，曾答錯的優先；滿分 100，80 分以上通過。學過的字只會在這裡重複出現；不影響學習日與週考的亮燈。（小考、週考要全對。）</small></div><button class="btn btn-review" data-action="sample">📝 進度抽考（複習）</button></div>
         <div class="toolbar card">
           <label>跳到指定學習日 <input id="dayJump" type="number" min="1" max="73" inputmode="numeric" value="1"></label><button class="btn" data-action="jump">前往</button><button class="btn btn-ghost" data-action="today">回到今天</button><button class="btn btn-ghost" data-action="export">匯出進度</button><label class="btn btn-ghost file-btn">匯入進度<input id="importFile" type="file" accept="application/json" hidden></label>
         </div>
@@ -60,6 +61,6 @@
     <div data-affiliate-carousel data-storefront-url="https://collshp.com/sberrychang?view=storefront" data-theme="learning-center" data-limit="12"></div>
   </main>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./vocabulary.js?v=19"></script><script src="./english-plan.js?v=19"></script><script src="./course-catalog.js?v=19"></script><script src="./app.js?v=19"></script><script src="./affiliate-carousel.config.js"></script><script src="./affiliate-carousel-v2.js"></script>
+  <script src="./vocabulary.js?v=21"></script><script src="./english-plan.js?v=21"></script><script src="./course-catalog.js?v=21"></script><script src="./app.js?v=21"></script><script src="./affiliate-carousel.config.js"></script><script src="./affiliate-carousel-v2.js"></script>
 </body></html>
 

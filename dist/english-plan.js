@@ -12,8 +12,9 @@
   var LEARN_DAYS_PER_WEEK = 5; // 每週 5 個學習日 + 第 6 天週考
   var QUIZ_SIZE = 10;
   var WEEKLY_SIZE = 10;
-  var REVIEW_SIZE = 10;
-  var PASS_RATE = 1; // 全對才通過；之後要改 80% 只需改成 0.8
+  var PASS_RATE = 1; // 小考／週考：全對才通過；之後要改 80% 只需改成 0.8
+  var SAMPLE_PASS_SCORE = 80; // 進度抽考：滿分 100，80 分以上通過（與 PASS_RATE 獨立）
+  var SAMPLE_SIZE = 10;
   var FAMILY_DAYS = {
     1: ["bug", "hug", "mug", "rug", "jug"],
     2: ["cake", "lake", "make", "take", "wake"],
@@ -234,29 +235,6 @@
     return mixedQuestions(picked, ctx);
   }
 
-  /* 複習：已學字中優先抽答錯過的，其餘隨機；不足 10 個抽全部 */
-  function makeReview(learned, wrong, ctx) {
-    ctx = ctxOf(ctx);
-    wrong = wrong || {};
-    var size = Math.min(REVIEW_SIZE, learned.length);
-    var pool = shuffle(learned, ctx.rng);
-    var wrongList = pool.filter(function (w) { return wrong[w.word] > 0; });
-    var others = pool.filter(function (w) { return !(wrong[w.word] > 0); });
-    var picked = [];
-    if (wrongList.length <= size) picked = wrongList.slice();
-    else { // 錯得越多越優先（加權抽樣）
-      var bag = wrongList.slice();
-      while (picked.length < size) {
-        var sum = 0; bag.forEach(function (w) { sum += wrong[w.word]; });
-        var r = ctx.rng() * sum, idx = 0;
-        for (; idx < bag.length - 1; idx++) { r -= wrong[bag[idx].word]; if (r < 0) break; }
-        picked.push(bag.splice(idx, 1)[0]);
-      }
-    }
-    picked = picked.concat(others.slice(0, size - picked.length));
-    return mixedQuestions(picked, ctx);
-  }
-
   /* 聽不到聲音時：把聽音題換成同一個字的英翻中或中翻英（不計對錯） */
   function replaceListen(questions, i, ctx) {
     ctx = ctxOf(ctx);
@@ -266,6 +244,36 @@
     if (!opts.length) opts = ["en2zh", "zh2en"];
     return makeQuestion(shuffle(opts, ctx.rng)[0], target, ctx);
   }
+
+  /* 進度抽考（複習）：已學字隨機抽 10 個（不足抽全部）。
+     曾答錯的字優先（錯越多越優先），其餘隨機並盡量避開上一次用過的字 */
+  function makeSampleExam(learned, wrong, ctx, prevWords) {
+    ctx = ctxOf(ctx);
+    wrong = wrong || {};
+    var prev = {};
+    (prevWords || []).forEach(function (w) { prev[w] = true; });
+    var size = Math.min(SAMPLE_SIZE, learned.length);
+    var pool = shuffle(learned, ctx.rng);
+    var wrongList = pool.filter(function (w) { return wrong[w.word] > 0; });
+    var picked = [];
+    if (wrongList.length <= size) picked = wrongList.slice();
+    else {
+      var bag = wrongList.slice();
+      while (picked.length < size) {
+        var sum = 0; bag.forEach(function (w) { sum += wrong[w.word]; });
+        var r = ctx.rng() * sum, idx = 0;
+        for (; idx < bag.length - 1; idx++) { r -= wrong[bag[idx].word]; if (r < 0) break; }
+        picked.push(bag.splice(idx, 1)[0]);
+      }
+    }
+    var others = pool.filter(function (w) { return !(wrong[w.word] > 0); });
+    var fresh = others.filter(function (w) { return !prev[w.word]; });
+    var old = others.filter(function (w) { return prev[w.word]; });
+    picked = picked.concat(fresh.concat(old).slice(0, size - picked.length));
+    return mixedQuestions(picked, ctx);
+  }
+  function sampleScore(correct, total) { return total ? Math.round(correct * 100 / total) : 0; }
+  function isSamplePass(score) { return score >= SAMPLE_PASS_SCORE; }
 
   /* 單題合法性檢查（選擇題 4 個不重複選項且恰好一個正解） */
   function validateQuestion(q) {
@@ -280,11 +288,12 @@
 
   return {
     TOTAL_WORDS: TOTAL_WORDS, WORDS_PER_DAY: WORDS_PER_DAY, LEARN_DAYS_PER_WEEK: LEARN_DAYS_PER_WEEK,
-    QUIZ_SIZE: QUIZ_SIZE, WEEKLY_SIZE: WEEKLY_SIZE, REVIEW_SIZE: REVIEW_SIZE, PASS_RATE: PASS_RATE,
+    QUIZ_SIZE: QUIZ_SIZE, WEEKLY_SIZE: WEEKLY_SIZE, PASS_RATE: PASS_RATE,
     FAMILY_DAYS: FAMILY_DAYS, TYPES: TYPES,
     shuffle: shuffle, makeRng: makeRng, buildPlan: buildPlan,
     isTaskPassed: isTaskPassed, isUnlocked: isUnlocked, nextTask: nextTask, allDone: allDone, learnedWords: learnedWords,
+    SAMPLE_PASS_SCORE: SAMPLE_PASS_SCORE, SAMPLE_SIZE: SAMPLE_SIZE, makeSampleExam: makeSampleExam, sampleScore: sampleScore, isSamplePass: isSamplePass,
     isPass: isPass, zhOverlap: zhOverlap, synonymsOf: synonymsOf, isSpellCorrect: isSpellCorrect, replaceListen: replaceListen,
-    makeDailyQuiz: makeDailyQuiz, makeWeeklyQuiz: makeWeeklyQuiz, makeReview: makeReview, validateQuestion: validateQuestion
+    makeDailyQuiz: makeDailyQuiz, makeWeeklyQuiz: makeWeeklyQuiz, validateQuestion: validateQuestion
   };
 });

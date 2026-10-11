@@ -5,9 +5,9 @@
   var plan=P.buildPlan(CORE_WORDS);
   var TOTAL_DAYS=plan.totalDays,TOTAL_WEEKS=plan.weekCount,TOTAL_WORDS=plan.totalWords;
   var LABELS={en2zh:"英翻中",zh2en:"中翻英",spell:"拼字",listen:"聽音選字"};
-  var state=load(),mode="day",currentDay=1,currentWeek=1,currentStep=0,spellIndex=0,deferredInstall=null,session=null,lastWeeklyWords=null;
+  var state=load(),mode="day",currentDay=1,currentWeek=1,currentStep=0,spellIndex=0,deferredInstall=null,session=null,lastWeeklyWords=null,lastSampleWords=null;
   function el(q){return document.querySelector(q)}
-  function blankState(){return {schemaVersion:SCHEMA,completed:{},weekPassed:{},scores:{},weekScores:{},started:{},activityDates:[],wrong:{},migrationNotice:false}}
+  function blankState(){return {schemaVersion:SCHEMA,completed:{},weekPassed:{},scores:{},weekScores:{},started:{},activityDates:[],wrong:{},sampleBest:0,samplePassed:false,migrationNotice:false}}
   function isObj(x){return x&&typeof x==="object"&&!Array.isArray(x)}
   function cleanFlags(src,max){var out={};if(isObj(src))Object.keys(src).forEach(function(k){var n=Number(k);if(src[k]&&n>=1&&n<=max&&Math.floor(n)===n)out[n]=true});return out}
   function cleanNumbers(src,max){var out={};if(isObj(src))Object.keys(src).forEach(function(k){var n=Number(k),v=Number(src[k]);if(n>=1&&n<=max&&Math.floor(n)===n&&isFinite(v))out[n]=v});return out}
@@ -17,6 +17,7 @@
     s.scores=cleanNumbers(x.scores,TOTAL_DAYS);s.weekScores=cleanNumbers(x.weekScores,TOTAL_WEEKS);
     if(Array.isArray(x.activityDates))s.activityDates=x.activityDates.filter(function(d){return /^\d{4}-\d{2}-\d{2}$/.test(String(d))});
     if(isObj(x.wrong))Object.keys(x.wrong).forEach(function(w){var n=Number(x.wrong[w]);if(n>0&&isFinite(n))s.wrong[w]=Math.floor(n)});
+    var sb=Number(x.sampleBest);s.sampleBest=isFinite(sb)?Math.max(0,Math.min(100,Math.round(sb))):0;s.samplePassed=x.samplePassed===true;
     s.migrationNotice=!!x.migrationNotice;
     return s;
   }
@@ -62,8 +63,9 @@ var SYN_HINT="<small class=\"hint\">（有多個英文字都能表示這個意�
   function renderDashboard(){
     var nt=nextTask(),done=P.allDone(plan,state);
     el("#completedStat").textContent=completedCount();el("#wordsStat").textContent=learnedList().length;el("#weekStat").textContent=weekPassedCount();el("#streakStat").textContent=streak();
-    el("#nextTaskText").textContent=done?"全部任務都亮燈了，太棒了！可以用「複習」繼續練習。":"下一個任務："+(nt.type==="day"?"Day "+nt.day+"（"+dayObj(nt.day).topic+"）":"第 "+nt.week+" 週 週考");
+    el("#nextTaskText").textContent=done?"全部任務都亮燈了，太棒了！可以用「進度抽考」繼續練習。":"下一個任務："+(nt.type==="day"?"Day "+nt.day+"（"+dayObj(nt.day).topic+"）":"第 "+nt.week+" 週 週考");
     el("#dayJump").value=nt.type==="day"?nt.day:weekObj(nt.week).lastDay;
+    el("#sampleStatus").textContent=state.sampleBest>0||state.samplePassed?"最高分 "+state.sampleBest+"／100｜"+(state.samplePassed?"已通過 ✅":"尚未通過"):"尚未考過";
     el("#migrateNotice").hidden=!state.migrationNotice;
     renderWeeks();
   }
@@ -116,7 +118,7 @@ var SYN_HINT="<small class=\"hint\">（有多個英文字都能表示這個意�
   function showLesson(){el("#libraryView").hidden=true;el("#dashboardView").hidden=true;el("#lessonView").hidden=false;setAffiliateTheme("english-elementary")}
   function resetPanels(){["learnPanel","spellPanel","quizPanel","resultPanel"].forEach(function(id){el("#"+id).hidden=true})}
   function updateNav(){
-    var nav=el(".lesson-nav");nav.hidden=mode==="review";if(mode==="review")return;
+    var nav=el(".lesson-nav");nav.hidden=mode==="sample";if(mode==="sample")return;
     var t=mode==="day"?taskOf("d",currentDay):taskOf("w",currentWeek),prev=plan.tasks[t.no-2],next=plan.tasks[t.no];
     el('[data-action="prev"]').disabled=!prev;el('[data-action="next"]').disabled=!next||!passed(t)&&!unlocked(next);
   }
@@ -141,12 +143,12 @@ var SYN_HINT="<small class=\"hint\">（有多個英文字都能表示這個意�
     p.innerHTML="<h2>先快速看一遍本週單字</h2><p>點一下喇叭可以聽發音，準備好了再開始週考。</p><div class=\"chip-list\">"+wk.words.map(function(x){return '<button class="chip" data-speak="'+esc(x.word)+'">🔊 '+esc(x.word)+"<small>"+esc(x.zh)+"</small></button>"}).join("")+'</div><div class="panel-actions"><span></span><button class="btn btn-primary" data-action="start-session">開始週考</button></div>';
     updateNav();window.scrollTo({top:0,behavior:"smooth"});
   }
-  function openReview(){
+  function openSample(){
     var learned=learnedList();
     if(!learned.length){toast("還沒有學過的字：先完成 Day 1 小考亮燈吧");return}
-    mode="review";session=null;document.title="複習｜英語單字儲備庫";showLesson();
-    el("#lessonTitle").textContent="🔁 複習";el("#lessonTheme").textContent="已學過的 "+learned.length+" 個字";
-    el("#lessonSubtitle").textContent="從學過的字隨機抽 10 題（曾答錯的優先）。不計入進度、不影響亮燈，可以無限次練習。";
+    mode="sample";session=null;lastSampleWords=null;document.title="進度抽考｜英語單字儲備庫";showLesson();
+    el("#lessonTitle").textContent="📝 進度抽考";el("#lessonTheme").textContent="已學過的 "+learned.length+" 個字";
+    el("#lessonSubtitle").textContent="依目前進度隨機抽 10 題，滿分 100 分，80 分以上通過；不影響學習日與週考的亮燈。";
     el("#stepper").innerHTML="";updateNav();startSession();window.scrollTo({top:0,behavior:"smooth"});
   }
   function openTask(spec){var p=String(spec).split(":");if(p[0]==="w")openWeek(p[1]);else openDay(p[1])}
@@ -178,12 +180,12 @@ var SYN_HINT="<small class=\"hint\">（有多個英文字都能表示這個意�
     else{f.textContent="還差一點，再聽一次並重新輸入。";f.className="feedback bad";input.select()}
   }
 
-  /* ---------- 小考／週考／複習（共用作答流程） ---------- */
+  /* ---------- 小考／週考／進度抽考（共用作答流程） ---------- */
   function startSession(){
     var qs;
     if(mode==="day")qs=P.makeDailyQuiz(dayObj(currentDay).words,ctx(poolUpTo(currentDay)));
     else if(mode==="week"){qs=P.makeWeeklyQuiz(weekObj(currentWeek).words,ctx(poolUpTo(weekObj(currentWeek).lastDay)),lastWeeklyWords);lastWeeklyWords=qs.map(function(q){return q.word})}
-    else qs=P.makeReview(learnedList(),state.wrong,ctx(learnedList()));
+    else if(mode==="sample"){qs=P.makeSampleExam(learnedList(),state.wrong,ctx(learnedList()),lastSampleWords);lastSampleWords=qs.map(function(q){return q.word})}
     session={ctx:sessionCtx(),questions:qs,i:0,correct:0,answered:false,mistakes:[]};
     resetPanels();renderQuestion();
   }
@@ -192,7 +194,7 @@ var SYN_HINT="<small class=\"hint\">（有多個英文字都能表示這個意�
     if(!session||session.answered)return;var q=session.questions[session.i];if(!q||q.type!=="listen")return;
     session.questions[session.i]=P.replaceListen(session.questions,session.i,session.ctx);renderQuestion();
   }
-  function sessionTitle(){return mode==="day"?"Day "+currentDay+" 小考":mode==="week"?"第 "+currentWeek+" 週 週考":"複習"}
+  function sessionTitle(){return mode==="day"?"Day "+currentDay+" 小考":mode==="week"?"第 "+currentWeek+" 週 週考":"進度抽考"}
   function renderQuestion(){
     var p=el("#quizPanel"),q=session.questions[session.i],n=session.questions.length;p.hidden=false;session.answered=false;
     if(session.i>=n){finishSession();return}
@@ -206,8 +208,8 @@ var SYN_HINT="<small class=\"hint\">（有多個英文字都能表示這個意�
     if(q.type==="spell")setTimeout(function(){if(el("#quizAnswer"))el("#quizAnswer").focus()},0);
   }
   function recordAnswer(q,ok){
-    if(ok){session.correct++;if(mode==="review"&&state.wrong[q.word]>0){state.wrong[q.word]--;if(state.wrong[q.word]<=0)delete state.wrong[q.word]}}
-    else{session.mistakes.push(q.word);state.wrong[q.word]=(state.wrong[q.word]||0)+1}
+    if(ok){session.correct++;if(mode==="sample"&&state.wrong[q.word]>0){state.wrong[q.word]--;if(state.wrong[q.word]<=0)delete state.wrong[q.word]}}
+    else{session.mistakes.push({word:q.word,zh:q.zh});state.wrong[q.word]=(state.wrong[q.word]||0)+1}
     save();
   }
   function showFeedback(q,ok){
@@ -226,12 +228,17 @@ var SYN_HINT="<small class=\"hint\">（有多個英文字都能表示這個意�
     recordAnswer(q,ok);showFeedback(q,ok);
   }
   function finishSession(){
-    var n=session.questions.length,c=session.correct,ok=P.isPass(c,n),isReview=mode==="review",html="";
+    var n=session.questions.length,c=session.correct,ok=P.isPass(c,n),html="";
     el("#quizPanel").hidden=true;var r=el("#resultPanel");r.hidden=false;
-    var wrongText=session.mistakes.length?"<p>這次答錯的字："+session.mistakes.map(function(w){return "<strong>"+esc(w)+"</strong>"}).join("、")+"</p>":"";
-    if(isReview){
-      html='<div class="result"><span class="kicker">複習結果</span><div class="score">'+c+"／"+n+"</div><h2>複習完成（不計入進度）</h2>"+wrongText+'<div class="panel-actions"><button class="btn" data-action="english">返回儀表板</button><button class="btn btn-primary" data-action="retry-session">再來一組複習</button></div></div>';
-    }else{
+    var wrongText=session.mistakes.length?"<p>這次答錯的字："+session.mistakes.map(function(m){return "<strong>"+esc(m.word)+"</strong>"}).join("、")+"</p>":"";
+    if(mode==="sample"){
+      var score=P.sampleScore(c,n),sp=P.isSamplePass(score);
+      state.sampleBest=Math.max(state.sampleBest||0,score);if(sp)state.samplePassed=true;save();
+      var det=session.mistakes.length?'<p>答錯的字與正確答案：</p><ul class="wrong-list">'+session.mistakes.map(function(m){return "<li><strong>"+esc(m.word)+"</strong>："+esc(m.zh)+"</li>"}).join("")+"</ul>":"";
+      el("#resultPanel").innerHTML='<div class="result"><span class="kicker">進度抽考結果</span><div class="score">'+score+"／100</div><h2>"+(sp?"通過（≥"+P.SAMPLE_PASS_SCORE+"）":"未通過（需 "+P.SAMPLE_PASS_SCORE+" 分以上）")+"</h2><p>答對 "+c+"／"+n+" 題，最高分 "+state.sampleBest+"／100。抽考不影響學習日與週考的亮燈。</p>"+det+'<div class="panel-actions"><button class="btn" data-action="english">返回儀表板</button><button class="btn btn-primary" data-action="retry-session">再抽一組</button></div></div>';
+      return;
+    }
+    {
       if(ok){
         if(mode==="day"){state.completed[currentDay]=true;state.scores[currentDay]=Math.max(Number(state.scores[currentDay]||0),Math.round(c/n*100))}
         else{state.weekPassed[currentWeek]=true;state.weekScores[currentWeek]=Math.max(Number(state.weekScores[currentWeek]||0),Math.round(c/n*100))}
@@ -240,7 +247,7 @@ var SYN_HINT="<small class=\"hint\">（有多個英文字都能表示這個意�
       save();
       var t=mode==="day"?taskOf("d",currentDay):taskOf("w",currentWeek),next=plan.tasks[t.no],finalDone=ok&&!next;
       var msg=ok?(finalDone?"全部任務完成！":"全對！已亮燈，"+(next.type==="week"?"本週週考已解鎖":"下一個任務已解鎖")):"沒有全對，需要 "+n+"／"+n+" 才通過";
-      var sub=ok?"繼續保持。想加強記憶可以用儀表板的「複習」。":"錯的題目已記下來。按「再測一次」會換一組新題目，直到全對為止。";
+      var sub=ok?"繼續保持。想加強記憶可以用儀表板的「進度抽考」。":"錯的題目已記下來。按「再測一次」會換一組新題目，直到全對為止。";
       html='<div class="result"><span class="kicker">'+esc(sessionTitle())+' 結果</span><div class="score">'+c+"／"+n+"</div><h2>"+msg+"</h2><p>"+sub+"</p>"+wrongText+'<div class="panel-actions">'+(ok?'<button class="btn" data-action="retry-session">再練一次</button>'+(next?'<button class="btn btn-primary" data-action="next">前往下一個任務</button>':'<button class="btn btn-primary" data-action="english">返回儀表板</button>'):(mode==="day"?'<button class="btn" data-action="restudy">回到單字卡</button>':'<button class="btn" data-action="english">返回儀表板</button>')+'<button class="btn btn-primary" data-action="retry-session">再測一次</button>')+"</div></div>";
       updateNav();
     }
@@ -262,7 +269,7 @@ var SYN_HINT="<small class=\"hint\">（有多個英文字都能表示這個意�
   document.addEventListener("click",function(event){
     var x=event.target.closest("[data-speak]");if(x){speak(x.dataset.speak);return}x=event.target.closest("[data-task]");if(x){openTask(x.dataset.task);return}x=event.target.closest("[data-level]");if(x){selectLevel(x.dataset.level);return}x=event.target.closest("[data-grade]");if(x){document.querySelectorAll(".grade-tab").forEach(function(t){t.classList.toggle("active",t===x)});renderJunior(Number(x.dataset.grade));return}x=event.target.closest("[data-pick]");if(x){pickChoice(Number(x.dataset.pick));return}
     var action=event.target.closest("[data-action]");action=action&&action.dataset.action;if(!action)return;
-    if(action==="home")home();else if(action==="english")showEnglish();else if(action==="continue"||action==="today")openNextTask();else if(action==="review")openReview();else if(action==="jump"){var n=Math.floor(Number(el("#dayJump").value));if(!(n>=1&&n<=TOTAL_DAYS))toast("請輸入 1–"+TOTAL_DAYS+" 之間的學習日");else openDay(n)}
+    if(action==="home")home();else if(action==="english")showEnglish();else if(action==="continue"||action==="today")openNextTask();else if(action==="sample")openSample();else if(action==="jump"){var n=Math.floor(Number(el("#dayJump").value));if(!(n>=1&&n<=TOTAL_DAYS))toast("請輸入 1–"+TOTAL_DAYS+" 之間的學習日");else openDay(n)}
     else if(action==="prev"||action==="next"){var cur=mode==="day"?taskOf("d",currentDay):taskOf("w",currentWeek),tt=plan.tasks[cur.no-1+(action==="next"?1:-1)];if(tt){if(tt.type==="week")openWeek(tt.week);else openDay(tt.day)}}
     else if(action==="step-next"){currentStep++;renderStep()}else if(action==="check-spell")checkSpell();else if(action==="check-quiz-spell")checkQuizSpell();else if(action==="skip-listen")skipListen();else if(action==="q-next"){session.i++;renderQuestion()}
     else if(action==="start-session"||action==="retry-session"){if(mode==="day"){currentStep=4;renderStep()}else startSession()}
