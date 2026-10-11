@@ -13,6 +13,7 @@
       const hm = o.answer.match(/(\d+)\/(\d+)$/);
       if (hm) { let dn = +hm[2]; while (dn % 2 === 0) dn /= 2; while (dn % 5 === 0) dn /= 5; if (dn !== 1) o.stem += "（請以分數作答）"; }
     }
+    if (o.accepted) o.accepted = o.accepted.filter(function (a) { const mm = /(\d+)\/(\d+)$/.exec(a); return !(mm && +mm[2] > 100); });
     const all = [o.stem, o.explain, o.trapNote, o.answer, o.options ? o.options.join(" ") : ""].join(" ");
     const re = /(\d+)\/(\d+)/g; let m;
     while ((m = re.exec(all))) { if (+m[2] > 60) throw new Error("retry"); }
@@ -280,7 +281,7 @@
   add("calc-L3-01", "calc", 3, "basic", function (k) {
     const f = FQ(k.pick(FR3)), d = Q(k.pick([50, 25, 75, 20, 40]), 100), g = FQ(k.pick(FR3)), v = qa(f, qm(d, g));
     const o = K.qAnswer(v, "dec");
-    return Object.assign({ stem: K.qFrac(f) + " + " + auto(d, "dec") + " × " + K.qFrac(g) + "（答案可寫分數或小數）",
+    return Object.assign({ stem: K.qFrac(f) + " + " + auto(d, "dec") + " × " + K.qFrac(g) + (K.qIsTerminating(v) ? "（答案可寫分數或小數）" : "（請以分數作答）"),
       explain: "解析：先乘：" + auto(d, "dec") + " × " + K.qFrac(g) + " = " + K.qFrac(qm(d, g)) + "；再加 " + K.qFrac(f) + " = " + K.qFrac(v) + "。" }, o);
   });
   add("calc-L3-02", "calc", 3, "basic", function (k) {
@@ -345,6 +346,55 @@
     const v = qs(qm(x.q, Q(3, 4)), Q(1, 2)); pos(v); dec4(v, x.q);
     return Object.assign({ stem: "老師想了一個數，把它乘 0.75 以後再減去 1/2，得到 " + auto(v, "dec") + "，這個數是多少？",
       explain: "解析：逆向：" + auto(v, "dec") + " + 1/2 = " + auto(qa(v, Q(1, 2)), "dec") + "，再 ÷ 0.75 = " + dd(x) + "。" }, ans(x.q, x.fl === "mixed" ? "mixed" : "dec"), { units: ["個"] });
+  });
+
+  /* ---------- 教材 □ 未知數題（規格第 14 節） ---------- */
+  add("fill-L1-03", "fill", 1, "basic", function (k) {
+    const x = N(k, ["dec", "mixed", "int"], 1, 5, [2, 4, 5], [3, 2, 1]), f = N(k, ["frac", "dec"], 1, 3, [2, 4, 5, 10], [2, 2]), v = qa(x.q, f.q); dec4(v);
+    return Object.assign({ stem: "□ + " + ex(f) + " = " + auto(v, x.fl === "mixed" ? "mixed" : "dec") + "，□ 是多少？",
+      explain: "解析：□ = " + auto(v, x.fl === "mixed" ? "mixed" : "dec") + " − " + dd(f) + " = " + dd(x) + "。" }, ans(x.q, x.fl === "mixed" ? "mixed" : "dec"));
+  });
+  add("fill-L2-02", "fill", 2, "basic", function (k) {
+    const x = N(k, ["int", "dec", "mixed"], 2, 9, [2, 4, 5], [2, 3, 2]), m = N(k, ["dec", "mixed", "int"], 2, 9, [2, 4], [3, 2, 1]), v = qm(x.q, m.q); dec4(v, x.q);
+    return Object.assign({ stem: ex(m) + " × □ = " + auto(v, m.fl === "mixed" || x.fl === "mixed" ? "mixed" : "dec") + "，□ 是多少？",
+      explain: "解析：□ = " + auto(v, "dec") + " ÷ " + dd(m) + " = " + dd(x) + "。" }, ans(x.q, x.fl === "mixed" ? "mixed" : "dec"));
+  });
+  add("calc-L2-02", "calc", 2, "basic", function (k) {
+    const q = N(k, ["int", "dec", "mixed"], 2, 9, [2, 4, 5], [2, 3, 2]), x = N(k, ["int", "dec"], 2, 9, [2], [2, 3]), a = qm(q.q, x.q); dec4(a);
+    return Object.assign({ stem: auto(a, "dec") + " ÷ □ = " + dd(q) + "，求 □：" + auto(a, "dec") + " ÷ " + ex(q),
+      explain: "解析：被除數 ÷ 商 = 除數，□ = " + auto(a, "dec") + " ÷ " + dd(q) + " = " + dd(x) + "。" }, ans(x.q, x.fl === "mixed" ? "mixed" : "dec"));
+  });
+  add("single-L3-04", "single", 3, "trap", function (k) {
+    const f = k.pick([[3, 4], [2, 5], [3, 5], [5, 4], [3, 2]]), x = N(k, ["int", "dec", "mixed"], 4, 40, [2, 4], [3, 3, 2]), y = qm(x.q, FQ(f)); dec4(y, x.q);
+    const fl = x.fl === "mixed" ? "mixed" : "dec";
+    const c = sc(k, x.q, [qm(y, FQ(f)), qs(y, FQ(f)).n > 0 ? qs(y, FQ(f)) : qa(y, FQ(f)), qd(y, I(f[0])), qm(y, I(f[1]))], fl);
+    return Object.assign(c, { stem: "□ × (" + f[0] + "/" + f[1] + ") = " + auto(y, fl) + "，□ 是多少？",
+      explain: "解析：□ = " + auto(y, fl) + " ÷ " + f[0] + "/" + f[1] + " = " + auto(y, fl) + " × " + f[1] + "/" + f[0] + " = " + auto(x.q, fl) + "。",
+      trapNote: "求 □ 要用除法（÷ " + f[0] + "/" + f[1] + "，也就是 × " + f[1] + "/" + f[0] + "）；直接 × " + f[0] + "/" + f[1] + " 會得到 " + auto(qm(y, FQ(f)), "dec") + "，把方向弄反了。" });
+  });
+  add("word-L3-02", "word", 3, "trap", function (k) {
+    const f = k.pick([[3, 5], [3, 4], [2, 5], [1, 4]]), x = N(k, ["int", "dec"], 20, 100, [2], [3, 2]), y = qm(x.q, FQ(f)); dec4(y, x.q);
+    return Object.assign({ stem: "小明買筆記本花了 " + auto(y, "dec") + " 元，這是他帶來的錢的 " + f[0] + "/" + f[1] + "，他帶了 □ 元。", units: ["元"],
+      explain: "解析：花掉的錢 = 帶來的錢 × " + f[0] + "/" + f[1] + "，□ = " + auto(y, "dec") + " ÷ " + f[0] + "/" + f[1] + " = " + auto(x.q, "dec") + "（元）。",
+      trapNote: "「是帶來的錢的 " + f[0] + "/" + f[1] + "」，帶來的錢是整體（1），要用除法還原；把 " + auto(y, "dec") + " 再 × " + f[0] + "/" + f[1] + " 會得到 " + auto(qm(y, FQ(f)), "dec") + "，比花掉的還少，不合理。" }, ans(x.q, "dec"));
+  });
+  add("tf-L4-02", "tf", 4, "trap", function (k) {
+    const x = N(k, ["int", "dec", "mixed"], 2, 20, [2, 4], [3, 3, 2]), v = qm(x.q, I(4)), ok = k.int(0, 1) === 1, w = ok ? x.q : qm(v, Q(1, 4).n ? Q(4, 1) : Q(4, 1)); dec4(v, x.q, w);
+    const fl = x.fl === "mixed" ? "mixed" : "dec";
+    return { stem: "□ ÷ 0.25 = " + auto(v, fl) + "，所以 □ = " + auto(w, fl) + "。", answer: ok,
+      explain: "解析：被除數 = 商 × 除數，□ = " + auto(v, fl) + " × 0.25 = " + auto(x.q, fl) + "。",
+      trapNote: "求被除數要用「乘」：商 × 除數；若再除以 0.25（= × 4）會得到 " + auto(qm(v, I(4)), fl) + "，方向弄反了。" };
+  });
+  add("calc-L4-02", "calc", 4, "extend", function (k) {
+    const m = k.pick([Q(3, 2), Q(5, 2), Q(3, 4), Q(2, 5), Q(5, 4)]), x = N(k, ["int", "dec", "mixed"], 4, 30, [2, 4], [3, 3, 2]), s = N(k, ["int", "dec", "mixed"], 1, 6, [2, 4], [3, 2, 2]), v = qs(qm(x.q, m), s.q); pos(v); dec4(v, x.q);
+    const fl = x.fl === "mixed" ? "mixed" : "dec";
+    return Object.assign({ stem: "□ × " + wrap(auto(m, "dec")) + " − " + ex(s) + " = " + auto(v, fl) + "，求 □：(" + auto(v, fl) + " + " + ex(s) + ") ÷ " + wrap(auto(m, "dec")),
+      explain: "解析：先把減掉的 " + dd(s) + " 加回去：" + auto(v, fl) + " + " + dd(s) + " = " + auto(qa(v, s.q), fl) + "，再 ÷ " + auto(m, "dec") + " = " + dd(x) + "。" }, ans(x.q, fl));
+  });
+  add("fill-L4-03", "fill", 4, "extend", function (k) {
+    const fl = k.flavor(["dec", "mixed"]), y = N(k, [fl], 2, 9, [2, 4]), gap = N(k, [fl], 1, 5, [2, 4]), x = qa(y.q, gap.q), S2 = qa(x, y.q); dec4(S2, gap.q);
+    return Object.assign({ stem: "□ + △ = " + auto(S2, fl) + "，□ − △ = " + auto(gap.q, fl) + "，△ 是多少？",
+      explain: "解析：△ = (和 − 差) ÷ 2 = (" + auto(S2, fl) + " − " + auto(gap.q, fl) + ") ÷ 2 = " + auto(y.q, fl) + "（□ = " + auto(x, fl) + "）。" }, ans(y.q, fl));
   });
 
   ExamBank.register("mixed-ops", "mixed-ops-main", S);

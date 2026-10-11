@@ -116,10 +116,16 @@
 
       const levelSel = h("select", { id: "ex-level", "aria-label": "難度範圍" }, cfg.levelRanges.map(l => h("option", { value: l.key, selected: l.key === sel.level, text: l.name })));
       levelSel.addEventListener("change", () => { sel.level = levelSel.value; saveSel(); });
+      const levelNote = h("p", { class: "ex-note", id: "ex-level-note" });
+      function syncLevel() {
+        const p = sel.mode === "practice";
+        levelSel.disabled = p;
+        levelNote.textContent = p ? "二十題練習由簡入深，不受難度影響。" : "難度只套用在一百分計分卷。";
+      }
 
       function modeCard(key, icon, title, desc) {
         const input = h("input", { type: "radio", name: "mode", value: key, checked: sel.mode === key });
-        input.addEventListener("change", () => { if (input.checked) { sel.mode = key; saveSel(); } });
+        input.addEventListener("change", () => { if (input.checked) { sel.mode = key; saveSel(); syncLevel(); } });
         return h("label", { class: "ex-mode" }, [input, h("span", { class: "ex-mode-body" }, [h("strong", { text: icon + " " + title }), h("small", { text: desc })])]);
       }
 
@@ -154,7 +160,8 @@
         ]),
         h("section", { class: "ex-card" }, [
           h("h2", { text: "3. 難度範圍" }),
-          h("label", { class: "ex-field", for: "ex-level" }, ["題目難度：", levelSel])
+          h("label", { class: "ex-field", for: "ex-level" }, ["題目難度：", levelSel]),
+          levelNote
         ]),
         h("section", { class: "ex-card" }, [
           h("h2", { text: "4. 考卷模式" }),
@@ -170,6 +177,7 @@
         ])
       ]);
       mount(node, pageTitle());
+      syncLevel();
       refresh();
     }
 
@@ -182,7 +190,7 @@
           const sum = engine.summarize(state.exam, state.resp);
           state.exam = engine.rebuildFromItems(state.exam, sum.wrong);
         } else {
-          state.exam = engine.buildExam({ mode: sel.mode, units: unitsSelected(), types: sel.types, levelMin: lv.min, levelMax: lv.max });
+          state.exam = engine.buildExam({ mode: sel.mode, units: unitsSelected(), types: sel.types, levelMin: lv.min, levelMax: lv.max, mix: lv.mix });
         }
       } catch (e) {
         console.error(e);

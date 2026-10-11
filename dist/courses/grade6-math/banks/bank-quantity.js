@@ -13,7 +13,7 @@
   function badStr(x) {
     x = String(x);
     let m; const re = /(\d+)\/(\d+)/g;
-    while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
+    while ((m = re.exec(x))) if (Number(m[2]) > 60) return true;
     return /\d{9,}|\d+\.\d{5,}/.test(x);
   }
   function badAcc(x) {
@@ -22,10 +22,20 @@
     while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
     return /\d{9,}/.test(x.replace(/\.\d+/, ""));
   }
-  /* fill／calc／word 的答案若是分數（含無限小數的情形），題幹補「（請以分數作答）」，已提到分數就不重複 */
+  /* fill／calc／word 的答案若是「無限小數」（寫成分數），題幹補「（請以分數作答）」，已提到分數就不重複；
+     這時也把「或小數作答」的提示改成只允許分數／帶分數。有限小數的答案不補。 */
+  function nonTerminating(ans) {
+    const m = /(\d+)\/(\d+)\s*$/.exec(String(ans));
+    if (!m) return false;
+    let d = Number(m[2]);
+    while (d % 2 === 0) d /= 2;
+    while (d % 5 === 0) d /= 5;
+    return d !== 1;
+  }
   function addHint(r, type) {
-    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && /\//.test(r.answer) && !/分數/.test(r.stem)) {
-      r.stem = r.stem + (/____/.test(r.stem) && /____[。]?$/.test(r.stem) ? "" : "") + "(請以分數作答)";
+    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && nonTerminating(r.answer)) {
+      if (/或小數作答/.test(r.stem)) r.stem = r.stem.replace("、帶分數或小數作答", "或帶分數作答").replace("或小數作答", "作答");
+      if (!/分數/.test(r.stem)) r.stem = r.stem + "(請以分數作答)";
     }
     return r;
   }
@@ -71,7 +81,7 @@
   function dsh(q) { return decOK(q) ? K.qDec(q) : K.qMixed(q); }
   function shT(q, fl) { return fl === "dec" ? dsh(q) : fl === "mixed" ? K.qMixed(q) : qFrac(q); }
   function qa(q, fl) { const o = K.qAnswer(q, fl === "int" ? "frac" : fl); const v = q.n / q.d; o.accepted = o.accepted.filter(function (x) { return !/^\d+\.\d+$/.test(x) || Math.abs(Number(x) - v) < 1e-12; }); return o; }
-  const FLQ = ["int", "dec", "frac", "mixed"], FQW = [0.5, 3, 4, 4];
+  const FLQ = ["int", "dec", "frac", "mixed"], FQW = [0.5, 4.5, 3.5, 3.5];
   const MONEY = ["int", "dec"], MW = [0.5, 5.5];
   function scaleOf(fl) {
     if (fl === "int") return Q(pick([1, 1, 2, 3, 5]));
@@ -369,5 +379,72 @@
     })
   ];
 
-  ExamBank.register(T, "quantity-basic", single.concat(multi, tf, fill, calc, word));
+  /* ===== 教材式 □ 未知數題（規格第 14 節）===== */
+  const PL = [20, 25, 40, 50, 60, 75, 80];
+  function basePair(p) { let B, c; do { B = 20 * int(3, 30); c = B * p / 100; } while (!Number.isInteger(c)); return [B, c]; }
+
+  const boxes = [
+    mk("fill", 2, "basic", function () {
+      const p = pick(PL), bc = basePair(p), v = sc(bc, FLQ, FQW), a = qa(v.qs[0], v.fl);
+      return { stem: "「□ 的 " + p + "% 是 " + v.sh[1] + "」,□ = ____", answer: a.answer, accepted: a.accepted,
+        explain: "□ × " + p + "% = " + v.sh[1] + ",所以 □ = " + v.sh[1] + " ÷ " + p + "% = " + v.sh[1] + " ÷ " + K.num(p / 100) + " = " + v.sh[0] + "。\n驗算:" + v.sh[0] + " × " + p + "% = " + v.sh[1] + "。" };
+    }),
+    mk("calc", 1, "basic", function () {
+      const p = int(1, 19) * 5, B = pick([20, 25, 40, 50, 80, 200]); if (!Number.isInteger(B * p / 100)) throw new Error("重抽");
+      const v = sc([B, B * p / 100], FLQ, FQW);
+      return { stem: "求 □ 是多少:「" + v.sh[0] + " 的 □% 是 " + v.sh[1] + "」", answer: String(p), accepted: [p + "%"], units: PCT,
+        explain: "□% = 比較量 ÷ 基準量 = " + v.sh[1] + " ÷ " + v.sh[0] + " = " + K.num(p / 100) + " = " + p + "%,所以 □ = " + p + "。" };
+    }),
+    mk("calc", 3, "basic", function () {
+      const B0 = pick([4, 5, 8, 10, 12, 20, 25]), f = pick([Q(3, 2), Q(5, 2), Q(7, 2), Q(9, 2), Q(1, 2), Q(3, 4), Q(5, 4), Q(2, 5), Q(7, 4), Q(3, 5)]);
+      const v = sc([B0, qMul(Q(B0), f)], FLQ, FQW), fl = v.fl === "int" ? "frac" : v.fl, ff = fl === "dec" && !decOK(f) ? "frac" : fl;
+      const a = qa(f, ff);
+      return { stem: "求 □ 是多少:「" + v.sh[0] + " × □ = " + v.sh[1] + "」", answer: a.answer, accepted: a.accepted,
+        explain: "□ = 比較量 ÷ 基準量 = " + v.sh[1] + " ÷ " + v.sh[0] + " = " + shT(f, ff) + "。" };
+    }),
+    mk("single", 3, "trap", function () {
+      const p = pick(PL), bc = basePair(p), v = sc(bc, FLQ, FQW), s = v.s, fl = v.fl;
+      const cands = [mv(bc[1] * p / 100, s), mv(bc[1] * p, s), mv(bc[1] * (100 - p) / 100, s), mv(bc[1] + p, s), mv(bc[1] * (100 + p) / 100, s)].filter(function (x) { return qCmp(x, v.qs[0]) !== 0 && (fl !== "dec" || ok2(x)); }).map(function (x) { return shT(x, fl); });
+      const r = S(v.sh[0], cands);
+      r.stem = "「□ 的 " + p + "% 是 " + v.sh[1] + "」,□ 是多少?";
+      r.explain = "□ 是基準量," + v.sh[1] + " 是比較量。□ = " + v.sh[1] + " ÷ " + p + "% = " + v.sh[0] + "。";
+      r.trapNote = "常見錯誤:看到「" + p + "%」就用乘法,算成 " + v.sh[1] + " × " + p + "% = " + shT(mv(bc[1] * p / 100, s), fl) + "。未知的是基準量(□ 的 " + p + "% 是已知的結果),要用除法反求。";
+      return r;
+    }),
+    mk("tf", 2, "trap", function () {
+      const p = int(1, 19) * 5, B = pick([20, 25, 40, 50, 80, 200]); if (!Number.isInteger(B * p / 100) || p === 50) throw new Error("重抽");
+      const v = sc([B, B * p / 100], FLQ, FQW), right = Math.random() < 0.5, x = right ? p : pick([100 - p, p * 10, K.num(p / 10)]);
+      return { stem: "「" + v.sh[0] + " 的 □% 是 " + v.sh[1] + "」,所以 □ = " + x + "。", answer: right,
+        explain: "□% = " + v.sh[1] + " ÷ " + v.sh[0] + " = " + K.num(p / 100) + " = " + p + "%,所以 □ = " + p + (right ? ",敘述正確。" : ",不是 " + x + "。"),
+        trapNote: "易錯:把比較量當成「剩下的」而算成 100 - " + p + ",或百分率的位數搞錯。□% 是比較量除以基準量。" };
+    }),
+    mk("fill", 4, "trap", function () {
+      const p = pick([10, 20, 25, 30, 40, 50]);
+      let B, c; do { B = 20 * int(3, 40); c = B * (100 + p) / 100; } while (!Number.isInteger(c));
+      const v = sc([B, c], FLQ, FQW), a = qa(v.qs[0], v.fl);
+      return { stem: "「□ × (1 + " + p + "%) = " + v.sh[1] + "」,□ = ____", answer: a.answer, accepted: a.accepted,
+        explain: "1 + " + p + "% = " + K.num((100 + p) / 100) + ",□ = " + v.sh[1] + " ÷ " + K.num((100 + p) / 100) + " = " + v.sh[0] + "。",
+        trapNote: "常見錯誤:把 " + v.sh[1] + " 減去它的 " + p + "%,得到 " + shT(qMul(v.qs[1], Q(100 - p, 100)), v.fl) + "。" + p + "% 是 □ 的 " + p + "%,不是 " + v.sh[1] + " 的 " + p + "%,要用除法還原。" };
+    }),
+    mk("word", 4, "extend", function () {
+      let B, dp, c; do { B = 20 * int(5, 50); dp = pick([60, 70, 75, 80, 85, 90]); c = B * dp / 100; } while (!Number.isInteger(c));
+      const v = scMoney([B, c]), a = qa(v.qs[0], "dec");
+      return { stem: "一件商品打 " + zhe(dp) + " 折之後賣 " + dsh(v.qs[1]) + " 元。設原價是 □ 元,可以列成「□ × " + dp + "% = " + dsh(v.qs[1]) + "」,原價 □ 是多少元?", answer: a.answer, accepted: a.accepted, units: ["元"],
+        explain: "打 " + zhe(dp) + " 折 = 原價的 " + dp + "%。□ = " + dsh(v.qs[1]) + " ÷ " + dp + "% = " + dsh(v.qs[1]) + " ÷ " + K.num(dp / 100) + " = " + dsh(v.qs[0]) + " 元。" };
+    }),
+    mk("calc", 5, "extend", function () {
+      let p, q, B, c; do { p = pick([10, 20, 25, 30, 40]); q = pick([10, 20, 25, 30]); B = 400 * int(1, 5); c = B * (100 + p) * (100 - q) / 10000; } while (!Number.isInteger(c) || (100 + p) * (100 - q) === 10000);
+      const v = sc([B, c], FLQ, FQW), a = qa(v.qs[0], v.fl);
+      return { stem: "求 □ 是多少:「□ × (1 + " + p + "%) × (1 - " + q + "%) = " + v.sh[1] + "」", answer: a.answer, accepted: a.accepted,
+        explain: "(1 + " + p + "%) × (1 - " + q + "%) = " + K.num((100 + p) / 100) + " × " + K.num((100 - q) / 100) + " = " + K.num((100 + p) * (100 - q) / 10000) + "。\n□ = " + v.sh[1] + " ÷ " + K.num((100 + p) * (100 - q) / 10000) + " = " + v.sh[0] + "。" };
+    }),
+    mk("word", 5, "extend", function () {
+      const p = pick([25, 50, 100, 150]), X0 = 20 * int(2, 15), Y0 = X0 * (100 + p) / 100;
+      const v = sc([X0, X0 + Y0], FLQ, FQW), a = qa(v.qs[0], v.fl);
+      return { stem: "甲有 □ 公斤的米,乙有 △ 公斤的米,乙比甲多 " + p + "%,兩人一共有 " + v.sh[1] + " 公斤。可以列成「△ = □ × (1 + " + p + "%)」、「□ + △ = " + v.sh[1] + "」,□ 是多少公斤?", answer: a.answer, accepted: a.accepted, units: ["公斤"],
+        explain: "△ = □ × " + K.num((100 + p) / 100) + ",所以 □ + △ = □ × (1 + " + K.num((100 + p) / 100) + ") = □ × " + K.num((200 + p) / 100) + " = " + v.sh[1] + "。\n□ = " + v.sh[1] + " ÷ " + K.num((200 + p) / 100) + " = " + v.sh[0] + " 公斤。" };
+    })
+  ];
+
+  ExamBank.register(T, "quantity-basic", single.concat(multi, tf, fill, calc, word, boxes));
 })();

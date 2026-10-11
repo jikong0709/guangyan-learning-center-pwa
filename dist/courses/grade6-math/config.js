@@ -124,10 +124,10 @@
     practice: { count: 20, pointEach: 5 },
     mix: { trap: 0.2, extend: 0.2, minEach: 2 },
     levelRanges: [
-      { key: "all", name: "簡單 → 深入（全部）", min: 1, max: 5 },
-      { key: "easy", name: "基礎暖身（1～2 級）", min: 1, max: 2 },
-      { key: "mid", name: "中等進階（2～4 級）", min: 2, max: 4 },
-      { key: "hard", name: "挑戰深入（3～5 級）", min: 3, max: 5 }
+      { key: "easy", name: "簡單（基礎暖身，1～2 級）", min: 1, max: 2, mix: { trap: 0.2, extend: 0 } },
+      { key: "mid", name: "中等（2～4 級）", min: 2, max: 4, mix: { trap: 0.2, extend: 0.2 } },
+      { key: "hard", name: "困難（挑戰深入，3～5 級）", min: 3, max: 5, mix: { trap: 0.2, extend: 0.3 } },
+      { key: "all", name: "綜合（簡單→深入，1～5 級）", min: 1, max: 5, mix: { trap: 0.2, extend: 0.2 } }
     ],
     tagNames: { basic: "基礎", trap: "易錯陷阱", extend: "延伸" },
     tagIcons: { basic: "🔰", trap: "⚠️", extend: "🚀" },

@@ -12,7 +12,7 @@
   function badStr(x) {
     x = String(x);
     let m; const re = /(\d+)\/(\d+)/g;
-    while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
+    while ((m = re.exec(x))) if (Number(m[2]) > 60) return true;
     return /\d{9,}|\d+\.\d{5,}/.test(x);
   }
   function badAcc(x) {
@@ -21,10 +21,20 @@
     while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
     return /\d{9,}/.test(x.replace(/\.\d+/, ""));
   }
-  /* fill／calc／word 的答案若是分數（含無限小數的情形），題幹補「（請以分數作答）」，已提到分數就不重複 */
+  /* fill／calc／word 的答案若是「無限小數」（寫成分數），題幹補「（請以分數作答）」，已提到分數就不重複；
+     這時也把「或小數作答」的提示改成只允許分數／帶分數。有限小數的答案不補。 */
+  function nonTerminating(ans) {
+    const m = /(\d+)\/(\d+)\s*$/.exec(String(ans));
+    if (!m) return false;
+    let d = Number(m[2]);
+    while (d % 2 === 0) d /= 2;
+    while (d % 5 === 0) d /= 5;
+    return d !== 1;
+  }
   function addHint(r, type) {
-    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && /\//.test(r.answer) && !/分數/.test(r.stem)) {
-      r.stem = r.stem + (/____/.test(r.stem) && /____[。]?$/.test(r.stem) ? "" : "") + "(請以分數作答)";
+    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && nonTerminating(r.answer)) {
+      if (/或小數作答/.test(r.stem)) r.stem = r.stem.replace("、帶分數或小數作答", "或帶分數作答").replace("或小數作答", "作答");
+      if (!/分數/.test(r.stem)) r.stem = r.stem + "(請以分數作答)";
     }
     return r;
   }
@@ -396,5 +406,92 @@
     })
   ];
 
-  ExamBank.register(T, "ratio-basic", single.concat(multi, tf, fill, calc, word));
+  /* ===== 教材式 □ 未知數題（規格第 14 節）===== */
+  function twoPairs() {
+    const p = coprime(1, 9), m = p[0], n = p[1];
+    for (let t = 0; t < 200; t++) {
+      const t1 = trm(m, n, FL, FLW), t2 = trm(m, n, FL, FLW);
+      if (qCmp(t1.s, t2.s) !== 0) return { m: m, n: n, t1: t1, t2: t2 };
+    }
+    throw new Error("重抽");
+  }
+  function fa(fl) { return fl === "int" ? "frac" : fl; }
+  /* hide: 0=a1 1=b1 2=a2 3=b2 */
+  function eqStr(P, hide) {
+    const v = [P.t1.sa, P.t1.sb, P.t2.sa, P.t2.sb]; v[hide] = "□";
+    return "「" + v[0] + ":" + v[1] + " = " + v[2] + ":" + v[3] + "」";
+  }
+  function hidden(P, hide) { return [P.t1.a, P.t1.b, P.t2.a, P.t2.b][hide]; }
+  function hfl(P, hide) { return hide < 2 ? P.t1.fl : P.t2.fl; }
+  function exBox(P, hide) {
+    const pair = hide < 2 ? P.t1 : P.t2, comp = hide < 2 ? P.t2 : P.t1, fl = pair.fl;
+    const hs = hide % 2 === 0 ? P.m : P.n, os = hide % 2 === 0 ? P.n : P.m, other = hide % 2 === 0 ? pair.b : pair.a;
+    return "完整的比 " + tr(comp) + " 化簡是 " + P.m + ":" + P.n + ",所以含 □ 的比也是 " + P.m + ":" + P.n + "。\n另一項 " + shT(other, fl) + " 是 " + os + " 份,1 份 = " + shT(other, fl) + " ÷ " + os + " = " + shT(pair.s, fl) + ";□ 是 " + hs + " 份,□ = " + hs + " × " + shT(pair.s, fl) + " = " + shT(hidden(P, hide), fl) + "。\n(也可用外項乘積 = 內項乘積檢查。)";
+  }
+
+  const boxes = [
+    mk("single", 1, "basic", function () {
+      const P = twoPairs(), h = 3, X = hidden(P, h), fx = fa(hfl(P, h));
+      const wr = [qMul(P.t2.a, P.t1.b), qAdd(P.t2.b, qSub(P.t1.a, P.t1.b).n < 0 ? Q(1) : Q(2)), qDiv(qMul(P.t1.a, P.t2.a), P.t1.b), P.t1.b, qAdd(X, Q(1, 2)), qMul(X, Q(2))].filter(function (x) { return x.n > 0 && qCmp(x, X) !== 0 && (fx !== "dec" || decOK(x)); }).map(function (x) { return shT(x, fx); });
+      const r = S(shT(X, fx), wr);
+      r.stem = eqStr(P, h) + ",□ 是多少?";
+      r.explain = exBox(P, h);
+      return r;
+    }),
+    mk("calc", 2, "basic", function () {
+      const P = twoPairs(), h = 0, X = hidden(P, h), a = qa(X, fa(hfl(P, h)));
+      return { stem: "求 □ 是多少:" + eqStr(P, h), answer: a.answer, accepted: a.accepted, explain: exBox(P, h) };
+    }),
+    mk("fill", 3, "basic", function () {
+      const P = twoPairs(), h = 2, X = hidden(P, h), a = qa(X, fa(hfl(P, h)));
+      return { stem: eqStr(P, h) + ",□ = ____", answer: a.answer, accepted: a.accepted, explain: exBox(P, h) };
+    }),
+    mk("single", 3, "trap", function () {
+      const P = twoPairs(), h = 3, X = hidden(P, h), fx = fa(hfl(P, h));
+      const add = qAdd(P.t2.a, qSub(P.t1.b, P.t1.a));
+      const wr = [add, qMul(P.t2.a, P.t1.b), qDiv(P.t2.a, P.t1.b), qDiv(qMul(P.t1.a, P.t2.a), P.t1.b), qAdd(X, Q(1))].filter(function (x) { return x.n > 0 && qCmp(x, X) !== 0 && (fx !== "dec" || decOK(x)); }).map(function (x) { return shT(x, fx); });
+      const r = S(shT(X, fx), wr);
+      r.stem = eqStr(P, h) + ",□ 是多少?";
+      r.explain = exBox(P, h);
+      r.trapNote = "常見錯誤:前項從 " + P.t1.sa + " 變成 " + P.t2.sa + ",就把後項「加上同樣多」,得到 " + shT(add, fx) + "。比例是「同乘(同除)」同一個倍數,不是同加。";
+      return r;
+    }),
+    mk("tf", 2, "trap", function () {
+      const P = twoPairs(), h = 3, X = hidden(P, h), fx = fa(hfl(P, h));
+      const add = qAdd(P.t2.a, qSub(P.t1.b, P.t1.a)); if (qCmp(add, X) === 0 || (fx === "dec" && !decOK(add)) || add.n <= 0) throw new Error("重抽");
+      const right = Math.random() < 0.5, v = right ? X : add;
+      return { stem: eqStr(P, h) + ",所以 □ = " + shT(v, fx) + "。", answer: right,
+        explain: exBox(P, h) + (right ? "\n敘述正確。" : "\n正確的 □ 是 " + shT(X, fx) + ",不是 " + shT(v, fx) + "。"),
+        trapNote: "易錯:以為前項增加多少,後項就跟著增加多少(同加)。比例要用同乘(同除)的倍數關係。" };
+    }),
+    mk("fill", 4, "trap", function () {
+      const P = twoPairs(), h = 1, X = hidden(P, h), a = qa(X, fa(hfl(P, h)));
+      return { stem: eqStr(P, h) + ",□ = ____", answer: a.answer, accepted: a.accepted, explain: exBox(P, h),
+        trapNote: "常見錯誤:□ 在前一個比的後項,卻把它當成最後一項去乘,得到 " + shT(qMul(P.t2.b, P.t1.a), fa(hfl(P, h))) + "。先看清楚兩個比的前項、後項對應關係,再用倍數(或外項乘積 = 內項乘積)求。" };
+    }),
+    mk("calc", 5, "extend", function () {
+      const p = coprime(1, 5), m = p[0], n = p[1], fl = K.flavor(["int", "dec", "frac"]);
+      const s = fl === "int" ? Q(int(1, 4)) : fl === "dec" ? Q(pick([1, 2, 5, 25]), pick([10, 10, 100])) : Q(pick([1, 3]), pick([2, 4, 5]));
+      const A = qMul(Q(m * m), s), C = qMul(Q(n * n), s), t = qMul(Q(m * n), s);
+      if (fl === "dec" && !(decOK(A) && decOK(C) && decOK(t))) throw new Error("重抽");
+      const sA = shT(A, fl), sC = shT(C, fl), a = qa(t, fa(fl));
+      return { stem: "「" + sA + ":□ = □:" + sC + "」,兩個 □ 是同一個數。求 □ 是多少?", answer: a.answer, accepted: a.accepted,
+        explain: "外項乘積 = 內項乘積:" + sA + " × " + sC + " = □ × □。\n" + sA + " × " + sC + " = " + shT(qMul(A, C), fl) + ",而 " + shT(t, fl) + " × " + shT(t, fl) + " = " + shT(qMul(t, t), fl) + ",所以 □ = " + shT(t, fl) + "。" };
+    }),
+    mk("word", 3, "basic", function () {
+      const P = twoPairs(), h = 3, X = hidden(P, h), a = qa(X, fa(hfl(P, h)));
+      return { stem: "調一種顏料,紅色 " + P.t1.sa + " 公升要配藍色 " + P.t1.sb + " 公升。如果紅色用了 " + P.t2.sa + " 公升,藍色要配 □ 公升才會一樣濃?可以列成" + eqStr(P, h) + "。", answer: a.answer, accepted: a.accepted, units: ["公升"],
+        explain: exBox(P, h) + "\n答:藍色要配 " + shT(X, fa(hfl(P, h))) + " 公升。" };
+    }),
+    mk("word", 5, "extend", function () {
+      const p = coprime(1, 7), m = p[0], n = p[1], u = int(2, 12), s = pick([Q(1), Q(1, 2), Q(1, 10), Q(5), Q(3, 2)]);
+      const X = qMul(Q(m * u), s), Y = qMul(Q(n * u), s), S2 = qAdd(X, Y);
+      if (!(decOK(X) && decOK(Y) && decOK(S2))) throw new Error("重抽");
+      const a = qa(X, "dec");
+      return { stem: "甲、乙兩人合買禮物共花 " + dsh(S2) + " 元,甲出的錢是 □ 元,乙出的錢是 △ 元,□:△ = " + m + ":" + n + "。可以列成「□ + △ = " + dsh(S2) + "」,甲出了 □ 是多少元?", answer: a.answer, accepted: a.accepted, units: ["元"],
+        explain: "□:△ = " + m + ":" + n + ",總共 " + (m + n) + " 份,1 份 = " + dsh(S2) + " ÷ " + (m + n) + " = " + dsh(qMul(Q(u), s)) + " 元。\n□ 是 " + m + " 份,□ = " + m + " × " + dsh(qMul(Q(u), s)) + " = " + dsh(X) + " 元(△ = " + dsh(Y) + " 元)。" };
+    })
+  ];
+
+  ExamBank.register(T, "ratio-basic", single.concat(multi, tf, fill, calc, word, boxes));
 })();

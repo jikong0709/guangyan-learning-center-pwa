@@ -429,4 +429,70 @@
       return Object.assign(base, isF(fl) ? Object.assign({ units: ["的"] }, ans(r, "frac")) : Object.assign({ units: ["%", "％", "百分比"] }, ans(pct(r), "dec")));
     }))
   ]);
+  /* 教材式 □ 未知數題（規格第 14 節） */
+  reg("statistics", "box", [
+    sp("statistics-box-fill-L1-01", "fill", 1, "basic", kit => retry(kit, fl => {
+      const a = []; for (let i = 0; i < 5; i++) a.push(sc(kit, fl, 55, 100));
+      const S = sumQ(a), A = dv(S, I(5)); if (!nice(A, fl) || (fl === "int" && A.d !== 1)) return null;
+      const f = x => sh(x, fl), four = a.slice(0, 4);
+      return Object.assign({ stem: `五個數的平均是 ${f(A)}，其中四個是 ${four.map(f).join("、")}，第五個數是 □。□ ＝ ?`, units: [],
+        explain: `解析：五個數的總和＝${f(A)}×5＝${f(mul(A, I(5)))}，□ ＝ ${f(mul(A, I(5)))} − (${four.map(f).join("＋")}) ＝ ${f(a[4])}。` }, ans(a[4], fl));
+    })),
+    sp("statistics-box-fill-L2-01", "fill", 2, "basic", kit => retry(kit, fl => {
+      const N = kit.pick([40, 80, 120, 160, 200, 240]), s = shr(kit, fl), c = mul(I(N), s); if (c.d !== 1 || c.n <= 0) return null;
+      return Object.assign({ stem: `全班有 ${N} 人，喜歡籃球的有 □ 人，占全班的 ${showS(s, fl)}。□ ＝ ?`, units: ["人", "位"],
+        explain: `解析：□ ＝ ${N} × ${showS(s, fl)} ＝ ${sh(c, "dec")}（人）。` }, ans(c, "int"));
+    })),
+    sp("statistics-box-calc-L2-01", "calc", 2, "basic", kit => retry(kit, fl => {
+      const N = kit.pick([40, 80, 120, 160, 200, 240]), s = shr(kit, fl), c = mul(I(N), s); if (c.d !== 1 || c.n <= 0) return null;
+      if (isF(fl)) return Object.assign({ stem: `${N} × □ ＝ ${sh(c, "dec")}（全班 ${N} 人，其中 ${sh(c, "dec")} 人喜歡閱讀，□ 是所占的比例）。□ 用最簡分數表示是多少？`, units: [],
+        explain: `解析：□ ＝ ${sh(c, "dec")} ÷ ${N} ＝ ${ExamKit.qFrac(s)}。` }, ans(s, "frac"));
+      return Object.assign({ stem: `${N} × □% ＝ ${sh(c, "dec")}（全班 ${N} 人，其中 ${sh(c, "dec")} 人喜歡閱讀）。□ ＝ ?`, units: ["%", "％", "百分比"],
+        explain: `解析：□% ＝ ${sh(c, "dec")} ÷ ${N} ＝ ${sh(s, "dec")} ＝ ${sh(pct(s), "dec")}%，所以 □ ＝ ${sh(pct(s), "dec")}。` }, ans(pct(s), "dec"));
+    })),
+    sp("statistics-box-single-L3-01", "single", 3, "trap", kit => retry(kit, fl => {
+      const s = shr(kit, fl), d = mul(s, I(360)); if (!nice(d, "dec")) return null;
+      const o = qopts(kit, d, [dv(I(360), s), pct(s), sub(I(360), d), dv(d, I(2)), mul(s, I(36))], "int", " 度");
+      return { stem: `圓形圖中某扇形的圓心角是 □ 度，已知 □ ÷ 360 ＝ ${showS(s, fl)}。□ 是多少度？`, options: o.options, answer: 0,
+        explain: `解析：□ ＝ 360 × ${showS(s, fl)} ＝ ${sh(d, "dec")}（度）。`,
+        trapNote: `□ 在被除數的位置，要用「商 × 除數」，也就是乘以 360；常見錯誤是用 360 ÷ ${showS(s, fl)}，或把比例直接當成度數。` };
+    })),
+    sp("statistics-box-tf-L4-01", "tf", 4, "trap", kit => retry(kit, fl => {
+      const b = sc(kit, fl, 60, 90), A = sc(kit, fl, 70, 95), x = sub(mul(I(2), A), b), bad = sub(A, b); if (!nice(x, fl) || !nice(bad, fl) || qv(bad) === qv(x)) return null;
+      const f = y => sh(y, fl), head = `兩次成績 (□ ＋ ${f(b)}) ÷ 2 ＝ ${f(A)}，所以 □ ＝`;
+      const r = tfQ(kit,
+        [`${head} ${f(x)}。`, `正確：□ ＋ ${f(b)} ＝ ${f(A)}×2 ＝ ${f(mul(A, I(2)))}，□ ＝ ${f(mul(A, I(2)))} − ${f(b)} ＝ ${f(x)}。`],
+        [`${head} ${f(bad)}。`, `錯誤：先還原 ÷2，□ ＋ ${f(b)} ＝ ${f(mul(A, I(2)))}，□ ＝ ${f(x)}，不是 ${f(bad)}。`]);
+      r.trapNote = "(□＋某數)÷2 ＝ 平均，要先把 ÷2 還原成 ×2 得到「總和」，再減去已知的數；直接用平均減已知數會少算一半。";
+      return r;
+    })),
+    sp("statistics-box-word-L3-01", "word", 3, "trap", kit => retry(kit, fl => {
+      const a = sc(kit, fl, 70, 88), B = add(a, kq(kit, fl)), need = sub(mul(I(5), B), mul(I(4), a)); if (qv(need) > 100 || !nice(need, fl) || !nice(B, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `小琪前四次考試的平均是 ${f(a)} 分，她希望五次考完後的平均剛好是 ${f(B)} 分，第五次要考 □ 分。□ ＝ ?`, units: ["分"],
+        explain: `解析：五次總分要 ${f(B)}×5＝${f(mul(B, I(5)))}，前四次總分 ${f(a)}×4＝${f(mul(a, I(4)))}，□ ＝ ${f(mul(B, I(5)))} − ${f(mul(a, I(4)))} ＝ ${f(need)}（分）。`,
+        trapNote: `不能直接用 ${f(B)} 當第五次的分數，也不能只補平均的差。前四次本來就有的分數要用總分算：目標總分減已有總分。` }, ans(need, fl));
+    })),
+    sp("statistics-box-calc-L5-01", "calc", 5, "extend", kit => retry(kit, fl => {
+      const S = sc(kit, fl, 130, 190), D = sc(kit, fl, 2, 15), big = dv(add(S, D), I(2)); if (!nice(big, fl) || !nice(dv(sub(S, D), I(2)), fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `小傑兩次測驗，第一次考 □ 分、第二次考 △ 分。□ ＋ △ ＝ ${f(S)}，□ － △ ＝ ${f(D)}。□ ＝ ?`, units: ["分"],
+        explain: `解析：和加差得 2 個 □＝${f(S)}＋${f(D)}＝${f(add(S, D))}，□ ＝ ${f(add(S, D))} ÷ 2 ＝ ${f(big)}（分）。（△ ＝ ${f(dv(sub(S, D), I(2)))}）` }, ans(big, fl));
+    })),
+    sp("statistics-box-word-L5-01", "word", 5, "extend", kit => retry(kit, fl => {
+      const n1 = kit.pick([2, 3, 4]), n2 = kit.pick([2, 3]), a1 = sc(kit, fl, 70, 90), a2 = sc(kit, fl, 70, 95), tot = add(mul(I(n1), a1), mul(I(n2), a2)), T = dv(tot, I(n1 + n2));
+      if (!nice(T, fl) || !nice(tot, fl) || qv(a1) === qv(a2)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `前 ${n1} 次測驗的平均是 ${f(a1)} 分，後 ${n2} 次測驗的平均是 □ 分，這 ${n1 + n2} 次的總平均是 ${f(T)} 分。□ ＝ ?`, units: ["分"],
+        explain: `解析：${n1 + n2} 次總分＝${f(T)}×${n1 + n2}＝${f(tot)}，前 ${n1} 次總分＝${f(a1)}×${n1}＝${f(mul(a1, I(n1)))}，後 ${n2} 次總分＝${f(tot)}−${f(mul(a1, I(n1)))}＝${f(mul(a2, I(n2)))}，□ ＝ ${f(mul(a2, I(n2)))} ÷ ${n2} ＝ ${f(a2)}（分）。` }, ans(a2, fl));
+    })),
+    sp("statistics-box-fill-L4-01", "fill", 4, "trap", kit => retry(kit, fl => {
+      const a = rq2b(kit, fl, 2, 9), b = rq2b(kit, fl, 2, 9), k = kit.int(2, 6), tot = add(mul(b, I(k)), a); if (!nice(tot, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `把 □ 公斤的米拿走 ${f(a)} 公斤後，剩下的平分給 ${k} 個人，每人分到 ${f(b)} 公斤，也就是 (□ － ${f(a)}) ÷ ${k} ＝ ${f(b)}。□ ＝ ?`, units: ["公斤"],
+        explain: `解析：先還原 ÷${k}：□ － ${f(a)} ＝ ${f(b)}×${k} ＝ ${f(mul(b, I(k)))}，再還原 −${f(a)}：□ ＝ ${f(mul(b, I(k)))} ＋ ${f(a)} ＝ ${f(tot)}（公斤）。`,
+        trapNote: `括號先做的是「減 ${f(a)}」，最後才 ÷${k}，還原時順序要倒過來：先 ×${k}，再 ＋${f(a)}。常見錯誤是 (${f(b)} − ${f(a)}) × ${k} 或 ${f(b)}×${k} − ${f(a)}。` }, ans(tot, fl));
+    }))
+  ]);
+  function rq2b(kit, fl, lo, hi) { return fl === "int" ? I(kit.int(lo, hi)) : kit.randQ(fl === "dec" ? "dec" : "mixed", { min: lo, max: hi, dens: [2, 4], places: 1 }); }
 })();

@@ -130,6 +130,43 @@ check("洗牌後單選答案索引仍指向正解文字", okAnsw);
   check("題型子集(單一/兩型/三型/全選)×兩模式: 題型必屬子集、總分100、20題模式恰20題且平均 (" + combos + " 組)", ok, d);
 }
 
+/* 第 13 節：四檔難度 × 一百分卷；二十題不受難度影響 */
+{
+  check("config.levelRanges 四檔且範圍正確", cfg.levelRanges.length === 4 && ["easy:1-2", "mid:2-4", "hard:3-5", "all:1-5"].every(x => cfg.levelRanges.some(l => l.key + ":" + l.min + "-" + l.max === x)));
+  const subsets = [ALL, ["single", "word"], ["tf"]];
+  cfg.levelRanges.forEach(lv => {
+    let ok = true, d = "", sumT = 0, sumE = 0, n = 0;
+    subsets.forEach(sub => {
+      for (let r = 0; r < 20; r++) {
+        let ex; const units = pickUnits("hanlin", 1 + (r % 4));
+        try { ex = engine.buildExam({ mode: "score", units, types: sub, levelMin: lv.min, levelMax: lv.max, mix: lv.mix }); }
+        catch (e) { ok = false; d = lv.key + " 丟錯 " + e.message; continue; }
+        const tot = ex.items.reduce((a, i) => a + i.points, 0);
+        if (!ex.items.every(i => i.level >= lv.min && i.level <= lv.max)) { ok = false; d = lv.key + " level 超出範圍"; }
+        if (!ex.items.every(i => sub.indexOf(i.type) >= 0)) { ok = false; d = lv.key + " 題型越界"; }
+        if (tot !== 100 || ex.total !== 100) { ok = false; d = lv.key + " 總分 " + tot; }
+        ex.sections.forEach(sc => { for (let i = 1; i < sc.items.length; i++) if (sc.items[i].level < sc.items[i - 1].level) { ok = false; d = lv.key + " 未由簡入深"; } });
+        { const tp = engine.topicsOfUnits(units).topics; ex.sections.forEach(sc => { const pool = engine.buildPools(tp, [sc.type], lv.min, lv.max)[sc.type].length; const ids = sc.items.map(i => i.specId); if (sc.count <= pool && new Set(ids).size !== ids.length) { ok = false; d = lv.key + " " + sc.type + " spec 重複(池 " + pool + ")"; } }); }
+        const t = ex.items.filter(i => i.tag === "trap").length, e = ex.items.filter(i => i.tag === "extend").length;
+        if (sub === ALL) { sumT += t; sumE += e; n++; if (lv.key === "easy" && e !== 0) { ok = false; d = "簡單檔不應強求延伸 e=" + e; } if (lv.key !== "easy" && e < 2) { ok = false; d = lv.key + " 延伸<2 e=" + e; } if (t < 2) { ok = false; d = lv.key + " 易錯<2"; } }
+      }
+    });
+    check("一百分卷難度檔 " + lv.key + "(" + lv.min + "~" + lv.max + "): level 在範圍、題型屬勾選、總分100、由簡入深、無重複、trap/extend 配額 (平均 trap=" + (sumT / n).toFixed(1) + " extend=" + (sumE / n).toFixed(1) + ")", ok, d);
+  });
+  let okP = true, dP = "";
+  cfg.levelRanges.forEach(lv => [ALL, ["single", "fill"], ["word"]].forEach(sub => {
+    const ex = engine.buildExam({ mode: "practice", units: pickUnits("nani", 2), types: sub, levelMin: lv.min, levelMax: lv.max, mix: lv.mix });
+    const lvs = new Set(ex.items.map(i => i.level));
+    if (lvs.size !== 5) { okP = false; dP = lv.key + " 涵蓋 level " + Array.from(lvs).join(); }
+    for (let i = 1; i < ex.items.length; i++) if (ex.items[i].level < ex.items[i - 1].level) { okP = false; dP = "未由簡入深"; }
+    if (ex.items.length !== 20 || !ex.items.every(i => sub.indexOf(i.type) >= 0)) { okP = false; dP = "題數/題型"; }
+  }));
+  check("二十題模式: 不論難度設定 level 皆涵蓋 1~5、由簡入深、只出勾選題型、20 題", okP, dP);
+  const avgLv = key => { const lv = cfg.levelRanges.find(l => l.key === key); let a = 0; for (let r = 0; r < 20; r++) { const ex = engine.buildExam({ mode: "score", units: pickUnits("hanlin", 3), types: ALL, levelMin: lv.min, levelMax: lv.max, mix: lv.mix }); a += ex.items.reduce((x, i) => x + i.level, 0) / ex.items.length; } return a / 20; };
+  const ae = avgLv("easy"), ah = avgLv("hard");
+  check("難度分布: 簡單檔平均 level < 困難檔 (" + ae.toFixed(2) + " < " + ah.toFixed(2) + ")", ae < ah);
+}
+
 /* 難度範圍 */
 {
   const ex = engine.buildExam({ mode: "score", units: pickUnits("hanlin", 3), types: ALL, levelMin: 3, levelMax: 5 });

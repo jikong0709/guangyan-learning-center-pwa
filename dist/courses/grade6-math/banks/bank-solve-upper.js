@@ -13,6 +13,7 @@
       const hm = o.answer.match(/(\d+)\/(\d+)$/);
       if (hm) { let dn = +hm[2]; while (dn % 2 === 0) dn /= 2; while (dn % 5 === 0) dn /= 5; if (dn !== 1) o.stem += "（請以分數作答）"; }
     }
+    if (o.accepted) o.accepted = o.accepted.filter(function (a) { const mm = /(\d+)\/(\d+)$/.exec(a); return !(mm && +mm[2] > 100); });
     const all = [o.stem, o.explain, o.trapNote, o.answer, o.options ? o.options.join(" ") : ""].join(" ");
     const re = /(\d+)\/(\d+)/g; let m;
     while ((m = re.exec(all))) { if (+m[2] > 60) throw new Error("retry"); }
@@ -341,6 +342,60 @@
     const last = qa(a, qm(d, I(n0 - 1))), tot = qd(qm(qa(a, last), I(n0)), I(2)); need(tot, last);
     return Object.assign({ stem: "把木條排成階梯：最短的一條長 " + A(a) + " 公分，每一條都比前一條長 " + A(d) + " 公分，共排 " + n0 + " 條，全部木條的長度合計多少公分？", units: ["公分", "cm"],
       explain: "解析：最長一條 " + A(a) + " + " + (n0 - 1) + " × " + A(d) + " = " + A(last) + " 公分；合計 = (" + A(a) + " + " + A(last) + ") × " + n0 + " ÷ 2 = " + A(tot) + "（公分）。" }, ans(tot, fl));
+  });
+
+  /* ---------- 教材 □ 未知數題（規格第 14 節） ---------- */
+  add("single-L1-03", "single", 1, "basic", function (k) {
+    const p = sd(k, 12, 60);
+    const c = sc(k, p.y, [p.x, qs(p.S, p.D), qd(p.S, I(2)), qd(p.D, I(2)), qa(p.S, p.D)], p.fl);
+    return Object.assign(c, { stem: "□ + △ = " + p.A(p.S) + "，□ − △ = " + p.A(p.D) + "，△ 是多少？",
+      explain: "解析：△ = (和 − 差) ÷ 2 = (" + p.A(p.S) + " − " + p.A(p.D) + ") ÷ 2 = " + p.A(p.y) + "（□ = " + p.A(p.x) + "）。" });
+  });
+  add("fill-L1-03", "fill", 1, "basic", function (k) {
+    const p = sd(k, 12, 60);
+    return Object.assign({ stem: "□ + △ = " + p.A(p.S) + "，□ − △ = " + p.A(p.D) + "，□ 是多少？",
+      explain: "解析：□ = (和 + 差) ÷ 2 = (" + p.A(p.S) + " + " + p.A(p.D) + ") ÷ 2 = " + p.A(p.x) + "。" }, ans(p.x, p.fl));
+  });
+  add("calc-L2-02", "calc", 2, "basic", function (k) {
+    const p = sd(k, 15, 70);
+    return Object.assign({ stem: "□ + △ = " + p.A(p.S) + "，□ − △ = " + p.A(p.D) + "，求 △：(" + ex(p.S, p.fl) + " − " + ex(p.D, p.fl) + ") ÷ 2",
+      explain: "解析：" + p.A(qs(p.S, p.D)) + " ÷ 2 = " + p.A(p.y) + "。" }, ans(p.y, p.fl));
+  });
+  add("single-L3-04", "single", 3, "trap", function (k) {
+    const fl = FL(k), small = RQ(k, fl, 3, 20), m = k.pick([2, 3, 4, 5, 1.5, 2.5]), mq = Q(Math.round(m * 2), 2), big = qm(small, mq), S2 = qa(small, big); need(S2, big, small);
+    const c = sc(k, small, [big, qd(S2, mq), qd(S2, I(2)), qs(S2, small)], fl);
+    return Object.assign(c, { stem: "△ + □ = " + auto(S2, fl) + "，□ 是 △ 的 " + auto(mq, "dec") + " 倍，△ 是多少？",
+      explain: "解析：把 △ 當 1 份，□ 是 " + auto(mq, "dec") + " 份，共 " + auto(qa(I(1), mq), "dec") + " 份，△ = " + auto(S2, fl) + " ÷ " + auto(qa(I(1), mq), "dec") + " = " + auto(small, fl) + "（□ = " + auto(big, fl) + "）。",
+      trapNote: "算出 " + auto(big, fl) + " 的是 □（大的那份），題目問的是 △；也不能直接把和 ÷ 2。" });
+  });
+  add("word-L3-03", "word", 3, "trap", function (k) {
+    const fl = FL(k), a = RQ(k, fl, 10, 50), d = RQ(k, fl, 5, 20), n0 = k.int(5, 15), v = qa(a, qm(d, I(n0 - 1))), A = function (q) { return auto(q, fl); }; need(v);
+    return { stem: "小明第 1 週存了 " + A(a) + " 元，之後每一週都比前一週多存 " + A(d) + " 元，第 □ 週他存了 " + A(v) + " 元。", answer: String(n0), units: ["週"],
+      explain: "解析：從第 1 週到 □ 週共增加 (" + A(v) + " − " + A(a) + ") ÷ " + A(d) + " = " + (n0 - 1) + " 次，所以 □ = " + (n0 - 1) + " + 1 = " + n0 + "。",
+      trapNote: "(" + A(v) + " − " + A(a) + ") ÷ " + A(d) + " = " + (n0 - 1) + " 只是增加的次數，第 1 週還沒有增加，要再加 1 才是第 " + n0 + " 週。" };
+  });
+  add("tf-L4-02", "tf", 4, "trap", function (k) {
+    const t = arith(k), n0 = k.int(6, 15), v = t.nth(n0), ok = k.int(0, 1) === 1, A = t.A; need(v);
+    return { stem: "數列 " + t.head() + "裡，" + A(v) + " 是第 □ 個數，□ = " + (ok ? n0 : n0 - 1) + "。", answer: ok,
+      explain: "解析：(" + A(v) + " − " + A(t.a) + ") ÷ " + A(t.d) + " = " + (n0 - 1) + " 次增加，所以是第 " + (n0 - 1) + " + 1 = " + n0 + " 個數。",
+      trapNote: "(" + A(v) + " − " + A(t.a) + ") ÷ " + A(t.d) + " = " + (n0 - 1) + " 是增加的次數，項數要再加 1。" };
+  });
+  add("calc-L4-02", "calc", 4, "trap", function (k) {
+    const t = arith(k), A = t.A, v = t.nth(t.n); need(v);
+    return Object.assign({ stem: "數列每次增加 " + A(t.d) + "，第 " + t.n + " 個數是 " + A(v) + "，第 1 個數 □ 是多少？求 □：" + ex(v, t.fl) + " − (" + t.n + " − 1) × " + ex(t.d, t.fl),
+      explain: "解析：第 " + t.n + " 個數比第 1 個數多增加了 " + (t.n - 1) + " 次，□ = " + A(v) + " − " + (t.n - 1) + " × " + A(t.d) + " = " + A(t.a) + "。",
+      trapNote: "從第 1 個到第 " + t.n + " 個只增加 " + (t.n - 1) + " 次；扣掉 " + t.n + " 次會得到 " + A(qs(v, qm(t.d, I(t.n)))) + "，是錯的。" }, ans(t.a, t.fl));
+  });
+  add("fill-L5-02", "fill", 5, "extend", function (k) {
+    const t = three(k), A = t.A;
+    return Object.assign({ stem: "□ + △ + ○ = " + A(t.S) + "，□ − △ = " + A(t.a) + "，△ − ○ = " + A(t.b) + "，○ 是多少？",
+      explain: "解析：△ = ○ + " + A(t.b) + "，□ = △ + " + A(t.a) + " = ○ + " + A(qa(t.a, t.b)) + "；三數和 = 3 個 ○ + " + A(qa(qm(I(2), t.b), t.a)) + " = " + A(t.S) + "，○ = (" + A(t.S) + " − " + A(qa(qm(I(2), t.b), t.a)) + ") ÷ 3 = " + A(t.z) + "。" }, ans(t.z, t.fl));
+  });
+  add("single-L5-03", "single", 5, "extend", function (k) {
+    const fl = FL(k), z = RQ(k, fl, 5, 30), d = RQ(k, fl, 1, 6), S2 = qa(qm(I(3), z), qm(I(3), d)), d2 = qm(I(2), d); need(S2, z, d2);
+    const c = sc(k, z, [qd(S2, I(3)), qa(z, d), qa(z, d2), qs(qd(S2, I(3)), d2), qs(S2, qm(I(3), d2))], fl);
+    return Object.assign(c, { stem: "三個數依序相差 " + auto(d, fl) + "：□ + (□ + " + auto(d, fl) + ") + (□ + " + auto(d2, fl) + ") = " + auto(S2, fl) + "，□ 是多少？",
+      explain: "解析：三個 □ 加上 " + auto(d, fl) + " 和 " + auto(d2, fl) + " = " + auto(S2, fl) + "，3 個 □ = " + auto(S2, fl) + " − " + auto(qa(d, d2), fl) + " = " + auto(qm(I(3), z), fl) + "，□ = " + auto(z, fl) + "。" });
   });
 
   ExamBank.register("solve-upper", "solve-upper-main", S);

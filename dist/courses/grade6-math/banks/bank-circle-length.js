@@ -13,6 +13,7 @@
       const hm = o.answer.match(/(\d+)\/(\d+)$/);
       if (hm) { let dn = +hm[2]; while (dn % 2 === 0) dn /= 2; while (dn % 5 === 0) dn /= 5; if (dn !== 1) o.stem += "（請以分數作答）"; }
     }
+    if (o.accepted) o.accepted = o.accepted.filter(function (a) { const mm = /(\d+)\/(\d+)$/.exec(a); return !(mm && +mm[2] > 100); });
     const all = [o.stem, o.explain, o.trapNote, o.answer, o.options ? o.options.join(" ") : ""].join(" ");
     const re = /(\d+)\/(\d+)/g; let m;
     while ((m = re.exec(all))) { if (+m[2] > 60) throw new Error("retry"); }
@@ -44,7 +45,7 @@
   }
   function ans(q, fl) { return K.qAnswer(q, fl === "frac" || fl === "mixed" ? fl : "dec"); }
   function ex(q, fl) { const s = K.qShow(q, fl); return /[ \/]/.test(s) ? "(" + s + ")" : s; } /* 算式中的分數／帶分數加括號 */
-  function R(k, lo, hi, w, dens) { const fl = k.flavor(["int", "dec", "mixed", "frac"], w || [3, 3, 5, 1]); return { q: k.randQ(fl, { min: lo, max: hi, dens: dens || [2, 4, 5, 10] }), fl: fl }; }
+  function R(k, lo, hi, w, dens) { const fl = k.flavor(["int", "dec", "mixed", "frac"], w || [5, 2, 7, 1]); return { q: k.randQ(fl, { min: lo, max: hi, dens: dens || [2, 4, 5, 10] }), fl: fl }; }
   function R22(k) { const q = Q(7 * k.int(2, 12), 4); return { q: q, fl: q.d === 1 ? "int" : k.pick(["dec", "mixed"]) }; }
   function RR(k, z, lo, hi, w) { return z ? R22(k) : R(k, lo, hi, w); }
   function sv(x) { return K.qShow(x.q, x.fl); }
@@ -137,7 +138,7 @@
       trapNote: "「半圓的周長是圓周長的一半」是錯的：還要加上直徑那條直邊；也不能加上半徑。" });
   });
   add("multi-L4-01", "multi", 4, "extend", function (k) {
-    const r1 = R(k, 2, 6), m = k.randQ(k.flavor(["int", "int", "dec", "mixed"]), { min: 2, max: 4, dens: [2, 4] }), P = Q(157, 50), r2 = qm(r1.q, m);
+    const r1 = R(k, 2, 6), m = k.randQ(k.flavor(["int", "int", "dec", "mixed"]), { min: 2, max: 4, dens: [2, 4], places: 1 }), P = Q(157, 50), r2 = qm(r1.q, m);
     const df = qm(qm(I(2), P), qs(r2, r1.q)), wrong1 = qm(P, qs(r2, r1.q)), wrong2 = qm(qm(I(2), P), qa(r2, r1.q)); need(df, wrong1, wrong2, r2);
     const c = mu(k,
       ["大圓的直徑是小圓的 " + auto(m, "mixed") + " 倍", "大圓的周長是小圓的 " + auto(m, "mixed") + " 倍", "大圓的周長比小圓多 " + D(df) + " 公分"],
@@ -170,7 +171,7 @@
       explain: "解析：周長 = 2 × 3.14 × " + sv(r) + " = " + D(t) + " 公分，" + (ok ? "所以敘述正確。" : "敘述中的 " + D(f) + " 少乘了 2，所以錯誤。") };
   });
   add("tf-L3-01", "tf", 3, "trap", function (k) {
-    const m = k.randQ(k.flavor(["int", "int", "dec", "mixed"]), { min: 2, max: 4, dens: [2, 4] }), ok = k.int(0, 1) === 1, v = ok ? m : qm(m, m); need(m, v);
+    const m = k.randQ(k.flavor(["int", "int", "dec", "mixed"]), { min: 2, max: 4, dens: [2, 4], places: 1 }), ok = k.int(0, 1) === 1, v = ok ? m : qm(m, m); need(m, v);
     return { stem: "把圓的直徑變成原來的 " + auto(m, "mixed") + " 倍，圓的周長會變成原來的 " + auto(v, "mixed") + " 倍。（圓周率取 3.14）", answer: ok,
       explain: "解析：周長 = 3.14 × 直徑，周長與直徑成正比，直徑 " + auto(m, "mixed") + " 倍則周長也是 " + auto(m, "mixed") + " 倍。",
       trapNote: "把「面積」的平方倍關係（" + auto(m, "mixed") + "×" + auto(m, "mixed") + " = " + auto(qm(m, m), "mixed") + " 倍）拿來套在周長上是常見錯誤；周長只是同倍數變化。" };
@@ -182,7 +183,7 @@
       trapNote: "只算弧長 " + D(arc) + " 公分就當作周長，漏掉直邊 " + sv(d) + " 公分。" };
   });
   add("tf-L4-01", "tf", 4, "extend", function (k) {
-    const r = R(k, 2, 8), m = k.randQ(k.flavor(["int", "int", "dec"]), { min: 2, max: 4 }), P = Q(157, 50), a = qm(qm(I(2), P), r.q), ok = k.int(0, 1) === 1, v = ok ? qm(a, m) : qm(a, qm(m, m)); need(a, v, qm(a, m));
+    const r = R(k, 2, 8), m = k.randQ(k.flavor(["int", "int", "dec"]), { min: 2, max: 4, places: 1 }), P = Q(157, 50), a = qm(qm(I(2), P), r.q), ok = k.int(0, 1) === 1, v = ok ? qm(a, m) : qm(a, qm(m, m)); need(a, v, qm(a, m));
     return { stem: "小圓周長是 " + D(a) + " 公分，大圓的半徑是小圓半徑的 " + auto(m, "mixed") + " 倍，所以大圓周長是 " + D(v) + " 公分。（圓周率取 3.14）", answer: ok,
       explain: "解析：半徑 " + auto(m, "mixed") + " 倍，周長也是 " + auto(m, "mixed") + " 倍：" + D(a) + " × " + auto(m, "mixed") + " = " + D(qm(a, m)) + " 公分。" };
   });
@@ -294,6 +295,58 @@
     const r = I(k.int(20, 40)), w = R(k, 1, 2, [2, 4, 3, 0.01]), P = Q(157, 50), v = qm(qm(I(2), P), qm(I(2), w.q)); need(v);
     return Object.assign({ stem: "圓形跑道每一道寬 " + sv(w) + " 公尺。第 1 道的跑步路線半徑是 " + r.n + " 公尺，比賽時第 3 道的選手沿著半徑更大的圓跑一圈，他比第 1 道的選手多跑幾公尺？（兩道圓心相同）（圓周率取 3.14）", units: ["公尺", "m"],
       explain: "解析：第 3 道半徑比第 1 道多 2 × " + sv(w) + " = " + auto(qm(I(2), w.q), w.fl) + " 公尺；多跑 2 × 3.14 × " + auto(qm(I(2), w.q), w.fl) + " = " + D(v) + "（公尺），與 " + r.n + " 公尺無關。" }, ans(v, "dec"));
+  });
+
+  /* ---------- 教材 □ 未知數題（規格第 14 節） ---------- */
+  add("single-L1-03", "single", 1, "basic", function (k) {
+    const d = R(k, 3, 24), P = Q(157, 50), C = qm(P, d.q); need(C);
+    const c = sc(k, d.q, [qm(d.q, I(2)), qd(d.q, I(2)), C, qm(d.q, P)], d.fl);
+    return Object.assign(c, { stem: "圓周率取 3.14，3.14 × □ = " + D(C) + "（□ 是圓的直徑），□ 是多少公分？",
+      explain: "解析：□ = " + D(C) + " ÷ 3.14 = " + sv(d) + "（公分）。" });
+  });
+  add("fill-L1-03", "fill", 1, "basic", function (k) {
+    const d = R(k, 3, 30), C = qm(Q(157, 50), d.q); need(C);
+    return Object.assign({ stem: "圓的周長是 " + D(C) + " 公分，直徑是 □ 公分。（圓周率取 3.14）", units: ["公分", "cm"],
+      explain: "解析：周長 = 3.14 × 直徑，□ = " + D(C) + " ÷ 3.14 = " + sv(d) + "。" }, ans(d.q, d.fl));
+  });
+  add("calc-L2-02", "calc", 2, "basic", function (k) {
+    const d = R(k, 3, 30), C = qm(Q(157, 50), d.q); need(C);
+    return Object.assign({ stem: "圓周率取 3.14，圓的周長是 " + D(C) + " 公分，直徑是 □ 公分，求 □：" + D(C) + " ÷ 3.14", units: ["公分"],
+      explain: "解析：□ = " + D(C) + " ÷ 3.14 = " + sv(d) + "。" }, ans(d.q, d.fl));
+  });
+  add("single-L3-02", "single", 3, "trap", function (k) {
+    const r = R(k, 2, 16), P = Q(157, 50), C = qm(qm(I(2), P), r.q); need(C);
+    const c = sc(k, r.q, [qm(r.q, I(2)), qd(r.q, I(2)), qd(C, I(2)), qm(r.q, P)], r.fl);
+    return Object.assign(c, { stem: "圓周率取 3.14，2 × 3.14 × □ = " + D(C) + "（□ 是圓的半徑），□ 是多少公分？",
+      explain: "解析：□ = " + D(C) + " ÷ (2 × 3.14) = " + D(C) + " ÷ 6.28 = " + sv(r) + "（公分）。",
+      trapNote: "只用 " + D(C) + " ÷ 3.14 會得到 " + auto(qm(r.q, I(2)), r.fl) + "，那是直徑；算式裡已經有「2 ×」，□ 是半徑，要連 2 一起除。" });
+  });
+  add("word-L3-02", "word", 3, "basic", function (k) {
+    const d = R(k, 4, 24), L = qm(Q(157, 50), d.q); need(L);
+    return Object.assign({ stem: "園藝社用一條長 " + D(L) + " 公尺的籬笆圍成圓形花圃（接頭不計），花圃的直徑是 □ 公尺。（圓周率取 3.14）", units: ["公尺", "m"],
+      explain: "解析：籬笆長 = 圓周長 = 3.14 × 直徑，□ = " + D(L) + " ÷ 3.14 = " + sv(d) + "（公尺）。" }, ans(d.q, d.fl));
+  });
+  add("tf-L4-02", "tf", 4, "trap", function (k) {
+    const d = R(k, 4, 20), P = Q(157, 50), arc = qd(qm(P, d.q), I(2)), per = qa(arc, d.q), ok = k.int(0, 1) === 1, f = qd(d.q, I(2)); need(per, f);
+    return { stem: "半圓形的周長是 " + D(per) + " 公分，它的直徑 □ 是 " + D(ok ? d.q : f) + " 公分。（圓周率取 3.14）", answer: ok,
+      explain: "解析：半圓周長 = 3.14 × 直徑 ÷ 2 + 直徑 = 2.57 × 直徑，□ = " + D(per) + " ÷ 2.57 = " + sv(d) + "（公分）。",
+      trapNote: "周長是半圓弧加直徑；若把 " + D(f) + " 當成直徑，其實那只是半徑（直徑的一半）。" };
+  });
+  add("word-L4-03", "word", 4, "extend", function (k) {
+    const d = R(k, 30, 80, [3, 4, 1, 0.01]), t = I(k.pick([10, 20, 25, 50])), P = Q(157, 50), L = qd(qm(qm(P, d.q), t), I(100)); need(L);
+    return Object.assign({ stem: "腳踏車的車輪在平地上轉了 " + t.n + " 圈，共前進 " + D(L) + " 公尺，車輪的直徑是 □ 公分。（圓周率取 3.14）", units: ["公分", "cm"],
+      explain: "解析：" + D(L) + " 公尺 = " + D(qm(L, I(100))) + " 公分；轉一圈 " + D(qm(L, I(100))) + " ÷ " + t.n + " = " + D(qm(P, d.q)) + " 公分，直徑 □ = " + D(qm(P, d.q)) + " ÷ 3.14 = " + sv(d) + "（公分）。" }, ans(d.q, d.fl));
+  });
+  add("calc-L4-02", "calc", 4, "trap", function (k) {
+    const r = R(k, 3, 12), w = R(k, 1, 4, [3, 4, 2, 0.01]), P = Q(157, 50), C = qm(qm(I(2), P), qa(r.q, w.q)); need(C);
+    return Object.assign({ stem: "圓周率取 3.14，把一個圓的半徑 □ 公分增加 " + sv(w) + " 公分後，周長變成 " + D(C) + " 公分，求 □：" + D(C) + " ÷ (2 × 3.14) − " + ex(w.q, w.fl), units: ["公分"],
+      explain: "解析：新半徑 = " + D(C) + " ÷ 6.28 = " + auto(qa(r.q, w.q), r.fl) + " 公分，原半徑 □ = " + auto(qa(r.q, w.q), r.fl) + " − " + sv(w) + " = " + sv(r) + "。",
+      trapNote: "算出的 " + auto(qa(r.q, w.q), r.fl) + " 是「增加後」的半徑，還要減掉增加的 " + sv(w) + " 才是原來的半徑。" }, ans(r.q, r.fl));
+  });
+  add("fill-L5-02", "fill", 5, "extend", function (k) {
+    const w = R(k, 1, 12), X = qm(qm(I(2), Q(157, 50)), w.q); need(X);
+    return Object.assign({ stem: "大圓的周長比小圓的周長多 " + D(X) + " 公分，大圓的半徑比小圓的半徑多 □ 公分。（圓周率取 3.14）", units: ["公分", "cm"],
+      explain: "解析：周長差 = 2 × 3.14 × 半徑差，□ = " + D(X) + " ÷ 6.28 = " + sv(w) + "（公分）。" }, ans(w.q, w.fl));
   });
 
   ExamBank.register("circle-length", "circle-length-main", S);

@@ -389,4 +389,71 @@
         explain: `解析：一杯水＝π×${f(c.r)}×${f(c.r)}×${f(H)}＝${f(cup)} 立方公分，${n} 杯＝${f(tot)}；水槽底面積＝${f(a)}×${f(b)}＝${f(ab)}；水深＝${f(tot)}÷${f(ab)}＝${f(dep)}（公分）。` }, ans(dep, fl));
     }))
   ]);
+  /* 教材式 □ 未知數題（規格第 14 節） */
+  reg("solids", "box", [
+    sp("solids-box-fill-L1-01", "fill", 1, "basic", kit => retry(kit, fl => {
+      const a = lq(kit, fl, 3, 10), b = lq(kit, fl, 3, 10), h = lq(kit, fl, 2, 9), V = mul(mul(a, b), h); if (!nice(V, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `體積 ${f(V)} 立方公分的長方體，長 ${f(a)} 公分、寬 ${f(b)} 公分，高 □ 公分。□ ＝ ?`, units: ["公分", "cm"],
+        explain: `解析：${f(a)} × ${f(b)} × □ ＝ ${f(V)}，□ ＝ ${f(V)} ÷ ${f(mul(a, b))} ＝ ${f(h)}（公分）。` }, ans(h, fl));
+    })),
+    sp("solids-box-fill-L2-01", "fill", 2, "basic", kit => retry(kit, fl => {
+      const A = lq(kit, fl, 12, 30), h = lq(kit, fl, 3, 12), V = mul(A, h); if (!nice(V, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `底面積 ${f(A)} 平方公分、高 □ 公分的直立柱體，體積是 ${f(V)} 立方公分。□ ＝ ?`, units: ["公分", "cm"],
+        explain: `解析：${f(A)} × □ ＝ ${f(V)}，□ ＝ ${f(V)} ÷ ${f(A)} ＝ ${f(h)}（公分）。` }, ans(h, fl));
+    })),
+    sp("solids-box-calc-L2-01", "calc", 2, "basic", kit => retry(kit, fl => {
+      const b = lq(kit, fl, 6, 12), h = lq(kit, fl, 4, 8), H = lq(kit, fl, 5, 12), B = dv(mul(b, h), I(2)), V = mul(B, H); if (!nice(V, fl) || !nice(B, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `直立三角柱的底面三角形底 ${f(b)} 公分、高 ${f(h)} 公分，柱高 □ 公分，體積是 ${f(V)} 立方公分。□ ＝ ?`, units: ["公分", "cm"],
+        explain: `解析：底面積＝${f(b)}×${f(h)}÷2＝${f(B)}，${f(B)} × □ ＝ ${f(V)}，□ ＝ ${f(V)} ÷ ${f(B)} ＝ ${f(H)}（公分）。` }, ans(H, fl));
+    })),
+    sp("solids-box-single-L3-01", "single", 3, "trap", kit => retry(kit, fl => {
+      const c = circ(kit, fl, 3, 10); if (!c) return null;
+      const H = lq(kit, fl, 4, 12), B = mul(c.pi, sq(c.r)), V = mul(B, H); if (!nice(V, fl) || !nice(B, fl)) return null;
+      const f = x => sh(x, fl);
+      const o = qopts(kit, c.r, [sq(c.r), mul(c.r, I(2)), dv(c.r, I(2)), B, add(c.r, I(1))], fl, " 公分");
+      return { stem: `圓柱的高是 ${f(H)} 公分，體積是 ${f(V)} 立方公分，底面半徑是 □ 公分。□ 是多少？（${c.pt}）`, options: o.options, answer: 0,
+        explain: `解析：底面積＝${f(V)} ÷ ${f(H)} ＝ ${f(B)}，π × □ × □ ＝ ${f(B)}，□ × □ ＝ ${f(sq(c.r))}，□ ＝ ${f(c.r)}（公分）。`,
+        trapNote: `算到 □ × □ ＝ ${f(sq(c.r))} 就要停下來想：什麼數自己乘自己得到它？答案是 ${f(c.r)}。常見錯誤是把 ${f(sq(c.r))} 當半徑，或把半徑和直徑 (${f(mul(c.r, I(2)))}) 弄混。` };
+    })),
+    sp("solids-box-tf-L4-01", "tf", 4, "trap", kit => retry(kit, fl => {
+      const c = circ(kit, fl, 3, 10); if (!c) return null;
+      const H = lq(kit, fl, 4, 12), B = mul(c.pi, sq(c.r)), V = mul(B, H), bad = kit.pick([mul(c.r, I(2)), sq(c.r)]); if (!nice(V, fl) || !nice(bad, fl) || qv(bad) === qv(c.r)) return null;
+      const f = x => sh(x, fl), head = `圓柱的高是 ${f(H)} 公分，體積是 ${f(V)} 立方公分（${c.pt}），則底面半徑 □ ＝`;
+      const r = tfQ(kit,
+        [`${head} ${f(c.r)} 公分。`, `正確：底面積 ${f(V)}÷${f(H)}＝${f(B)}，□×□＝${f(sq(c.r))}，□＝${f(c.r)}。`],
+        [`${head} ${f(bad)} 公分。`, `錯誤：□×□＝${f(sq(c.r))}，半徑是 ${f(c.r)}；${f(bad)} 是${qv(bad) === qv(sq(c.r)) ? "半徑的平方" : "直徑"}。`]);
+      r.trapNote = "由底面積求半徑時，要找「自己乘自己等於它」的數；不要把半徑的平方、直徑當成半徑。";
+      return r;
+    })),
+    sp("solids-box-word-L3-01", "word", 3, "basic", kit => retry(kit, fl => {
+      const a = lq(kit, fl, 20, 50), b = lq(kit, fl, 20, 50), L = lq(kit, fl, 5, 30), dep = dv(mul(L, I(1000)), mul(a, b)); if (!nice(dep, fl) || !nice(mul(a, b), fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `長方體水槽的內底長 ${f(a)} 公分、寬 ${f(b)} 公分，倒入 ${f(L)} 公升的水（1 公升＝1000 立方公分），水深 □ 公分。□ ＝ ?`, units: ["公分", "cm"],
+        explain: `解析：水量＝${f(L)}×1000＝${f(mul(L, I(1000)))} 立方公分，${f(a)} × ${f(b)} × □ ＝ ${f(mul(L, I(1000)))}，□ ＝ ${f(mul(L, I(1000)))} ÷ ${f(mul(a, b))} ＝ ${f(dep)}（公分）。` }, ans(dep, fl));
+    })),
+    sp("solids-box-calc-L5-01", "calc", 5, "extend", kit => retry(kit, fl => {
+      const S = lq(kit, fl, 20, 40), D = lq(kit, fl, 2, 10), big = dv(add(S, D), I(2)), sm = dv(sub(S, D), I(2)); if (!nice(big, fl) || !nice(sm, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `長方體底面的長是 □ 公分、寬是 △ 公分。□ ＋ △ ＝ ${f(S)}，□ － △ ＝ ${f(D)}。□ ＝ ?`, units: ["公分", "cm"],
+        explain: `解析：和加差得 2 個 □＝${f(S)}＋${f(D)}＝${f(add(S, D))}，□ ＝ ${f(add(S, D))} ÷ 2 ＝ ${f(big)}（公分）。（△ ＝ ${f(sm)}）` }, ans(big, fl));
+    })),
+    sp("solids-box-word-L5-01", "word", 5, "extend", kit => retry(kit, fl => {
+      const c = circ(kit, fl, 5, 10); if (!c) return null;
+      const d = lq(kit, fl, 2, 6), V = mul(mul(c.pi, sq(c.r)), d); if (!nice(V, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `圓柱形水桶的底面半徑是 ${f(c.r)} 公分，把一塊體積 ${f(V)} 立方公分的石頭完全放入水中（水沒有溢出），水位上升了 □ 公分。□ ＝ ?（${c.pt}）`, units: ["公分", "cm"],
+        explain: `解析：桶底面積＝π×${f(c.r)}×${f(c.r)}＝${f(mul(c.pi, sq(c.r)))}，${f(mul(c.pi, sq(c.r)))} × □ ＝ ${f(V)}，□ ＝ ${f(d)}（公分）。` }, ans(d, fl));
+    })),
+    sp("solids-box-fill-L4-01", "fill", 4, "trap", kit => retry(kit, fl => {
+      const a = lq(kit, fl, 3, 9), b = lq(kit, fl, 3, 9), h = lq(kit, fl, 2, 8), S = mul(I(2), add(add(mul(a, b), mul(a, h)), mul(b, h)));
+      if (![S, mul(a, b), add(a, b)].every(x => nice(x, fl))) return null;
+      const f = x => sh(x, fl), wrong = dv(S, mul(a, b));
+      return Object.assign({ stem: `長 ${f(a)} 公分、寬 ${f(b)} 公分、高 □ 公分的長方體，表面積是 ${f(S)} 平方公分。□ ＝ ?`, units: ["公分", "cm"],
+        explain: `解析：表面積＝2×(長×寬＋長×高＋寬×高)，所以 ${f(a)}×${f(b)}＋(${f(a)}＋${f(b)})×□ ＝ ${f(S)}÷2 ＝ ${f(dv(S, I(2)))}；(${f(a)}＋${f(b)})×□ ＝ ${f(sub(dv(S, I(2)), mul(a, b)))}，□ ＝ ${f(h)}（公分）。`,
+        trapNote: `表面積有六個面，要用 2×(長×寬＋長×高＋寬×高)。不能用體積的算法（把 ${f(S)} 除以底面積 ${f(mul(a, b))}，會得到 ${sh(wrong, fl)}）。` }, ans(h, fl));
+    }))
+  ]);
 })();

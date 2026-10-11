@@ -13,6 +13,7 @@
       const hm = o.answer.match(/(\d+)\/(\d+)$/);
       if (hm) { let dn = +hm[2]; while (dn % 2 === 0) dn /= 2; while (dn % 5 === 0) dn /= 5; if (dn !== 1) o.stem += "（請以分數作答）"; }
     }
+    if (o.accepted) o.accepted = o.accepted.filter(function (a) { const mm = /(\d+)\/(\d+)$/.exec(a); return !(mm && +mm[2] > 100); });
     const all = [o.stem, o.explain, o.trapNote, o.answer, o.options ? o.options.join(" ") : ""].join(" ");
     const re = /(\d+)\/(\d+)/g; let m;
     while ((m = re.exec(all))) { if (+m[2] > 60) throw new Error("retry"); }
@@ -43,7 +44,7 @@
   }
   function ans(q, fl) { return K.qAnswer(q, fl === "frac" || fl === "mixed" ? fl : "dec"); }
   function ex(q, fl) { const s = K.qShow(q, fl); return /[ \/]/.test(s) ? "(" + s + ")" : s; }
-  function R(k, lo, hi, w) { const fl = k.flavor(["int", "dec", "mixed", "frac"], w || [3, 3, 5, 1]); return { q: k.randQ(fl, { min: lo, max: hi, dens: [2, 5], places: 1 }), fl: fl }; }
+  function R(k, lo, hi, w) { const fl = k.flavor(["int", "dec", "mixed", "frac"], w || [5, 3, 5, 1]); return { q: k.randQ(fl, { min: lo, max: hi, dens: [2, 5], places: 1 }), fl: fl }; }
   function R22(k) { const q = Q(7 * k.int(1, 8), 4); return { q: q, fl: q.d === 1 ? "int" : k.pick(["dec", "mixed"]) }; }
   function RR(k, z, lo, hi, w) { return z ? R22(k) : R(k, lo, hi, w); }
   function sv(x) { return K.qShow(x.q, x.fl); }
@@ -118,7 +119,7 @@
       explain: "解析：面積 = 3.14 × " + sv(r) + " × " + sv(r) + " = " + D(ar) + "；" + D(per) + " 是周長的數值；直徑 = 2 × " + sv(r) + "。" });
   });
   add("multi-L2-01", "multi", 2, "trap", function (k) {
-    const m = k.randQ(k.flavor(["int", "int", "dec", "mixed"]), { min: 2, max: 5, dens: [2, 4] }), mm = qm(m, m), m1 = qa(m, I(1)); need(mm);
+    const m = k.randQ(k.flavor(["int", "int", "dec", "mixed"]), { min: 2, max: 5, dens: [2, 4], places: 1 }), mm = qm(m, m), m1 = qa(m, I(1)); need(mm);
     const c = mu(k,
       ["圓的直徑變成 " + auto(m, "mixed") + " 倍", "圓的周長變成 " + auto(m, "mixed") + " 倍", "圓的面積變成 " + auto(mm, "mixed") + " 倍"],
       ["圓的面積變成 " + auto(m, "mixed") + " 倍", "圓的面積變成 " + auto(m1, "mixed") + " 倍", "圓的周長變成 " + auto(mm, "mixed") + " 倍"]);
@@ -159,7 +160,7 @@
       explain: "解析：面積 = 3.14 × " + sv(r) + " × " + sv(r) + " = " + D(t) + " 平方公分。" + (ok ? "" : D(f) + " 是用周長或 3.14 × 半徑算出來的，不是面積。") };
   });
   add("tf-L2-01", "tf", 2, "trap", function (k) {
-    const m = k.randQ(k.flavor(["int", "int", "dec", "mixed"]), { min: 2, max: 5, dens: [2, 4] }), ok = k.int(0, 1) === 1, v = ok ? qm(m, m) : m; need(v);
+    const m = k.randQ(k.flavor(["int", "int", "dec", "mixed"]), { min: 2, max: 5, dens: [2, 4], places: 1 }), ok = k.int(0, 1) === 1, v = ok ? qm(m, m) : m; need(v);
     return { stem: "圓的半徑變成原來的 " + auto(m, "mixed") + " 倍，面積會變成原來的 " + auto(v, "mixed") + " 倍。（圓周率取 3.14）", answer: ok,
       explain: "解析：面積 = 3.14 × 半徑 × 半徑，半徑 " + auto(m, "mixed") + " 倍，面積變成 " + auto(m, "mixed") + " × " + auto(m, "mixed") + " = " + auto(qm(m, m), "mixed") + " 倍。",
       trapNote: "周長是半徑 " + auto(m, "mixed") + " 倍就跟著 " + auto(m, "mixed") + " 倍，但面積要平方，所以是 " + auto(qm(m, m), "mixed") + " 倍。" };
@@ -305,6 +306,58 @@
     return Object.assign({ stem: "圓形池塘的半徑是 " + sv(r) + " 公尺，現在要向外擴大，半徑增加 " + auto(t, r.fl) + " 公尺，池塘的面積增加了多少平方公尺？（圓周率取 3.14）", units: SM,
       explain: "解析：新面積 3.14 × " + auto(r2, r.fl) + "² = " + D(A(P, r2)) + "，舊面積 3.14 × " + sv(r) + "² = " + D(A(P, r.q)) + "，增加 " + D(inc) + "（平方公尺）。",
       trapNote: "不能只算 3.14 × " + auto(t, r.fl) + " × " + auto(t, r.fl) + " = " + D(qm(P, qm(t, t))) + "；增加的是「新面積 − 舊面積」。" }, ans(inc, "dec"));
+  });
+
+  /* ---------- 教材 □ 未知數題（規格第 14 節） ---------- */
+  add("word-L2-02", "word", 2, "basic", function (k) {
+    const r = R(k, 3, 15), A0 = A(Q(157, 50), r.q); need(A0);
+    return Object.assign({ stem: "圓形餐墊的面積是 " + D(A0) + " 平方公分，半徑是 □ 公分。（圓周率取 3.14）", units: ["公分", "cm"],
+      explain: "解析：半徑 × 半徑 = " + D(A0) + " ÷ 3.14 = " + D(qm(r.q, r.q)) + "，所以 □ = " + sv(r) + "（公分）。" }, ans(r.q, r.fl));
+  });
+  add("fill-L2-03", "fill", 2, "trap", function (k) {
+    const r = R(k, 3, 15), A0 = A(Q(157, 50), r.q), d = qm(r.q, I(2)); need(A0, d);
+    return Object.assign({ stem: "圓的面積是 " + D(A0) + " 平方公分，直徑是 □ 公分。（圓周率取 3.14）", units: ["公分", "cm"],
+      explain: "解析：半徑 × 半徑 = " + D(A0) + " ÷ 3.14 = " + D(qm(r.q, r.q)) + "，半徑 " + sv(r) + " 公分，直徑 □ = 2 × " + sv(r) + " = " + auto(d, r.fl) + "（公分）。",
+      trapNote: "算到半徑 " + sv(r) + " 就停下來是常見錯誤；題目問的是直徑，要再乘 2。" }, ans(d, r.fl));
+  });
+  add("calc-L3-03", "calc", 3, "basic", function (k) {
+    const r = R(k, 2, 12), A0 = A(Q(157, 50), r.q), rr = qm(r.q, r.q); need(A0, rr);
+    return Object.assign({ stem: "圓周率取 3.14，3.14 × □ = " + D(A0) + "（□ 是半徑 × 半徑），求 □：" + D(A0) + " ÷ 3.14", units: SQ,
+      explain: "解析：□ = " + D(A0) + " ÷ 3.14 = " + D(rr) + "，也就是半徑 " + sv(r) + " 公分的平方。" }, ans(rr, "dec"));
+  });
+  add("single-L3-03", "single", 3, "trap", function (k) {
+    const r = R(k, 2, 12), P = Q(157, 50), A0 = A(P, r.q); need(A0, qm(r.q, r.q));
+    const c = sc(k, r.q, [qm(r.q, r.q), qd(A0, qm(I(2), P)), qd(A0, P), qm(r.q, I(2))], r.fl);
+    return Object.assign(c, { stem: "圓周率取 3.14，3.14 × □ × □ = " + D(A0) + "，□ 是多少公分？",
+      explain: "解析：□ × □ = " + D(A0) + " ÷ 3.14 = " + D(qm(r.q, r.q)) + "，哪個數乘自己等於 " + D(qm(r.q, r.q)) + "？□ = " + sv(r) + "（公分）。",
+      trapNote: "除以 3.14 之後得到的 " + D(qm(r.q, r.q)) + " 是「□ × □」，還要再找出乘自己的那個數；直接答 " + D(qm(r.q, r.q)) + " 是常見錯誤。" });
+  });
+  add("tf-L4-02", "tf", 4, "trap", function (k) {
+    const r = R(k, 2, 10), P = Q(157, 50), H = qd(A(P, r.q), I(2)), ok = k.int(0, 1) === 1, f = qm(r.q, I(2)); need(H, f);
+    return { stem: "半圓形的面積是 " + D(H) + " 平方公分，它的半徑 □ 是 " + auto(ok ? r.q : f, r.fl) + " 公分。（圓周率取 3.14）", answer: ok,
+      explain: "解析：整圓面積 = " + D(H) + " × 2 = " + D(A(P, r.q)) + "，半徑 × 半徑 = " + D(A(P, r.q)) + " ÷ 3.14 = " + D(qm(r.q, r.q)) + "，□ = " + sv(r) + " 公分。",
+      trapNote: "半圓面積只是整圓的一半，要先乘 2 還原成整圓再反推；" + auto(f, r.fl) + " 公分是直徑，不是半徑。" };
+  });
+  add("word-L4-03", "word", 4, "extend", function (k) {
+    const r = R(k, 3, 15), A0 = A(Q(157, 50), r.q), d = qm(r.q, I(2)); need(A0, d);
+    return Object.assign({ stem: "圓形水池的面積是 " + D(A0) + " 平方公尺，水池的直徑是 □ 公尺。（圓周率取 3.14）", units: ["公尺", "m"],
+      explain: "解析：半徑 × 半徑 = " + D(A0) + " ÷ 3.14 = " + D(qm(r.q, r.q)) + "，半徑 " + sv(r) + " 公尺；直徑 □ = 2 × " + sv(r) + " = " + auto(d, r.fl) + "（公尺）。" }, ans(d, r.fl));
+  });
+  add("fill-L4-02", "fill", 4, "extend", function (k) {
+    const r = R(k, 2, 10), A0 = A(Q(157, 50), r.q), a = qm(r.q, I(2)); need(A0, a);
+    return Object.assign({ stem: "在正方形裡畫一個最大的圓，圓的面積是 " + D(A0) + " 平方公分，正方形的邊長是 □ 公分。（圓周率取 3.14）", units: ["公分", "cm"],
+      explain: "解析：半徑 × 半徑 = " + D(A0) + " ÷ 3.14 = " + D(qm(r.q, r.q)) + "，半徑 " + sv(r) + " 公分；最大圓的直徑等於正方形邊長，□ = 2 × " + sv(r) + " = " + auto(a, r.fl) + "（公分）。" }, ans(a, r.fl));
+  });
+  add("single-L5-03", "single", 5, "extend", function (k) {
+    const r = R(k, 2, 8), P = Q(157, 50), diff = k.randQ(k.flavor(["int", "dec", "mixed"]), { min: 1, max: 5, dens: [2, 5], places: 1 }), Rr = qa(r.q, diff), Ar = qm(P, qs(qm(Rr, Rr), qm(r.q, r.q))); need(Ar);
+    const c = sc(k, Rr, [diff, qd(Ar, P), qa(Rr, r.q), qm(Rr, I(2)), qs(Rr, I(1))], r.fl);
+    return Object.assign(c, { stem: "圓環的面積是 " + D(Ar) + " 平方公分，內圓半徑是 " + sv(r) + " 公分，外圓半徑 □ 是多少公分？（圓周率取 3.14）",
+      explain: "解析：□ × □ − " + sv(r) + " × " + sv(r) + " = " + D(Ar) + " ÷ 3.14 = " + D(qd(Ar, P)) + "，所以 □ × □ = " + D(qd(Ar, P)) + " + " + D(qm(r.q, r.q)) + " = " + D(qm(Rr, Rr)) + "，□ = " + auto(Rr, r.fl) + "（公分）。" });
+  });
+  add("calc-L5-02", "calc", 5, "extend", function (k) {
+    const r = R(k, 2, 8), P = Q(157, 50), diff = k.randQ(k.flavor(["int", "dec", "mixed"]), { min: 1, max: 5, dens: [2, 5], places: 1 }), Rr = qa(r.q, diff), Ar = qm(P, qs(qm(Rr, Rr), qm(r.q, r.q))), RR2 = qm(Rr, Rr); need(Ar, RR2);
+    return Object.assign({ stem: "圓周率取 3.14，圓環的面積是 " + D(Ar) + " 平方公分，內圓半徑是 " + sv(r) + " 公分，外圓半徑 × 外圓半徑 = □，求 □：" + D(Ar) + " ÷ 3.14 + " + ex(r.q, r.fl) + " × " + ex(r.q, r.fl), units: SQ,
+      explain: "解析：外圓面積 − 內圓面積 = " + D(Ar) + "，除以 3.14 得 " + D(qd(Ar, P)) + " = □ − " + D(qm(r.q, r.q)) + "，所以 □ = " + D(qd(Ar, P)) + " + " + D(qm(r.q, r.q)) + " = " + D(RR2) + "。" }, ans(RR2, "dec"));
   });
 
   ExamBank.register("circle-area", "circle-area-main", S);

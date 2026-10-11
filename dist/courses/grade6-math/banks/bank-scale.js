@@ -13,6 +13,7 @@
       const hm = o.answer.match(/(\d+)\/(\d+)$/);
       if (hm) { let dn = +hm[2]; while (dn % 2 === 0) dn /= 2; while (dn % 5 === 0) dn /= 5; if (dn !== 1) o.stem += "（請以分數作答）"; }
     }
+    if (o.accepted) o.accepted = o.accepted.filter(function (a) { const mm = /(\d+)\/(\d+)$/.exec(a); return !(mm && +mm[2] > 100); });
     const all = [o.stem, o.explain, o.trapNote, o.answer, o.options ? o.options.join(" ") : ""].join(" ");
     const re = /(\d+)\/(\d+)/g; let m;
     while ((m = re.exec(all))) { if (+m[2] > 60) throw new Error("retry"); }
@@ -286,6 +287,58 @@
     const N = k.pick([500, 1000, 2000]), a = R(k, 2, 6), b = R(k, 2, 6), L = qd(qm(a.q, I(N)), C100), W = qd(qm(b.q, I(N)), C100), ar = qm(L, W); need(L, W, ar);
     return Object.assign({ stem: "地圖比例尺 1:" + N + "，圖上有一塊長方形農地，長 " + sv(a) + " 公分、寬 " + sv(b) + " 公分，這塊農地實際面積是多少平方公尺？", units: ["平方公尺", "m2", "m²", "公尺"],
       explain: "解析：實際長 " + D(L) + " 公尺，實際寬 " + D(W) + " 公尺，面積 " + D(L) + " × " + D(W) + " = " + D(ar) + " 平方公尺。" }, ans(ar, "dec"));
+  });
+
+  /* ---------- 教材 □ 未知數題（規格第 14 節） ---------- */
+  add("single-L1-03", "single", 1, "basic", function (k) {
+    const N = k.pick([100, 200, 500, 1000]), a = R(k, 2, 15), m = qd(qm(a.q, I(N)), C100); need(m);
+    const c = sc(k, m, [qm(a.q, I(N)), qd(m, I(10)), qm(m, I(10)), qd(qm(a.q, C100), I(N))], a.fl);
+    return Object.assign(c, { stem: "比例尺是 1:" + N + "，圖上 " + sv(a) + " 公分代表實際 □ 公尺，□ 是多少？",
+      explain: "解析：□ = " + sv(a) + " × " + N + " ÷ 100 = " + D(m) + "（公尺）。" });
+  });
+  add("fill-L1-03", "fill", 1, "basic", function (k) {
+    const N = k.pick([10000, 50000, 100000, 200000, 250000]), a = R(k, 2, 16), km = qd(qm(a.q, I(N)), C1e5); need(km);
+    return Object.assign({ stem: "圖上 " + sv(a) + " 公分代表實際 □ 公里，這張地圖的比例尺是 1:" + N + "。", units: ["公里", "km"],
+      explain: "解析：□ = " + sv(a) + " × " + N + " ÷ 100000 = " + D(km) + "（公里）。" }, ans(km, "dec"));
+  });
+  add("calc-L2-02", "calc", 2, "basic", function (k) {
+    const N = k.pick([50000, 100000, 200000, 250000]), x = R(k, 5, 50), cm = qd(qm(x.q, C1e5), I(N)); need(cm);
+    return Object.assign({ stem: "比例尺是 1:" + N + "，實際距離 " + sv(x) + " 公里，圖上距離是 □ 公分，求 □：" + ex(x.q, x.fl) + " × 100000 ÷ " + N, units: ["公分"],
+      explain: "解析：" + sv(x) + " 公里 = " + D(qm(x.q, C1e5)) + " 公分，□ = " + D(qm(x.q, C1e5)) + " ÷ " + N + " = " + D(cm) + "。" }, ans(cm, "dec"));
+  });
+  add("fill-L2-03", "fill", 2, "basic", function (k) {
+    const a = R(k, 2, 9), b = R(k, 2, 12), t = k.randQ(k.flavor(["int", "int", "dec"]), { min: 2, max: 5, places: 1 }), c0 = qm(a.q, t), v = qm(b.q, t); need(c0, v);
+    return Object.assign({ stem: "放大圖和原圖的對應邊長成比例：" + sv(a) + ":" + sv(b) + " = " + D(c0) + ":□，□ 是多少？",
+      explain: "解析：" + sv(a) + " 變成 " + D(c0) + "，放大 " + D(t) + " 倍，所以 □ = " + sv(b) + " × " + D(t) + " = " + D(v) + "。" }, ans(v, b.fl));
+  });
+  add("single-L3-04", "single", 3, "trap", function (k) {
+    const N = k.pick([10000, 50000, 100000, 200000, 250000]), a = R(k, 2, 10), b = qd(qm(a.q, I(N)), C1e5); need(b);
+    const cs = ["1:" + D(qd(qm(b, I(1000)), a.q)), "1:" + D(qd(qm(b, C100), a.q)), "1:" + D(qd(b, a.q)), N + ":1"];
+    const w = k.distractors("1:" + N, cs, 3); if (w.length < 3) throw new Error("retry");
+    return { stem: "地圖上 " + sv(a) + " 公分代表實際 " + D(b) + " 公里，這張地圖的比例尺是 1:□，□ 是多少？", options: ["1:" + N].concat(w), answer: 0,
+      explain: "解析：" + D(b) + " 公里 = " + D(qm(b, C1e5)) + " 公分，□ = " + D(qm(b, C1e5)) + " ÷ " + sv(a) + " = " + N + "，比例尺是 1:" + N + "。",
+      trapNote: "公里要換成公分（× 100000）才能和圖上的公分相比；只乘 1000（當成公尺）或不換算，比例尺會差很多倍。" };
+  });
+  add("word-L3-02", "word", 3, "basic", function (k) {
+    const N = k.pick([50000, 100000, 200000, 250000]), a = R(k, 2, 16), km = qd(qm(a.q, I(N)), C1e5); need(km);
+    return Object.assign({ stem: "地圖比例尺是 1:" + N + "，量得兩個景點在圖上相距 " + sv(a) + " 公分，實際相距 □ 公里。", units: ["公里", "km"],
+      explain: "解析：□ = " + sv(a) + " × " + N + " ÷ 100000 = " + D(km) + "（公里）。" }, ans(km, "dec"));
+  });
+  add("tf-L4-02", "tf", 4, "trap", function (k) {
+    const N = k.pick([10000, 50000, 100000, 200000, 250000]), a = R(k, 2, 16), ok = k.int(0, 1) === 1, t = qd(qm(a.q, I(N)), C1e5), f = qd(qm(a.q, I(N)), I(1000)); need(t, f);
+    return { stem: "比例尺是 1:" + N + "，圖上 " + sv(a) + " 公分代表實際 □ 公里，□ = " + D(ok ? t : f) + "。", answer: ok,
+      explain: "解析：" + sv(a) + " × " + N + " = " + D(qm(a.q, I(N))) + " 公分 = " + D(t) + " 公里。",
+      trapNote: "公分換公里要 ÷ 100000；" + D(f) + " 是只 ÷ 1000 的結果，單位換算少除了 100。" };
+  });
+  add("word-L4-04", "word", 4, "extend", function (k) {
+    const a = R(k, 1, 9), m = Mq(k, 2, 9), b = qm(a.q, m.q); need(b);
+    return Object.assign({ stem: "螞蟻的身體實際長 " + sv(a) + " 公分，畫成放大圖後長 " + D(b) + " 公分，這張放大圖的比例尺是 □:1，□ 是多少？", units: ["倍"],
+      explain: "解析：放大倍率 = 圖上長度 ÷ 實際長度 = " + D(b) + " ÷ " + sv(a) + " = " + sv(m) + "，比例尺是 " + sv(m) + ":1。" }, ans(m.q, m.fl));
+  });
+  add("fill-L5-02", "fill", 5, "extend", function (k) {
+    const N1 = k.pick([5000, 10000, 25000]), mult = k.pick([2, 4, 5, 10]), a = R(k, 4, 20), b = qd(a.q, I(mult)); need(b);
+    return Object.assign({ stem: "同樣兩地，在比例尺 1:" + N1 + " 的地圖上相距 " + sv(a) + " 公分，在另一張地圖上相距 " + D(b) + " 公分，另一張地圖的比例尺是 1:□。", answer: String(N1 * mult),
+      explain: "解析：兩地實際距離 = " + sv(a) + " × " + N1 + " = " + D(qm(a.q, I(N1))) + " 公分；□ = " + D(qm(a.q, I(N1))) + " ÷ " + D(b) + " = " + (N1 * mult) + "。" });
   });
 
   ExamBank.register("scale", "scale-main", S);

@@ -181,14 +181,14 @@
 
     /* ----- 選題（單元均衡 + 標籤比例 + 難度涵蓋） ----- */
     const LEVEL_PREF = { extend: l => l >= 4, trap: l => l >= 2 && l <= 4, basic: l => l <= 3 };
-    function selectOnce(pools, counts, tagPlan) {
+    function selectOnce(pools, counts, tagPlan, cover) {
       const topicUsed = {}; const levelUsed = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
       const used = new Set(); const out = {}; let repeated = false;
-      const slots = [];
+      const slots = []; let gk = Math.floor(Math.random() * 5);
       Object.keys(counts).forEach(k => {
         out[k] = [];
         const p = tagPlan[k] || { trap: 0, extend: 0 };
-        for (let i = 0; i < counts[k]; i++) slots.push({ type: k, tag: i < p.trap ? "trap" : (i < p.trap + p.extend ? "extend" : "basic") });
+        for (let i = 0; i < counts[k]; i++) slots.push({ type: k, target: cover ? (gk++ % 5) + 1 : 0, tag: i < p.trap ? "trap" : (i < p.trap + p.extend ? "extend" : "basic") });
       });
       shuffle(slots).forEach(slot => {
         const all = pools[slot.type];
@@ -204,7 +204,7 @@
         let list = cands.filter(s => s.topic === topic);
         const tagged = list.filter(s => s.tag === slot.tag);
         if (tagged.length) list = tagged;
-        const pref = list.filter(s => LEVEL_PREF[slot.tag](s.level));
+        const pref = slot.target ? list.filter(s => s.level === slot.target) : list.filter(s => LEVEL_PREF[slot.tag](s.level));
         if (pref.length) list = pref;
         let minL = Infinity; list.forEach(s => { minL = Math.min(minL, levelUsed[s.level]); });
         list = list.filter(s => levelUsed[s.level] === minL);
@@ -214,15 +214,21 @@
       });
       return { out, topicUsed, repeated };
     }
-    function selectSpecs(pools, counts) {
+    function missingLevels(out, pools, keys) {
+      const have = {}, want = {};
+      keys.forEach(k => { pools[k].forEach(s => { want[s.level] = true; }); out[k].forEach(s => { have[s.level] = true; }); });
+      return Object.keys(want).filter(l => !have[l]).length;
+    }
+    function selectSpecs(pools, counts, mix, cover) {
+      mix = Object.assign({}, mixCfg, mix || {});
       const keys = Object.keys(counts);
       const total = keys.reduce((a, k) => a + counts[k], 0);
       const poolTopics = {};
       keys.forEach(k => pools[k].forEach(s => { poolTopics[s.topic] = true; }));
       const trapCap = keys.map(k => pools[k].filter(s => s.tag === "trap").length);
       const extCap = keys.map(k => pools[k].filter(s => s.tag === "extend").length);
-      const wantTrap = Math.max(mixCfg.minEach, Math.round(total * mixCfg.trap));
-      const wantExt = Math.max(mixCfg.minEach, Math.round(total * mixCfg.extend));
+      const wantTrap = (mix.trap > 0 ? Math.max(mix.minEach, Math.round(total * mix.trap)) : 0);
+      const wantExt = (mix.extend > 0 ? Math.max(mix.minEach, Math.round(total * mix.extend)) : 0);
       const nArr = keys.map(k => counts[k]);
       const trapAlloc = apportion(Math.min(wantTrap, total), nArr, keys.map((k, i) => Math.min(trapCap[i], counts[k])));
       const extAlloc = apportion(Math.min(wantExt, total), nArr, keys.map((k, i) => Math.min(extCap[i], counts[k] - trapAlloc[i])));
@@ -231,12 +237,12 @@
       const wantT = trapAlloc.reduce((a, b) => a + b, 0), wantE = extAlloc.reduce((a, b) => a + b, 0);
       let best = null, bestScore = Infinity;
       for (let attempt = 0; attempt < 60; attempt++) {
-        const r = selectOnce(pools, counts, tagPlan);
+        const r = selectOnce(pools, counts, tagPlan, cover);
         let t = 0, e = 0;
         keys.forEach(k => r.out[k].forEach(s => { if (s.tag === "trap") t++; if (s.tag === "extend") e++; }));
         const vals = Object.keys(poolTopics).map(tp => r.topicUsed[tp] || 0);
         const spread = vals.length ? Math.max.apply(null, vals) - Math.min.apply(null, vals) : 0;
-        const score = 100 * Math.max(0, spread - 1) + Math.abs(t - wantT) + Math.abs(e - wantE) + (r.repeated ? 1000 : 0);
+        const score = 100 * Math.max(0, spread - 1) + Math.abs(t - wantT) + Math.abs(e - wantE) + (r.repeated ? 1000 : 0) + (cover ? 50 * missingLevels(r.out, pools, keys) : 0);
         if (score < bestScore) { best = r; bestScore = score; }
         if (score === 0) break;
       }
@@ -289,7 +295,8 @@
     /* ----- 對外：出題 ----- */
     function buildExam(opts) {
       const mode = opts.mode === "practice" ? "practice" : "score";
-      const lvMin = opts.levelMin || 1, lvMax = opts.levelMax || 5;
+      /* 二十題加強練習固定 level 1~5 全範圍，忽略難度設定；計分卷才依難度出題 */
+      const lvMin = mode === "practice" ? 1 : (opts.levelMin || 1), lvMax = mode === "practice" ? 5 : (opts.levelMax || 5);
       const { topics, topicUnits } = topicsOfUnits(opts.units || []);
       const wantTypes = types.map(t => t.key).filter(k => (opts.types || []).indexOf(k) >= 0);
       const pools = buildPools(topics, wantTypes, lvMin, lvMax);
@@ -306,7 +313,7 @@
         const scale = Math.min(scoreCfg.maxScale, sumAll / sumSel);
         avail.forEach(k => { counts[k] = Math.max(scoreCfg.minPerType, Math.round(typeByKey[k].count * scale)); });
       }
-      const selection = selectSpecs(pools, counts);
+      const selection = selectSpecs(pools, counts, mode === "score" ? opts.mix : null, mode === "practice");
       const exam = assemble(selection, mode, { topicUnits }, pools);
       exam.opts = { mode, units: opts.units, types: wantTypes.slice(), levelMin: lvMin, levelMax: lvMax };
       return exam;

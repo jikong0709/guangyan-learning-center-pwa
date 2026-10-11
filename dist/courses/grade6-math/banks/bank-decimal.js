@@ -11,7 +11,7 @@
   function badStr(x) {
     x = String(x);
     let m; const re = /(\d+)\/(\d+)/g;
-    while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
+    while ((m = re.exec(x))) if (Number(m[2]) > 60) return true;
     return /\d{9,}|\d+\.\d{5,}/.test(x);
   }
   function badAcc(x) {
@@ -20,10 +20,20 @@
     while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
     return /\d{9,}/.test(x.replace(/\.\d+/, ""));
   }
-  /* fill／calc／word 的答案若是分數（含無限小數的情形），題幹補「（請以分數作答）」，已提到分數就不重複 */
+  /* fill／calc／word 的答案若是「無限小數」（寫成分數），題幹補「（請以分數作答）」，已提到分數就不重複；
+     這時也把「或小數作答」的提示改成只允許分數／帶分數。有限小數的答案不補。 */
+  function nonTerminating(ans) {
+    const m = /(\d+)\/(\d+)\s*$/.exec(String(ans));
+    if (!m) return false;
+    let d = Number(m[2]);
+    while (d % 2 === 0) d /= 2;
+    while (d % 5 === 0) d /= 5;
+    return d !== 1;
+  }
   function addHint(r, type) {
-    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && /\//.test(r.answer) && !/分數/.test(r.stem)) {
-      r.stem = r.stem + (/____/.test(r.stem) && /____[。]?$/.test(r.stem) ? "" : "") + "(請以分數作答)";
+    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && nonTerminating(r.answer)) {
+      if (/或小數作答/.test(r.stem)) r.stem = r.stem.replace("、帶分數或小數作答", "或帶分數作答").replace("或小數作答", "作答");
+      if (!/分數/.test(r.stem)) r.stem = r.stem + "(請以分數作答)";
     }
     return r;
   }
@@ -408,5 +418,73 @@
     })
   ];
 
-  ExamBank.register(T, "decimal-basic", single.concat(multi, tf, fill, calc, word));
+  /* ===== 教材式 □ 未知數題（規格第 14 節）===== */
+  function dv(lo, hi, FLs, places) { const fl = K.flavor(FLs || ["dec", "dec", "int"]); const q = gen1(fl, { min: lo, max: hi, places: places }); return { q: q, f: fl }; }
+  function shv(o) { return sho(o.q, o.f); }
+  function need(q) { if (!decOK(q) || q.n > 200000) throw new Error("重抽"); return q; }
+
+  const boxes = [
+    mk("calc", 1, "basic", function () {
+      const X = dv(1, 20), b = dv(0.2, 9, ["dec", "int", "int"]), c = need(qMul(X.q, b.q)), a = qa(X.q);
+      return { stem: "求 □ 是多少:「□ × " + shv(b) + " = " + dsh(c) + "」", answer: a.answer, accepted: a.accepted,
+        explain: "□ × " + shv(b) + " = " + dsh(c) + ",所以 □ = " + dsh(c) + " ÷ " + shv(b) + " = " + dsh(X.q) + "。\n驗算:" + dsh(X.q) + " × " + shv(b) + " = " + dsh(c) + "。" };
+    }),
+    mk("fill", 2, "basic", function () {
+      const c = dv(1, 20), b = dv(0.2, 9, ["dec", "int"]), X = need(qMul(c.q, b.q)), a = qa(X);
+      return { stem: "「□ ÷ " + shv(b) + " = " + shv(c) + "」,□ = ____", answer: a.answer, accepted: a.accepted,
+        explain: "被除數 = 商 × 除數,所以 □ = " + shv(c) + " × " + shv(b) + " = " + dsh(X) + "。\n驗算:" + dsh(X) + " ÷ " + shv(b) + " = " + shv(c) + "。" };
+    }),
+    mk("calc", 3, "basic", function () {
+      const X = dv(0.2, 9, ["dec", "dec", "int"]), c = dv(1, 20, ["dec", "int"]), a0 = need(qMul(X.q, c.q)), a = qa(X.q);
+      return { stem: "求 □ 是多少:「" + dsh(a0) + " ÷ □ = " + shv(c) + "」", answer: a.answer, accepted: a.accepted,
+        explain: "除數 = 被除數 ÷ 商,所以 □ = " + dsh(a0) + " ÷ " + shv(c) + " = " + dsh(X.q) + "。\n驗算:" + dsh(a0) + " ÷ " + dsh(X.q) + " = " + shv(c) + "。" };
+    }),
+    mk("single", 3, "trap", function () {
+      const c = dv(1, 20), b = dv(0.2, 0.9, ["dec"]), X = need(qMul(c.q, b.q));
+      const wr = [qDiv(c.q, b.q), qDiv(b.q, c.q), qAdd(c.q, b.q), qMul(X, Q(10)), qDiv(X, Q(10))].filter(function (x) { return x.n > 0 && qCmp(x, X) !== 0 && decOK(x); }).map(dsh);
+      const r = S(dsh(X), wr);
+      r.stem = "「□ ÷ " + shv(b) + " = " + shv(c) + "」,□ 是多少?";
+      r.explain = "被除數 = 商 × 除數:□ = " + shv(c) + " × " + shv(b) + " = " + dsh(X) + "。";
+      r.trapNote = "常見錯誤:把 □ 移到另一邊時,方向弄反,用 " + shv(c) + " ÷ " + shv(b) + " = " + dsh(qDiv(c.q, b.q)) + "。□ 在被除數的位置,要用「商 × 除數」;並且除以小於 1 的數,商會比被除數大,所以 □ 應該比 " + shv(c) + " 小。";
+      return r;
+    }),
+    mk("fill", 4, "trap", function () {
+      const b = dv(0.5, 9, ["dec", "int"]), c = dv(2, 9, ["int", "dec"]), d = dv(1, 9, ["dec", "int"]);
+      const X = need(qAdd(qMul(d.q, c.q), b.q)), a = qa(X);
+      return { stem: "「(□ - " + shv(b) + ") ÷ " + shv(c) + " = " + shv(d) + "」,□ = ____", answer: a.answer, accepted: a.accepted,
+        explain: "括號裡的 □ - " + shv(b) + " 是被除數 = 商 × 除數 = " + shv(d) + " × " + shv(c) + " = " + dsh(qMul(d.q, c.q)) + "。\n□ = " + dsh(qMul(d.q, c.q)) + " + " + shv(b) + " = " + dsh(X) + "。\n驗算:(" + dsh(X) + " - " + shv(b) + ") ÷ " + shv(c) + " = " + shv(d) + "。",
+        trapNote: "常見錯誤:還原時順序弄反,先加再乘,或把減 " + shv(b) + " 變成再減一次,得到 " + dsh(qSub(qMul(d.q, c.q), b.q).n > 0 ? qSub(qMul(d.q, c.q), b.q) : Q(1)) + "。要由後往前還原:先乘回除數,再加回減掉的數。" };
+    }),
+    mk("tf", 2, "trap", function () {
+      const X = dv(0.2, 9, ["dec", "int"]), c = dv(0.2, 9, ["dec", "int"]), a0 = need(qMul(X.q, c.q));
+      const wrong = qMul(a0, c.q); if (!decOK(wrong) || qCmp(wrong, X.q) === 0) throw new Error("重抽");
+      const right = Math.random() < 0.5, v = right ? X.q : wrong;
+      return { stem: "「" + dsh(a0) + " ÷ □ = " + shv(c) + "」,所以 □ = " + dsh(v) + "。", answer: right,
+        explain: "除數 = 被除數 ÷ 商 = " + dsh(a0) + " ÷ " + shv(c) + " = " + dsh(X.q) + (right ? ",敘述正確。" : ",不是 " + dsh(v) + "(那是把被除數和商相乘)。"),
+        trapNote: "易錯:□ 在除數的位置時,要用「被除數 ÷ 商」,不能用乘法。" };
+    }),
+    mk("single", 5, "extend", function () {
+      const X = dv(2, 12, ["dec", "int"]), Y = dv(0.5, 6, ["dec"]);
+      if (qCmp(X.q, Y.q) <= 0) throw new Error("重抽");
+      const s = need(qAdd(X.q, Y.q)), d = need(qSub(X.q, Y.q));
+      const wr = [Y.q, qDiv(d, Q(2)), qDiv(s, Q(2)), d, qAdd(s, d)].filter(function (x) { return x.n > 0 && qCmp(x, X.q) !== 0 && decOK(x); }).map(dsh);
+      const r = S(dsh(X.q), wr);
+      r.stem = "已知「□ + △ = " + dsh(s) + "」,「□ - △ = " + dsh(d) + "」,□ 是多少?";
+      r.explain = "兩式相加,2 個 □ = " + dsh(s) + " + " + dsh(d) + " = " + dsh(qAdd(s, d)) + ",所以 □ = " + dsh(qAdd(s, d)) + " ÷ 2 = " + dsh(X.q) + "。(△ = " + dsh(Y.q) + ")";
+      return r;
+    }),
+    mk("fill", 5, "extend", function () {
+      const X = dv(1, 12, ["dec", "int"]), b = dv(0.2, 9, ["dec", "int"]), d = dv(1, 9, ["int", "dec"]);
+      const c = need(qDiv(qMul(X.q, b.q), d.q)), a = qa(X.q);
+      return { stem: "「□ × " + shv(b) + " ÷ " + shv(d) + " = " + dsh(c) + "」,□ = ____", answer: a.answer, accepted: a.accepted,
+        explain: "由後往前還原:先 × " + shv(d) + ":" + dsh(c) + " × " + shv(d) + " = " + dsh(qMul(c, d.q)) + ";再 ÷ " + shv(b) + ":□ = " + dsh(qMul(c, d.q)) + " ÷ " + shv(b) + " = " + dsh(X.q) + "。" };
+    }),
+    mk("word", 4, "extend", function () {
+      const X = dv(1, 9, ["dec", "int"]), price = dv(12, 90, ["dec", "int"]), total = need(qMul(X.q, price.q)), a = qa(X.q);
+      return { stem: "葡萄每公斤 " + shv(price) + " 元,小美買了 □ 公斤,一共付了 " + dsh(total) + " 元。可以列成「" + shv(price) + " × □ = " + dsh(total) + "」,□ 是多少公斤?", answer: a.answer, accepted: a.accepted, units: ["公斤"],
+        explain: "單價 × 重量 = 總價,所以 □ = " + dsh(total) + " ÷ " + shv(price) + " = " + dsh(X.q) + " 公斤。\n驗算:" + shv(price) + " × " + dsh(X.q) + " = " + dsh(total) + "。" };
+    })
+  ];
+
+  ExamBank.register(T, "decimal-basic", single.concat(multi, tf, fill, calc, word, boxes));
 })();

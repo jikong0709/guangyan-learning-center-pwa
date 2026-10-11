@@ -359,4 +359,69 @@
         explain: `解析：時速 ${f(vk)} 公里＝每秒 ${f(x)} 公尺。${f(s)} 秒共行駛 ${f(x)}×${f(s)}＝${f(mul(x, s))} 公尺，這段距離＝隧道長＋車長，所以隧道長＝${f(mul(x, s))}−${f(L)}＝${f(T)}（公尺）。` }, ans(T, fl));
     }))
   ]);
+  /* 教材式 □ 未知數題（規格第 14 節） */
+  reg("speed", "box", [
+    sp("speed-box-fill-L1-01", "fill", 1, "basic", kit => retry(kit, fl => {
+      const v = rq(kit, fl, 3, 9), t = tq(kit, fl), d = mul(v, t); if (!nice(d, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `時速 ${f(v)} 公里的人走 □ 小時，可以走 ${f(d)} 公里。□ ＝ ?`, units: ["小時", "時"],
+        explain: `解析：${f(v)} × □ ＝ ${f(d)}，□ ＝ ${f(d)} ÷ ${f(v)} ＝ ${f(t)}（小時）。` }, ans(t, fl));
+    })),
+    sp("speed-box-fill-L2-01", "fill", 2, "basic", kit => retry(kit, fl => {
+      const v = rq(kit, fl, 18, 150), c = dv(mul(v, I(5)), I(18)); if (!nice(c, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `${f(v)} 公里/時 ＝ □ 公尺/秒。□ ＝ ?`, units: ["公尺/秒", "公尺"],
+        explain: `解析：${f(v)} 公里＝${f(mul(v, I(1000)))} 公尺，1 小時＝3600 秒，□ ＝ ${f(mul(v, I(1000)))} ÷ 3600 ＝ ${f(c)}。` }, ans(c, fl));
+    })),
+    sp("speed-box-calc-L2-01", "calc", 2, "basic", kit => retry(kit, fl => {
+      const v = rq(kit, fl, 20, 90), t = tq(kit, fl), d = mul(v, t); if (!nice(d, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `${f(t)} × □ ＝ ${f(d)}。（□ 是時速，單位公里/時）□ 是多少？`, units: ["公里/時", "公里"],
+        explain: `解析：□ ＝ ${f(d)} ÷ ${f(t)} ＝ ${f(v)}（公里/時）。` }, ans(v, fl));
+    })),
+    sp("speed-box-single-L3-01", "single", 3, "trap", kit => retry(kit, fl => {
+      const v = rq(kit, fl, 20, 80), t = tq(kit, fl), d = mul(v, t); if (!nice(d, fl)) return null;
+      const f = x => sh(x, fl);
+      const o = qopts(kit, t, [mul(d, v), dv(v, d), sub(d, v), add(d, v), mul(t, I(2))], fl, " 小時");
+      return { stem: `${f(d)} ÷ □ ＝ ${f(v)}（距離 ÷ 時間 ＝ 速率，□ 是時間，單位小時）。□ 是多少小時？`, options: o.options, answer: 0,
+        explain: `解析：除數 □ ＝ 被除數 ÷ 商 ＝ ${f(d)} ÷ ${f(v)} ＝ ${f(t)}（小時）。`,
+        trapNote: `□ 在除數的位置，要用「被除數 ÷ 商」。常見錯誤是把 ${f(d)} 和 ${f(v)} 相乘，或反過來算 ${f(v)} ÷ ${f(d)}。` };
+    })),
+    sp("speed-box-tf-L4-01", "tf", 4, "trap", kit => retry(kit, fl => {
+      const x = rq(kit, fl, 5, 30, { dens: [2, 5] }), c = mul(x, Qn(18, 5)), bad = mul(x, I(kit.pick([6, 60]))); if (!nice(c, fl) || !nice(bad, fl) || qv(bad) === qv(c)) return null;
+      const f = y => sh(y, fl);
+      const r = tfQ(kit,
+        [`${f(x)} 公尺/秒 ＝ □ 公里/時，□ ＝ ${f(c)}。`, `正確：${f(x)} × 3600 ÷ 1000 ＝ ${f(c)}。`],
+        [`${f(x)} 公尺/秒 ＝ □ 公里/時，□ ＝ ${f(bad)}。`, `錯誤：${f(x)} 公尺/秒 ×3600 秒 ÷1000 ＝ ${f(c)} 公里/時，不是 ${f(bad)}。`]);
+      r.trapNote = "秒速換時速要 ×3600（秒→時）再 ÷1000（公尺→公里），也就是 ×3.6；只 ×60 或 ×6 都是換算漏步驟。";
+      return r;
+    })),
+    sp("speed-box-word-L4-01", "word", 4, "trap", kit => retry(kit, fl => {
+      const b = rq(kit, fl, 40, 60), df = rq(kit, fl, 5, 20), a = add(b, df), t = tq(kit, fl), g = mul(df, t); if (!nice(g, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `哥哥時速 ${f(a)} 公里，弟弟時速 ${f(b)} 公里，兩人同時從同一地點、往同一方向出發，□ 小時後兩人相距 ${f(g)} 公里。□ ＝ ?`, units: ["小時", "時"],
+        explain: `解析：同向出發，每小時拉開 ${f(a)}−${f(b)}＝${f(df)} 公里，□ ＝ ${f(g)} ÷ ${f(df)} ＝ ${f(t)}（小時）。`,
+        trapNote: `同向出發，拉開的距離看速率「差」，不是速率和 ${f(add(a, b))}。用和去除會算出 ${f(dv(g, add(a, b)))}，是錯的。` }, ans(t, fl));
+    })),
+    sp("speed-box-calc-L5-01", "calc", 5, "extend", kit => retry(kit, fl => {
+      const s = rq(kit, fl, 80, 140), df = rq(kit, fl, 5, 30), big = dv(add(s, df), I(2)); if (!nice(big, fl) || !nice(dv(sub(s, df), I(2)), fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `甲、乙兩車的時速（單位：公里/時）分別是 □ 和 △（□ 比較大）。□ ＋ △ ＝ ${f(s)}，□ － △ ＝ ${f(df)}。□ ＝ ?`, units: ["公里/時", "公里"],
+        explain: `解析：和加差：(□＋△)＋(□－△)＝2 個 □＝${f(s)}＋${f(df)}＝${f(add(s, df))}，□ ＝ ${f(add(s, df))} ÷ 2 ＝ ${f(big)}（公里/時）。（△ ＝ ${f(dv(sub(s, df), I(2)))}）` }, ans(big, fl));
+    })),
+    sp("speed-box-word-L5-01", "word", 5, "extend", kit => retry(kit, fl => {
+      const L = rq(kit, fl, 100, 250), T = rq(kit, fl, 200, 600), vk = rq(kit, fl, 36, 108), x = dv(mul(vk, I(5)), I(18)), tm = dv(add(L, T), x);
+      if (![x, tm, add(L, T)].every(y => nice(y, fl))) return null;
+      const f = y => sh(y, fl);
+      return Object.assign({ stem: `一列長 ${f(L)} 公尺的火車，時速 ${f(vk)} 公里，要通過一座長 ${f(T)} 公尺的橋（從車頭上橋到車尾離橋），需要 □ 秒。□ ＝ ?`, units: ["秒", "秒鐘"],
+        explain: `解析：時速 ${f(vk)} 公里＝每秒 ${f(x)} 公尺；車頭到車尾離橋共走 ${f(L)}＋${f(T)}＝${f(add(L, T))} 公尺，□ ＝ ${f(add(L, T))} ÷ ${f(x)} ＝ ${f(tm)}（秒）。` }, ans(tm, fl));
+    })),
+    sp("speed-box-fill-L4-01", "fill", 4, "trap", kit => retry(kit, fl => {
+      const a = rq(kit, fl, 2, 8), t = tq(kit, fl), v0 = rq(kit, fl, 15, 40), d = mul(sub(v0, a), t); if (!nice(d, fl) || !nice(sub(v0, a), fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `一艘船在靜水中每小時行 □ 公里，水流每小時 ${f(a)} 公里，逆流行駛 ${f(t)} 小時共 ${f(d)} 公里，也就是 (□ － ${f(a)}) × ${f(t)} ＝ ${f(d)}。□ ＝ ?`, units: ["公里/時", "公里"],
+        explain: `解析：(□ － ${f(a)}) ＝ ${f(d)} ÷ ${f(t)} ＝ ${f(sub(v0, a))}，□ ＝ ${f(sub(v0, a))} ＋ ${f(a)} ＝ ${f(v0)}（公里/時）。`,
+        trapNote: `括號裡是「減 ${f(a)}」，還原時要「加回 ${f(a)}」。常見錯誤是算出 ${f(sub(v0, a))} 就停下，或再減一次 ${f(a)}。` }, ans(v0, fl));
+    }))
+  ]);
 })();

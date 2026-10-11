@@ -15,7 +15,7 @@
   function badStr(x) {
     x = String(x);
     let m; const re = /(\d+)\/(\d+)/g;
-    while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
+    while ((m = re.exec(x))) if (Number(m[2]) > 60) return true;
     return /\d{9,}|\d+\.\d{5,}/.test(x);
   }
   function badAcc(x) {
@@ -24,10 +24,20 @@
     while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
     return /\d{9,}/.test(x.replace(/\.\d+/, ""));
   }
-  /* fill／calc／word 的答案若是分數（含無限小數的情形），題幹補「（請以分數作答）」，已提到分數就不重複 */
+  /* fill／calc／word 的答案若是「無限小數」（寫成分數），題幹補「（請以分數作答）」，已提到分數就不重複；
+     這時也把「或小數作答」的提示改成只允許分數／帶分數。有限小數的答案不補。 */
+  function nonTerminating(ans) {
+    const m = /(\d+)\/(\d+)\s*$/.exec(String(ans));
+    if (!m) return false;
+    let d = Number(m[2]);
+    while (d % 2 === 0) d /= 2;
+    while (d % 5 === 0) d /= 5;
+    return d !== 1;
+  }
   function addHint(r, type) {
-    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && /\//.test(r.answer) && !/分數/.test(r.stem)) {
-      r.stem = r.stem + (/____/.test(r.stem) && /____[。]?$/.test(r.stem) ? "" : "") + "(請以分數作答)";
+    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && nonTerminating(r.answer)) {
+      if (/或小數作答/.test(r.stem)) r.stem = r.stem.replace("、帶分數或小數作答", "或帶分數作答").replace("或小數作答", "作答");
+      if (!/分數/.test(r.stem)) r.stem = r.stem + "(請以分數作答)";
     }
     return r;
   }
@@ -332,5 +342,39 @@
     })
   ];
 
-  ExamBank.register(T, "factor-basic", single.concat(multi, tf, fill, calc, word));
+  /* ===== 教材式 □ 未知數題（規格第 14 節）===== */
+  const boxes = [
+    mk("single", 1, "basic", function () {
+      const B = int(3, 40), k = int(3, 30), A = B * k;
+      const r = S(String(k), [A + B, A - B, A * B, B, k + 1, k - 1, k * 2].map(String));
+      r.stem = "「" + A + " = " + B + " × □」,□ 是多少?";
+      r.explain = A + " ÷ " + B + " = " + k + ",所以 □ = " + k + "。(驗算:" + B + " × " + k + " = " + A + ")";
+      return r;
+    }),
+    mk("fill", 2, "basic", function () {
+      const g = (Math.random() < 0.5 ? int(2, 12) : int(13, 36)), p = coprime(2, 9), a = g * p[0], b = g * p[1];
+      return { stem: "「□ 是 " + a + " 與 " + b + " 的最大公因數」,□ = ____", answer: String(g),
+        explain: a + " = " + g + "×" + p[0] + ",\n" + b + " = " + g + "×" + p[1] + ",\n" + p[0] + " 和 " + p[1] + " 互質,所以 □ = " + g + "。" };
+    }),
+    mk("tf", 3, "trap", function () {
+      const g = int(2, 12), p = coprime(2, 7), a = g * p[0], b = g * p[1], L = lcm(a, b);
+      const right = Math.random() < 0.5, x = right ? g : pick([L, Math.min(a, b), g * 2].filter(function (v) { return v !== g; }));
+      return { stem: "「□ 是 " + a + " 的因數,也是 " + b + " 的因數」,□ 最大是 " + x + "。", answer: right,
+        explain: a + " 和 " + b + " 的公因數中最大的是最大公因數 " + g + (right ? ",敘述正確。" : ",不是 " + x + "。"),
+        trapNote: "易錯:「同時是兩數的因數」要找的是最大公因數;最小公倍數 " + L + " 或較小的數 " + Math.min(a, b) + " 都不是兩數共同的因數。" };
+    }),
+    mk("calc", 4, "trap", function () {
+      const g = int(2, 9), p = coprime(2, 7), m = p[0], n = p[1], a = g * m, b = g * n, L = g * m * n;
+      return { stem: "「" + a + " 與 □ 的最大公因數是 " + g + ",最小公倍數是 " + L + "」,求 □。", answer: String(b),
+        explain: "兩數的乘積 = 最大公因數 × 最小公倍數:" + a + " × □ = " + g + " × " + L + " = " + (g * L) + ",所以 □ = " + (g * L) + " ÷ " + a + " = " + b + "。\n驗算:" + a + " 與 " + b + " 的最大公因數是 " + g + ",最小公倍數是 " + L + "。",
+        trapNote: "常見錯誤:只用最小公倍數,算成 " + L + " ÷ " + a + " = " + K.num(L / a) + ",漏掉最大公因數 " + g + "。要用「兩數乘積 = 最大公因數 × 最小公倍數」。" };
+    }),
+    mk("word", 5, "extend", function () {
+      const g = int(2, 6), p = coprime(2, 6), m = p[0], n = p[1], a = g * m, b = g * n, L = g * m * n;
+      return { stem: "甲每 " + a + " 天、乙每 □ 天去一次圖書館。今天兩人同時去,下一次要 " + L + " 天後才又同一天去,而且 " + a + " 與 □ 的最大公因數是 " + g + "。乙每 □ 是多少天去一次?", answer: String(b), units: ["天", "日"],
+        explain: "同一天再去的間隔是最小公倍數 " + L + "。兩數乘積 = 最大公因數 × 最小公倍數:" + a + " × □ = " + g + " × " + L + " = " + (g * L) + ",□ = " + (g * L) + " ÷ " + a + " = " + b + " 天。" };
+    })
+  ];
+
+  ExamBank.register(T, "factor-basic", single.concat(multi, tf, fill, calc, word, boxes));
 })();

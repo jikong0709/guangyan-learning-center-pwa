@@ -389,4 +389,71 @@
         explain: `解析：設兒子今年 □ 歲，爸爸就是 ${set[0]} 個 □ 歲；${f(t)} 年後：${set[0]} 個 □＋${f(t)}＝${set[1]}×(□＋${f(t)})，整理得 ${set[0] - set[1]} 個 □＝${set[1] - 1}×${f(t)}，□＝${f(c)}，爸爸＝${set[0]}×${f(c)}＝${f(F)}（歲）。（檢驗：${f(t)} 年後爸爸 ${f(add(F, t))}、兒子 ${f(add(c, t))}，${f(add(F, t))}÷${f(add(c, t))}＝${set[1]} 倍。）` }, ans(F, fl));
     }))
   ]);
+  /* 教材式 □ 未知數題（規格第 14 節） */
+  reg("solve-lower", "box", [
+    sp("solve-lower-box-fill-L1-01", "fill", 1, "basic", kit => retry(kit, fl => {
+      const B = ageQ(kit, fl, 34, 45), t = ageQ(kit, fl, 2, 9), C = add(B, t); if (!nice(C, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `今年爸爸 ${f(B)} 歲，□ 年後爸爸 ${f(C)} 歲。□ ＝ ?`, units: ["年"],
+        explain: `解析：${f(B)} ＋ □ ＝ ${f(C)}，□ ＝ ${f(C)} − ${f(B)} ＝ ${f(t)}（年）。` }, ans(t, fl));
+    })),
+    sp("solve-lower-box-fill-L2-01", "fill", 2, "basic", kit => retry(kit, fl => {
+      const C = ageQ(kit, fl, 6, 12), g = ageQ(kit, fl, 24, 32), B = add(C, g); if (!nice(B, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `爸爸今年 □ 歲，兒子今年 ${f(C)} 歲，爸爸比兒子大 ${f(g)} 歲。□ ＝ ?`, units: ["歲"],
+        explain: `解析：□ − ${f(C)} ＝ ${f(g)}，□ ＝ ${f(C)} ＋ ${f(g)} ＝ ${f(B)}（歲）。` }, ans(B, fl));
+    })),
+    sp("solve-lower-box-calc-L2-01", "calc", 2, "basic", kit => retry(kit, fl => {
+      const n = kit.pick([4, 5, 6]), A = rq(kit, fl, 70, 90), T = mul(A, I(n)); if (!nice(T, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `${n} × □ ＝ ${f(T)}。（${n} 次考試的總分是 ${f(T)} 分，□ 是平均）□ 是多少分？`, units: ["分"],
+        explain: `解析：□ ＝ ${f(T)} ÷ ${n} ＝ ${f(A)}（分）。` }, ans(A, fl));
+    })),
+    sp("solve-lower-box-single-L4-01", "single", 4, "trap", kit => retry(kit, fl => {
+      const k = kit.pick([2, 3, 4]), s = ageSet(kit, fl, k); if (!s) return null;
+      const f = x => sh(x, fl), diff = sub(s.B, s.C);
+      const o = qopts(kit, s.t, [s.c0, diff, mul(I(k - 1), s.t), sub(s.B, mul(I(k), s.C)), add(s.t, I(1))], fl, " 年");
+      return { stem: `(${f(s.B)} ＋ □) ＝ ${k} × (${f(s.C)} ＋ □)（爸爸 ${f(s.B)} 歲、兒子 ${f(s.C)} 歲，□ 年後爸爸是兒子的 ${k} 倍）。□ 是多少年？`, options: o.options, answer: 0,
+        explain: `解析：${f(s.B)} ＋ □ ＝ ${k}×${f(s.C)} ＋ ${k}×□，整理得 ${k - 1} 個 □ ＝ ${f(s.B)} − ${k}×${f(s.C)}＝${f(sub(s.B, mul(I(k), s.C)))}，□ ＝ ${f(s.t)}（年）。`,
+        trapNote: `等號兩邊的 □ 要先合併：${k} 個 □ 移到左邊後只剩 ${k - 1} 個 □。常見錯誤是直接算 ${f(sub(s.B, mul(I(k), s.C)))}（忘了除以 ${k - 1}），或把兒子 ${k} 倍時的年齡 ${f(s.c0)} 當成年數。` };
+    })),
+    sp("solve-lower-box-tf-L4-01", "tf", 4, "trap", kit => retry(kit, fl => {
+      const k = kit.pick([2, 3, 4]), c0 = ageQ(kit, fl, 5, 14), t = ageQ(kit, fl, 2, 8), M = add(mul(I(k), c0), t), C = add(c0, t);
+      if (qv(M) < 30 || qv(M) > 50 || ![M, C, c0, t].every(x => nice(x, fl))) return null;
+      const bad = kit.pick([c0, add(t, I(1)), mul(I(k - 1), t)].filter(x => qv(x) !== qv(t)));
+      if (!bad || !nice(bad, fl)) return null;
+      const f = x => sh(x, fl), head = `(${f(M)} － □) ＝ ${k} × (${f(C)} － □)（媽媽 ${f(M)} 歲、女兒 ${f(C)} 歲，□ 年前媽媽是女兒的 ${k} 倍），所以 □ ＝`;
+      const r = tfQ(kit,
+        [`${head} ${f(t)}。`, `正確：年齡差 ${f(sub(M, C))} 不變，女兒那時 ${f(sub(M, C))}÷${k - 1}＝${f(c0)} 歲，${f(C)}−${f(c0)}＝${f(t)}（年）。`],
+        [`${head} ${f(bad)}。`, `錯誤：女兒那時是 ${f(c0)} 歲，要用 ${f(C)}−${f(c0)}＝${f(t)} 才是「幾年前」，不是 ${f(bad)}。`]);
+      r.trapNote = "往回推時，□ 是「過了幾年」，不是當時的年齡；先用年齡差求出當時的年齡，再用現在的年齡減掉它。";
+      return r;
+    })),
+    sp("solve-lower-box-word-L3-01", "word", 3, "basic", kit => retry(kit, fl => {
+      const c = chaseQ(kit, fl); if (!c) return null;
+      const f = x => sh(x, fl), dist = mul(c.a, c.t); if (!nice(dist, fl)) return null;
+      return Object.assign({ stem: `哥哥先走了 ${f(c.s)} 分鐘，每分鐘走 ${f(c.b)} 公尺；弟弟再出發，每分鐘走 ${f(c.a)} 公尺去追哥哥。弟弟追上哥哥時，哥哥一共走了 □ 公尺。□ ＝ ?`, units: ["公尺"],
+        explain: `解析：弟弟追上要 ${f(c.D)}÷${f(c.k)}＝${f(c.t)} 分鐘，追上時兩人走的路程一樣，□ ＝ ${f(c.a)}×${f(c.t)} ＝ ${f(dist)}（公尺）。` }, ans(dist, fl));
+    })),
+    sp("solve-lower-box-calc-L5-01", "calc", 5, "extend", kit => retry(kit, fl => {
+      const S = ageQ(kit, fl, 40, 55), D = ageQ(kit, fl, 24, 32), big = dv(add(S, D), I(2)); if (!nice(big, fl) || !nice(dv(sub(S, D), I(2)), fl) || qv(dv(sub(S, D), I(2))) < 5) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `爸爸今年 □ 歲，兒子今年 △ 歲。□ ＋ △ ＝ ${f(S)}，□ － △ ＝ ${f(D)}。□ ＝ ?`, units: ["歲"],
+        explain: `解析：和加差得 2 個 □＝${f(S)}＋${f(D)}＝${f(add(S, D))}，□ ＝ ${f(add(S, D))} ÷ 2 ＝ ${f(big)}（歲）。（△ ＝ ${f(dv(sub(S, D), I(2)))}）` }, ans(big, fl));
+    })),
+    sp("solve-lower-box-word-L5-01", "word", 5, "extend", kit => retry(kit, fl => {
+      const n = kit.pick([3, 4, 5]), a = rq(kit, fl, 70, 85), b = add(a, kq(kit, fl)), need = sub(mul(I(n + 2), b), mul(I(n), a));
+      if (qv(need) > 190 || !nice(need, fl) || !nice(b, fl)) return null;
+      const f = x => sh(x, fl);
+      return Object.assign({ stem: `前 ${n} 次測驗的平均是 ${f(a)} 分，再考 2 次後，${n + 2} 次的平均變成 ${f(b)} 分。後面這 2 次共考了 □ 分。□ ＝ ?`, units: ["分"],
+        explain: `解析：${n + 2} 次總分＝${f(b)}×${n + 2}＝${f(mul(b, I(n + 2)))}，前 ${n} 次總分＝${f(a)}×${n}＝${f(mul(a, I(n)))}，□ ＝ ${f(mul(b, I(n + 2)))} − ${f(mul(a, I(n)))} ＝ ${f(need)}（分）。` }, ans(need, fl));
+    })),
+    sp("solve-lower-box-fill-L4-01", "fill", 4, "trap", kit => retry(kit, fl => {
+      const x = ageQ(kit, fl, 8, 14), t = ageQ(kit, fl, 1, 6), k = kit.pick([3, 4, 5]), B = mul(add(x, t), I(k)); if (!nice(B, fl)) return null;
+      const f = y => sh(y, fl);
+      return Object.assign({ stem: `小明今年 □ 歲，再過 ${f(t)} 年，他的年齡的 ${k} 倍剛好是 ${f(B)} 歲，也就是 (□ ＋ ${f(t)}) × ${k} ＝ ${f(B)}。□ ＝ ?`, units: ["歲"],
+        explain: `解析：□ ＋ ${f(t)} ＝ ${f(B)} ÷ ${k} ＝ ${f(add(x, t))}，□ ＝ ${f(add(x, t))} − ${f(t)} ＝ ${f(x)}（歲）。`,
+        trapNote: `括號先「加 ${f(t)}」，最後才「×${k}」，還原要倒過來：先 ÷${k}，再 −${f(t)}。常見錯誤是 ${f(B)} ÷ ${k} 就當作答案，或 ${f(B)} − ${f(t)} 再 ÷${k}。` }, ans(x, fl));
+    }))
+  ]);
 })();
