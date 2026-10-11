@@ -24,6 +24,15 @@
     const storeKey = cfg.storagePrefix + verKey;
     const typeByKey = {}; cfg.types.forEach(t => { typeByKey[t.key] = t; });
     const LETTERS = "ABCDE";
+    /* 文案可由 config.texts 覆寫；預設為中性文案（共用引擎不含科目專屬字眼） */
+    const TXT = Object.assign({
+      intro: "自己選單元、題型和模式，開始出題。",
+      workPlaceholder: "作答過程（選填，不計分）",
+      workLabel: "作答過程（選填，不計分）",
+      yourWork: "你的作答過程："
+    }, cfg.texts || {});
+    /* 只有一種解析時標籤為「解析」，有 explain2 才用「解法一／解法二」 */
+    const exp1Label = it => (it.explain2 ? "解法一：" : "解析：");
     const state = { view: "setup", sel: null, exam: null, resp: {}, work: {}, checked: {}, submitted: false, warned: false };
 
     /* ----- 儲存（失敗不可壞掉） ----- */
@@ -142,7 +151,7 @@
         h("section", { class: "ex-card ex-hero" }, [
           h("p", { class: "ex-kicker", text: cfg.title }),
           h("h1", { "data-focus": true, text: ver.name + "・" + cfg.heading }),
-          h("p", { class: "ex-sub", text: "自己選單元、題型和模式，每次出題的數字都不一樣。" }),
+          h("p", { class: "ex-sub", text: TXT.intro }),
           h("div", { class: "ex-vers", role: "navigation", "aria-label": "切換教科書版本" }, [h("span", { class: "ex-vers-label", text: "教科書版本：" })].concat(verLinks))
         ]),
         h("section", { class: "ex-card" }, [
@@ -324,9 +333,9 @@
       }
       if (typeByKey[it.type].showWork && !practice) {
         const wid = id + "-work";
-        const work = h("textarea", { class: "ex-work", id: wid, rows: "2", placeholder: "列式（選填，不計分）", autocomplete: "off", spellcheck: "false" });
+        const work = h("textarea", { class: "ex-work", id: wid, rows: "2", placeholder: TXT.workPlaceholder, autocomplete: "off", spellcheck: "false" });
         work.addEventListener("input", () => { state.work[it.no] = work.value; });
-        area.insertBefore(h("label", { class: "ex-label", for: wid }, ["第 " + it.no + " 題列式（選填，不計分）"]), area.firstChild);
+        area.insertBefore(h("label", { class: "ex-label", for: wid }, ["第 " + it.no + " 題" + TXT.workLabel]), area.firstChild);
         area.insertBefore(work, area.children[1]);
         area.appendChild(h("span", { class: "ex-printlines", "aria-hidden": "true" }));
       }
@@ -360,7 +369,7 @@
       box.className = "ex-feedback is-show " + (g.correct ? "is-right" : "is-wrong");
       const kids = [h("p", { class: "ex-verdict", text: g.correct ? "✔ 答對了！" : (g.answered ? "✘ 答錯了" : "✘ 還沒作答") })];
       if (!g.correct) kids.push(h("p", {}, [h("b", { text: "正確答案：" }), engine.describeAnswer(it)]));
-      kids.push(h("p", { class: "ex-explain", text: "解法一：" + it.explain }));
+      kids.push(h("p", { class: "ex-explain", text: exp1Label(it) + it.explain }));
       if (it.explain2) kids.push(h("p", { class: "ex-explain", text: "解法二：" + it.explain2 }));
       if (it.tag === "trap" && it.trapNote) kids.push(h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }));
       kids.forEach(k => box.appendChild(k));
@@ -377,7 +386,7 @@
         ]),
         h("p", { class: "ex-keyans" }, [h("b", { text: "正解：" }), h("span", { class: "ex-keyans-text", text: engine.describeAnswer(it) })]),
         h("p", { class: "ex-keystem", text: it.stem }),
-        h("p", { class: "ex-keyexp" }, [h("b", { text: "解法一：" }), it.explain]),
+        h("p", { class: "ex-keyexp" }, [h("b", { text: exp1Label(it) }), it.explain]),
         it.explain2 ? h("p", { class: "ex-keyexp ex-keyexp2" }, [h("b", { text: "解法二：" }), it.explain2]) : null,
         it.tag === "trap" && it.trapNote ? h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }) : null
       ]);
@@ -434,8 +443,8 @@
           h("p", { class: "ex-stem", text: it.stem }),
           h("p", {}, [h("b", { text: "你的答案：" }), engine.describeResponse(it, resp)]),
           h("p", {}, [h("b", { text: "正確答案：" }), engine.describeAnswer(it)]),
-          state.work[it.no] && state.work[it.no].trim() ? h("p", { class: "ex-yourwork", text: "你的列式：" + state.work[it.no].trim() }) : null,
-          h("p", { class: "ex-explain", text: "解法一：" + it.explain }),
+          state.work[it.no] && state.work[it.no].trim() ? h("p", { class: "ex-yourwork", text: TXT.yourWork + state.work[it.no].trim() }) : null,
+          h("p", { class: "ex-explain", text: exp1Label(it) + it.explain }),
           it.explain2 ? h("p", { class: "ex-explain", text: "解法二：" + it.explain2 }) : null,
           it.tag === "trap" && it.trapNote ? h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }) : null
         ]);

@@ -113,6 +113,7 @@
     subject: "grade6-math",
     title: "國小六年級數學",
     heading: "題型多元・動態變數互動考卷",
+    texts: { intro: "自己選單元、題型和模式，每次出題的數字都不一樣。", workPlaceholder: "列式（選填，不計分）", workLabel: "列式（選填，不計分）", yourWork: "你的列式：" },
     backUrl: "../../",
     storagePrefix: "meihao-exam:grade6-math:",
     defaultVersion: "hanlin",

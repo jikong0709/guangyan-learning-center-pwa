@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國小六年級社會｜莓好學習區</title>
+  <link rel="manifest" href="../../manifest.webmanifest">
+  <link rel="icon" href="../../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../affiliate-carousel.css">
+  <link rel="stylesheet" href="../../exam-engine/exam.css">
+</head>
+<body class="ex-body">
+  <header class="ex-topbar"><div class="ex-topbar-in"><div class="ex-brand">莓好學習區<small>國小六年級社會・互動考卷</small></div><a class="ex-back" href="../../">← 返回教材中心</a></div></header>
+  <main class="ex-main"><div id="exam-root" aria-live="off"><p style="text-align:center;color:#786f78">載入題庫中…</p></div><noscript><p>需要開啟 JavaScript 才能使用互動考卷。</p></noscript></main>
+  <section class="ex-aff"><div data-affiliate-carousel data-storefront-url="https://collshp.com/sberrychang?view=storefront" data-theme="learning-center" data-limit="12"></div></section>
+  <footer class="ex-footer"><p>請仔細閱讀題目並依據社會概念作答。</p><p id="curriculum-source"></p></footer>
+  <script src="../../exam-engine/kit.js"></script>
+  <script src="../../exam-engine/engine.js"></script>
+  <script src="./config.js"></script>
+  <script src="./banks/factory.js"></script>
+  <script src="../../exam-engine/ui.js"></script>
+  <script src="../../affiliate-carousel.config.js"></script>
+  <script src="../../affiliate-carousel-v2.js"></script>
+  <script>
+  (function(){"use strict";var cfg=window.ExamConfig;var requested=new URLSearchParams(window.location.search).get("version");var verKey=cfg.versions[requested]?requested:cfg.defaultVersion;var ver=cfg.versions[verKey];var src=document.getElementById("curriculum-source");var a=document.createElement("a");a.href=ver.sourceUrl;a.target="_blank";a.rel="noopener noreferrer";a.textContent=ver.sourceLabel;src.appendChild(a);src.appendChild(document.createTextNode("；本站題目為自編練習，非出版社課本原文。"));var topics=cfg.allTopics,pending=topics.length;function done(){if(--pending>0)return;var engine=window.ExamEngine.create(cfg,window.ExamBank);window.ExamUI.start({engine:engine,config:cfg,root:document.getElementById("exam-root"),version:verKey});}topics.forEach(function(t){var s=document.createElement("script");s.src="./banks/bank-"+t+".js";s.onload=done;s.onerror=function(){s.remove();done();};document.head.appendChild(s);});})();
+  </script>
+</body>
+</html>
+

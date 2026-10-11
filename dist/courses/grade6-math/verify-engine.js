@@ -241,6 +241,18 @@ check("洗牌後單選答案索引仍指向正解文字", okAnsw);
   check("列印考卷: 作答頁題目卡不含解析欄位 (feedback 在列印隱藏)", /\.ex-feedback \{ display: none !important; \}/.test(pr));
 }
 
+/* 共用引擎去數學化：文案由 config.texts 注入、無 explain2 時標籤為「解析」 */
+{
+  const ui = fs.readFileSync(path.join(root, "exam-engine", "ui.js"), "utf8");
+  const en = fs.readFileSync(path.join(root, "exam-engine", "engine.js"), "utf8");
+  const banned = ["每次出題的數字", "列式", "公分", "分數", "算式", "應用題", "計算題", "□", "圓"];
+  const hit = banned.filter(w => ui.includes(w) || en.includes(w));
+  check("共用引擎 ui.js/engine.js 不含數學專屬字眼 (" + banned.join("/") + ")", hit.length === 0, hit.join());
+  check("ui.js 的設定頁文案可由 config.texts.intro 覆寫，預設為中性文案", /Object.assign({[sS]*intro: "自己選單元、題型和模式，開始出題。"[sS]*}, cfg.texts || {})/.test(ui) && /text: TXT.intro/.test(ui));
+  check("數學 config.texts.intro 維持原本數學文案", cfg.texts && cfg.texts.intro === "自己選單元、題型和模式，每次出題的數字都不一樣。" && cfg.texts.yourWork === "你的列式：");
+  check("無 explain2 標籤用「解析：」、有 explain2 才用「解法一／解法二」(答案卷/回饋/檢討三處共用 exp1Label)", ui.includes('const exp1Label = it => (it.explain2 ? "解法一：" : "解析：");') && ui.split("exp1Label(it)").length - 1 === 3 && !ui.includes('text: "解法一：" + it.explain'));
+}
+
 /* 難度範圍 */
 {
   const ex = engine.buildExam({ mode: "score", units: pickUnits("hanlin", 3), types: ALL, levelMin: 3, levelMax: 5 });

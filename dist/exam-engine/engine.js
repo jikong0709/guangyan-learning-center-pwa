@@ -101,7 +101,7 @@
       for (const c of cands) {
         const p = prep(c, item.units);
         if (!p) continue;
-        /* 空白剝除比對只給乘積寫法（2 × 3）；帶分數 "1 1/2" 與 "11/2" 數值不同，不可剝空白 */
+        /* 空白剝除比對只給由 config 正規化後的乘積式寫法；含空白的混合寫法與去空白後的數值不同，不可剝空白 */
         const mixedLike = s => /\d\s+\d+\/\d+/.test(s);
         if (u === p || (!mixedLike(u) && !mixedLike(p) && uc === p.replace(/ /g, ""))) return true;
         if (un !== null && typeof config.numberParser === "function") {
