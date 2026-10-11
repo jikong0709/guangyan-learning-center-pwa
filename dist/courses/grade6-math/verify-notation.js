@@ -10,7 +10,7 @@ const re = /[A-Za-zＡ-Ｚａ-ｚ]+|[*]/g;
 const bad = {};
 for (const t of Object.keys(specs)) for (const s of specs[t]) for (let i = 0; i < 100; i++) {
   const o = s.gen(ExamKit);
-  const txt = [o.stem, ...(o.options || []), o.explain, o.trapNote || "", String(o.answer), ...(o.accepted || [])].join(" ");
+  const txt = [o.stem, ...(o.options || []), o.explain, o.trapNote || "", (typeof o.answer === "string" ? o.answer : ""), ...(o.accepted || [])].join(" ");
   const m = txt.match(re);
   if (m && !bad[s.id]) bad[s.id] = { letters: [...new Set(m)].join(""), sample: txt.replace(/\s+/g, " ").slice(0, 80) };
 }
