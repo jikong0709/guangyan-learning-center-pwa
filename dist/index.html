@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#826b8d">
-  <meta name="description" content="莓好學習區：整合英語 365 天單字任務與國小數學多版本教材，可安裝、可離線使用。">
+  <meta name="description" content="莓好學習區：整合英語 73 個學習日單字任務與國小數學多版本教材，可安裝、可離線使用。">
   <title>莓好學習區｜教材中心</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=17">
+  <link rel="stylesheet" href="./styles.css?v=19">
   <link rel="stylesheet" href="./affiliate-carousel.css">
 </head>
 <body>
@@ -21,7 +21,7 @@
     <section id="libraryView">
       <div class="library-hero card"><span class="kicker">莓好學習區</span><h1>教材中心</h1><p>先選擇科目，再依學習階段、年級與教材版本進入任務。</p></div>
       <div class="subject-grid">
-        <article class="subject-card card"><div class="subject-icon english" aria-hidden="true">Aa</div><div class="subject-copy"><span class="kicker">英語</span><h2>單字儲備庫</h2><p>進入後可選擇國小區或國中區；國小區已有 365 天任務。</p><button class="btn btn-primary" data-action="english">進入英語教材</button></div></article>
+        <article class="subject-card card"><div class="subject-icon english" aria-hidden="true">Aa</div><div class="subject-copy"><span class="kicker">英語</span><h2>單字儲備庫</h2><p>進入後可選擇國小區或國中區；國小區有 73 個學習日任務。</p><button class="btn btn-primary" data-action="english">進入英語教材</button></div></article>
         <article class="subject-card card subject-card-versions"><div class="subject-icon math" aria-hidden="true">π</div><div class="subject-copy"><span class="kicker">數學｜國小區</span><h2>六年級互動練兵坊</h2><p>六上＋六下完整 14 單元；每節十題並支援動態出題。請先選擇教材版本。</p><div id="mathVersionList" class="version-list" aria-label="六年級數學教材版本"></div></div></article>
         <article class="subject-card card subject-card-versions"><div class="subject-icon chinese" aria-hidden="true">文</div><div class="subject-copy"><span class="kicker">國語｜國小區</span><h2>六年級互動考卷</h2><p>題型多元、段考版型一百分卷，也可選二十題逐題練習；請先選擇教材版本。</p><div id="chineseVersionList" class="version-list" aria-label="六年級國語教材版本"></div></div></article>
         <article class="subject-card card subject-card-versions"><div class="subject-icon social" aria-hidden="true">社</div><div class="subject-copy"><span class="kicker">社會｜國小區</span><h2>六年級互動考卷</h2><p>題型多元、段考版型一百分卷，也可選二十題逐題練習；請先選擇教材版本。</p><div id="socialVersionList" class="version-list" aria-label="六年級社會教材版本"></div></div></article>
@@ -29,7 +29,8 @@
       </div>
     </section>
     <section id="dashboardView" hidden>
-      <div class="intro card"><div><span class="kicker">365 天學習任務</span><h1>英語<span>｜</span>單字儲備庫</h1><p>每天一組、一次五個字。進度只保存在這台裝置的瀏覽器。</p></div><button class="btn btn-primary" data-action="continue">繼續學習</button></div>
+      <div class="intro card"><div><span class="kicker">73 個學習日任務</span><h1>英語<span>｜</span>單字儲備庫</h1><p>每天 5 個新字，學完小考全對才亮燈；每 6 天一次週考。進度只保存在這台裝置的瀏覽器。</p></div><button class="btn btn-primary" data-action="continue">繼續學習</button></div>
+      <div id="migrateNotice" class="notice card" role="status" hidden><p><strong>學習流程已改版，進度已重新開始。</strong>新版改為 73 個學習日＋週考，每個字只學一次，舊版的進度編號無法沿用；舊資料已備份在這台裝置的瀏覽器裡，沒有遺失。</p><button class="btn btn-small" data-action="dismiss-notice">知道了</button></div>
       <button class="btn btn-ghost subject-back" data-action="home">← 返回教材中心</button>
       <div class="level-tabs" role="tablist" aria-label="學習階段">
         <button id="elementaryTab" class="level-tab active" role="tab" aria-selected="true" data-level="elementary">國小區</button>
@@ -37,13 +38,13 @@
       </div>
       <section id="elementaryPanel" role="tabpanel" aria-labelledby="elementaryTab">
         <div class="stats" aria-label="學習摘要">
-          <article class="stat card"><strong id="completedStat">0</strong><span>完成天數／365</span></article><article class="stat card"><strong id="streakStat">0</strong><span>連續學習天數</span></article><article class="stat card"><strong id="wordsStat">0</strong><span>已學核心單字</span></article><article class="stat card"><strong id="todayStat">Day 1</strong><span>今天任務</span></article>
+          <article class="stat card"><strong id="completedStat">0</strong><span>已通過學習日／73</span></article><article class="stat card"><strong id="wordsStat">0</strong><span>已學單字／365</span></article><article class="stat card"><strong id="weekStat">0</strong><span>已通過週考／15</span></article><article class="stat card"><strong id="streakStat">0</strong><span>連續學習天數</span></article>
         </div>
+        <div class="review-card card"><div><strong>🔁 複習</strong><p id="nextTaskText"></p><small>從學過的字隨機抽 10 題，曾答錯的優先；可無限次練習，不計入進度。</small></div><button class="btn btn-review" data-action="review">🔁 開始複習</button></div>
         <div class="toolbar card">
-          <label>跳到指定任務 <input id="dayJump" type="number" min="1" max="365" inputmode="numeric" value="1"></label><button class="btn" data-action="jump">前往</button><button class="btn btn-ghost" data-action="today">回到今天</button><button class="btn btn-ghost" data-action="export">匯出進度</button><label class="btn btn-ghost file-btn">匯入進度<input id="importFile" type="file" accept="application/json" hidden></label>
+          <label>跳到指定學習日 <input id="dayJump" type="number" min="1" max="73" inputmode="numeric" value="1"></label><button class="btn" data-action="jump">前往</button><button class="btn btn-ghost" data-action="today">回到今天</button><button class="btn btn-ghost" data-action="export">匯出進度</button><label class="btn btn-ghost file-btn">匯入進度<input id="importFile" type="file" accept="application/json" hidden></label>
         </div>
-        <div class="range-row" id="rangeRow" aria-label="任務範圍"></div>
-        <section class="task-section"><div class="section-head"><div><span id="rangeLabel" class="kicker">Day 1–30</span><h2>每日任務</h2></div><p>○ 未開始　◐ 進行中　● 已完成</p></div><div id="dayGrid" class="day-grid"></div></section>
+        <section class="task-section"><div class="section-head"><div><span class="kicker">73 個學習日＋15 次週考</span><h2>學習進度</h2></div><p>亮燈＝已通過　灰燈＝未通過　🔒＝未解鎖</p></div><div id="weekList" class="week-list"></div></section>
       </section>
       <section id="juniorPanel" role="tabpanel" aria-labelledby="juniorTab" hidden>
         <div class="junior-head card"><div><span class="kicker">國中三年學習架構</span><h2>七至九年級英語任務</h2><p>各年級獨立管理單字、片語、例句閱讀與複習測驗；不與國小進度混用。</p></div><span class="structure-badge">架構已建立</span></div>
@@ -53,12 +54,12 @@
       </section>
     </section>
     <section id="lessonView" hidden>
-      <div class="lesson-head card"><button class="btn btn-ghost" data-action="english">← 返回英語儲備庫</button><div><span id="lessonTheme" class="kicker"></span><h1 id="lessonTitle">Day 1</h1><p id="lessonSubtitle"></p></div><div class="lesson-nav"><button class="btn" data-action="prev">上一天</button><button class="btn" data-action="next">下一天</button></div></div>
+      <div class="lesson-head card"><button class="btn btn-ghost" data-action="english">← 返回英語儲備庫</button><div><span id="lessonTheme" class="kicker"></span><h1 id="lessonTitle">Day 1</h1><p id="lessonSubtitle"></p></div><div class="lesson-nav"><button class="btn" data-action="prev">上一個</button><button class="btn" data-action="next">下一個</button></div></div>
       <div class="stepper" id="stepper" aria-label="學習步驟"></div><section id="learnPanel" class="lesson-panel card"></section><section id="spellPanel" class="lesson-panel card" hidden></section><section id="quizPanel" class="lesson-panel card" hidden></section><section id="resultPanel" class="lesson-panel card" hidden></section>
     </section>
     <div data-affiliate-carousel data-storefront-url="https://collshp.com/sberrychang?view=storefront" data-theme="learning-center" data-limit="12"></div>
   </main>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./vocabulary.js"></script><script src="./course-catalog.js?v=17"></script><script src="./app.js?v=17"></script><script src="./affiliate-carousel.config.js"></script><script src="./affiliate-carousel-v2.js"></script>
+  <script src="./vocabulary.js?v=19"></script><script src="./english-plan.js?v=19"></script><script src="./course-catalog.js?v=19"></script><script src="./app.js?v=19"></script><script src="./affiliate-carousel.config.js"></script><script src="./affiliate-carousel-v2.js"></script>
 </body></html>
 
