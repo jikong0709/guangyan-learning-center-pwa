@@ -34,4 +34,4 @@ body{background:radial-gradient(circle at 8% 0,#f7e3e4 0,transparent 32%),radial
 @media(min-width:980px){.affiliate-track{grid-auto-columns:calc((100% - 42px)/4)}}
 @media(max-width:720px){.affiliate-recommendation{padding:18px}.affiliate-heading{align-items:flex-start}.affiliate-heading p{font-size:.92rem}.affiliate-track{grid-auto-columns:minmax(190px,72%)}.affiliate-footer{flex-direction:column;gap:8px}.affiliate-footer a{white-space:normal}}
 @media(max-width:520px){.affiliate-recommendation{margin-top:20px;padding:16px}.affiliate-heading{gap:10px}.affiliate-heading h2{font-size:1.35rem}.affiliate-heading p{font-size:.86rem}.affiliate-control{width:38px;height:38px}.affiliate-track{grid-auto-columns:84%}.affiliate-product-body{padding:11px}}
-
+.subject-icon.chinese{background:linear-gradient(145deg,#c79a8b,#a97a75)}.subject-icon.social{background:linear-gradient(145deg,#d3b27a,#b08f58)}.subject-icon.science{background:linear-gradient(145deg,#8fb0c4,#6f8fa6)}.beta-badge{display:inline-block;vertical-align:middle;margin-left:8px;border-radius:999px;background:#f1ebf3;color:#78677f;padding:3px 9px;font-size:.72rem;font-weight:850}

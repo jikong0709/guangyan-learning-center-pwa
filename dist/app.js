@@ -48,12 +48,14 @@
     el("#juniorRoadmap").innerHTML=html;
   }
   function renderCourseVersions(){
-    var target=el("#mathVersionList"),catalog=window.MEIHAO_COURSE_CATALOG&&window.MEIHAO_COURSE_CATALOG.math;
-    if(!target||!catalog)return;
-    target.innerHTML=catalog.versions.map(function(version){
-      var ready=version.status==="ready";
-      return '<div class="version-item '+(ready?'is-ready':'is-planned')+'"><div><strong>'+esc(version.name)+'</strong><small>'+esc(version.note)+'</small></div>'+(ready?'<a class="version-action" href="'+esc(version.href)+'">開始學習</a>':'<span class="version-status">待加入教材</span>')+'</div>';
-    }).join("");
+    ["math","chinese","social","science"].forEach(function(key){
+      var target=el("#"+key+"VersionList"),catalog=window.MEIHAO_COURSE_CATALOG&&window.MEIHAO_COURSE_CATALOG[key];
+      if(!target||!catalog)return;
+      target.innerHTML=catalog.versions.map(function(version){
+        var ready=version.status==="ready";
+        return '<div class="version-item '+(ready?'is-ready':'is-planned')+'"><div><strong>'+esc(version.name)+'</strong><small>'+esc(version.note)+'</small></div>'+(ready?'<a class="version-action" href="'+esc(version.href)+'">開始學習</a>':'<span class="version-status">待加入教材</span>')+'</div>';
+      }).join("");
+    });
   }
   function setAffiliateTheme(theme){
     var root=el("[data-affiliate-carousel]");if(!root)return;root.dataset.theme=theme;
