@@ -9,20 +9,33 @@
   const Q = K.Q, qAdd = K.qAdd, qSub = K.qSub, qMul = K.qMul, qDiv = K.qDiv, qCmp = K.qCmp, qFrac = K.qFrac;
   const T = "quantity";
   const cnt = {};
-  /* 學生看得到的字串：分母不得超過 100、不得有 9 位以上數字，否則重抽（accepted 內的則直接剔除） */
+  /* 學生看得到的字串：分母不得超過 100、不得有 9 位以上數字，否則重抽（accepted 內的則直接剔除；accepted 可含精確的長小數） */
   function badStr(x) {
     x = String(x);
     let m; const re = /(\d+)\/(\d+)/g;
     while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
     return /\d{9,}|\d+\.\d{5,}/.test(x);
   }
-  function retry(g) {
+  function badAcc(x) {
+    x = String(x);
+    let m; const re = /(\d+)\/(\d+)/g;
+    while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
+    return /\d{9,}/.test(x.replace(/\.\d+/, ""));
+  }
+  /* fill／calc／word 的答案若是分數（含無限小數的情形），題幹補「（請以分數作答）」，已提到分數就不重複 */
+  function addHint(r, type) {
+    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && /\//.test(r.answer) && !/分數/.test(r.stem)) {
+      r.stem = r.stem + (/____/.test(r.stem) && /____[。]?$/.test(r.stem) ? "" : "") + "(請以分數作答)";
+    }
+    return r;
+  }
+  function retry(g, type) {
     return function (kit) {
       let last;
       for (let t = 0; t < 300; t++) {
         try {
-          const r = g(kit);
-          if (r.accepted) r.accepted = r.accepted.filter(function (x) { return !badStr(x); });
+          const r = addHint(g(kit), type);
+          if (r.accepted) r.accepted = r.accepted.filter(function (x) { return !badAcc(x); });
           const seen = [r.stem, r.explain, r.trapNote || "", String(r.answer)].concat(r.options || []);
           if (seen.some(badStr)) throw new Error("重抽");
           return r;
@@ -34,7 +47,7 @@
   function mk(type, level, tag, gen) {
     cnt[type] = (cnt[type] || 0) + 1;
     const n = cnt[type];
-    return { id: T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n, type: type, level: level, tag: tag, gen: retry(gen) };
+    return { id: T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n, type: type, level: level, tag: tag, gen: retry(gen, type) };
   }
   function S(correct, cands) {
     const w = K.distractors(correct, cands, 3);
@@ -216,8 +229,8 @@
       const names = shuffle(["小華", "小美", "小明", "小芳"]), n1 = names[0], n2 = names[1], p = pick([20, 25, 40, 60, 75, 120, 150, 12.5, 37.5, 62.5, 87.5, 112.5]);
       const right = Math.random() < 0.5;
       return { stem: "「" + n1 + "的存款是" + n2 + "的 " + p + "%」,這句話裡的基準量是" + (right ? n2 : n1) + "的存款。", answer: right,
-        explain: "「A 是 B 的 p%」中,「的」字後面的 B 是基準量,A 是比較量。這裡「" + n1 + "的存款」是比較量,「" + n2 + "的存款」是基準量。" + (right ? "敘述正確。" : "敘述把基準量說成" + n1 + ",不正確。"),
-        trapNote: "易錯:誤把題目先出現的那個量當成基準量。「是……的 p%」中,「的」後面那個量才是基準量(當作 100% 的那個)。" };
+        explain: "在「" + n1 + "的存款是" + n2 + "的 " + p + "%」中,「的」字後面的才是基準量,前面的是比較量。這裡「" + n1 + "的存款」是比較量,「" + n2 + "的存款」是基準量。" + (right ? "敘述正確。" : "敘述把基準量說成" + n1 + ",不正確。"),
+        trapNote: "易錯:誤把題目先出現的那個量當成基準量。「甲是乙的百分之幾」這類句子中,「的」後面那個量才是基準量(當作 100% 的那個)。" };
     }),
     mk("tf", 3, "trap", function () {
       const d = pick([6, 7, 8, 9, 7.5, 8.5, 6.5]), right = Math.random() < 0.5;

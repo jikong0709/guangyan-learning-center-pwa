@@ -9,6 +9,10 @@
   function post(o) {
     ["stem", "explain", "trapNote"].forEach(function (f) { if (o[f] !== undefined) o[f] = fixSq(o[f]); });
     if (o.options) o.options = o.options.map(fixSq);
+    if (typeof o.answer === "string" && o.stem && !/分數/.test(o.stem)) {
+      const hm = o.answer.match(/(\d+)\/(\d+)$/);
+      if (hm) { let dn = +hm[2]; while (dn % 2 === 0) dn /= 2; while (dn % 5 === 0) dn /= 5; if (dn !== 1) o.stem += "（請以分數作答）"; }
+    }
     const all = [o.stem, o.explain, o.trapNote, o.answer, o.options ? o.options.join(" ") : ""].join(" ");
     const re = /(\d+)\/(\d+)/g; let m;
     while ((m = re.exec(all))) { if (+m[2] > 60) throw new Error("retry"); }
@@ -148,7 +152,7 @@
       [A + " × " + C + " + " + B + " × " + C + " = (" + A + " + " + B + ") × " + C, C + " × (" + A + " − " + B + ") = " + C + " × " + A + " − " + C + " × " + B, A + " × " + C + " − " + B + " × " + C + " = (" + A + " − " + B + ") × " + C],
       [A + " × " + C + " + " + B + " × " + C + " = " + A + " × " + C + " + " + B, C + " × (" + A + " + " + B + ") = " + C + " × " + A + " + " + B, A + " ÷ (" + B + " + " + C + ") = " + A + " ÷ " + B + " + " + A + " ÷ " + C]);
     return Object.assign(c, { stem: "關於分配律與簡便計算，選出所有正確的算式。",
-      explain: "解析：乘法對加減有分配律：a × c + b × c = (a + b) × c；括號外的數要乘括號內每一項。但除法的分母部分不能這樣拆。" });
+      explain: "解析：乘法對加減有分配律，例如 " + A + " × " + C + " + " + B + " × " + C + " = (" + A + " + " + B + ") × " + C + "；括號外的數要乘括號內每一項。但除法的分母部分不能這樣拆。" });
   });
   add("multi-L4-01", "multi", 4, "trap", function (k) {
     const a = N(k, ["int", "dec"], 30, 80, [2], [2, 3]), b = N(k, ["int", "dec", "frac"], 2, 18, [2, 4], [2, 3, 1]), c0 = N(k, ["int", "dec", "frac"], 2, 14, [2, 4], [2, 3, 1]);
@@ -157,7 +161,7 @@
       [A + " ÷ (" + B + " × " + C + ") = " + A + " ÷ " + B + " ÷ " + C, A + " − (" + B + " + " + C + ") = " + A + " − " + B + " − " + C, A + " − (" + B + " − " + C + ") = " + A + " − " + B + " + " + C],
       [A + " ÷ (" + B + " × " + C + ") = " + A + " ÷ " + B + " × " + C, A + " − (" + B + " + " + C + ") = " + A + " − " + B + " + " + C, A + " − (" + B + " − " + C + ") = " + A + " − " + B + " − " + C]);
     return Object.assign(c, { stem: "拆括號時要小心符號，選出所有正確的等式。",
-      explain: "解析：括號前是「−」或「÷」時，拆括號後括號內的運算要變號：− (b + c) = − b − c；− (b − c) = − b + c；÷ (b × c) = ÷ b ÷ c。",
+      explain: "解析：括號前是「−」或「÷」時，拆括號後括號內的運算要變號，例如：− (" + B + " + " + C + ") = − " + B + " − " + C + "；− (" + B + " − " + C + ") = − " + B + " + " + C + "；÷ (" + B + " × " + C + ") = ÷ " + B + " ÷ " + C + "。",
       trapNote: "括號前面是減號或除號，拆括號後裡面的「+/−」「×/÷」都要「變號」，直接照抄是最常見的錯誤。" });
   });
   add("multi-L4-02", "multi", 4, "extend", function (k) {

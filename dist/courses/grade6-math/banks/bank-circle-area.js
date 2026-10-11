@@ -9,6 +9,10 @@
   function post(o) {
     ["stem", "explain", "trapNote"].forEach(function (f) { if (o[f] !== undefined) o[f] = fixSq(o[f]); });
     if (o.options) o.options = o.options.map(fixSq);
+    if (typeof o.answer === "string" && o.stem && !/分數/.test(o.stem)) {
+      const hm = o.answer.match(/(\d+)\/(\d+)$/);
+      if (hm) { let dn = +hm[2]; while (dn % 2 === 0) dn /= 2; while (dn % 5 === 0) dn /= 5; if (dn !== 1) o.stem += "（請以分數作答）"; }
+    }
     const all = [o.stem, o.explain, o.trapNote, o.answer, o.options ? o.options.join(" ") : ""].join(" ");
     const re = /(\d+)\/(\d+)/g; let m;
     while ((m = re.exec(all))) { if (+m[2] > 60) throw new Error("retry"); }
@@ -181,7 +185,7 @@
     const t = qm(P, qs(qm(Rr, Rr), qm(r.q, r.q))), f = qm(P, qm(diff, diff)); need(t, f);
     return { stem: "外圓半徑 " + auto(Rr, r.fl) + " 公分、內圓半徑 " + sv(r) + " 公分的圓環，面積是 " + D(ok ? t : f) + " 平方公分。（圓周率取 3.14）", answer: ok,
       explain: "解析：圓環面積 = 3.14 × (" + auto(Rr, r.fl) + "² − " + sv(r) + "²) = " + D(t) + " 平方公分。",
-      trapNote: "用半徑差的平方 3.14 × " + auto(diff, r.fl) + "² = " + D(f) + " 是錯的；(R − r)² 不等於 R² − r²。" };
+      trapNote: "用半徑差的平方 3.14 × " + auto(diff, r.fl) + "² = " + D(f) + " 是錯的；(外圓半徑 − 內圓半徑)² 不等於 外圓半徑² − 內圓半徑²。" };
   });
 
   /* ---------- fill ---------- */

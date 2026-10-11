@@ -8,20 +8,33 @@
   const Q = K.Q, qAdd = K.qAdd, qSub = K.qSub, qMul = K.qMul, qDiv = K.qDiv, qCmp = K.qCmp, qFrac = K.qFrac;
   const T = "ratio";
   const cnt = {};
-  /* 學生看得到的字串：分母不得超過 100、不得有 9 位以上數字，否則重抽（accepted 內的則直接剔除） */
+  /* 學生看得到的字串：分母不得超過 100、不得有 9 位以上數字，否則重抽（accepted 內的則直接剔除；accepted 可含精確的長小數） */
   function badStr(x) {
     x = String(x);
     let m; const re = /(\d+)\/(\d+)/g;
     while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
     return /\d{9,}|\d+\.\d{5,}/.test(x);
   }
-  function retry(g) {
+  function badAcc(x) {
+    x = String(x);
+    let m; const re = /(\d+)\/(\d+)/g;
+    while ((m = re.exec(x))) if (Number(m[2]) > 100) return true;
+    return /\d{9,}/.test(x.replace(/\.\d+/, ""));
+  }
+  /* fill／calc／word 的答案若是分數（含無限小數的情形），題幹補「（請以分數作答）」，已提到分數就不重複 */
+  function addHint(r, type) {
+    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && /\//.test(r.answer) && !/分數/.test(r.stem)) {
+      r.stem = r.stem + (/____/.test(r.stem) && /____[。]?$/.test(r.stem) ? "" : "") + "(請以分數作答)";
+    }
+    return r;
+  }
+  function retry(g, type) {
     return function (kit) {
       let last;
       for (let t = 0; t < 300; t++) {
         try {
-          const r = g(kit);
-          if (r.accepted) r.accepted = r.accepted.filter(function (x) { return !badStr(x); });
+          const r = addHint(g(kit), type);
+          if (r.accepted) r.accepted = r.accepted.filter(function (x) { return !badAcc(x); });
           const seen = [r.stem, r.explain, r.trapNote || "", String(r.answer)].concat(r.options || []);
           if (seen.some(badStr)) throw new Error("重抽");
           return r;
@@ -33,7 +46,7 @@
   function mk(type, level, tag, gen) {
     cnt[type] = (cnt[type] || 0) + 1;
     const n = cnt[type];
-    return { id: T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n, type: type, level: level, tag: tag, gen: retry(gen) };
+    return { id: T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n, type: type, level: level, tag: tag, gen: retry(gen, type) };
   }
   function S(correct, cands) {
     const w = K.distractors(correct, cands, 3);
@@ -315,8 +328,8 @@
       const p = coprime(1, 9), m = p[0], n = p[1];
       let t1, t2; do { t1 = trm(m, n, FL, FLW); t2 = trm(m, n, FL, FLW); } while (qCmp(t1.s, t2.s) === 0);
       const a = qa(t1.b, t1.fl === "int" ? "frac" : t1.fl);
-      return { stem: "解比例:" + t1.sa + ":x = " + t2.sa + ":" + t2.sb + ",求 x。", answer: a.answer, accepted: a.accepted,
-        explain: "右邊 " + tr(t2) + " 化簡是 " + m + ":" + n + "。左邊前項 " + t1.sa + " 是 " + m + " 的 " + qFrac(t1.s) + " 倍,所以 x = " + n + " × " + qFrac(t1.s) + " = " + shT(t1.b, t1.fl) + "。\n(也可用外項乘積 = 內項乘積檢查。)" };
+      return { stem: "解比例:" + t1.sa + ":□ = " + t2.sa + ":" + t2.sb + ",求 □。", answer: a.answer, accepted: a.accepted,
+        explain: "右邊 " + tr(t2) + " 化簡是 " + m + ":" + n + "。左邊前項 " + t1.sa + " 是 " + m + " 的 " + qFrac(t1.s) + " 倍,所以 □ = " + n + " × " + qFrac(t1.s) + " = " + shT(t1.b, t1.fl) + "。\n(也可用外項乘積 = 內項乘積檢查。)" };
     }),
     mk("calc", 4, "trap", function () {
       const p = coprime(1, 8); let a = p[0], b = p[1]; if (a > b) { const t = a; a = b; b = t; }
@@ -379,7 +392,7 @@
       if (!decOK(kq) || !decOK(ans)) throw new Error("重抽");
       const x = qa(ans, "dec");
       return { stem: "甲、乙兩人錢數的比是 " + a + ":" + b + ",兩人各花掉 " + dsh(kq) + " 元之後,錢數的比變成 " + c + ":" + d + "。甲原來有多少元?", answer: x.answer, accepted: x.accepted, units: ["元"],
-        explain: "設 1 份是 u 元,甲原有 " + a + "u、乙原有 " + b + "u。花掉 " + dsh(kq) + " 元後:(" + a + "u - " + dsh(kq) + "):(" + b + "u - " + dsh(kq) + ") = " + c + ":" + d + "。\n交叉相乘 " + d + "(" + a + "u - " + dsh(kq) + ") = " + c + "(" + b + "u - " + dsh(kq) + "),解得 u = " + vm(u, s) + "。\n甲原有 " + a + " × " + vm(u, s) + " = " + dsh(ans) + " 元。" };
+        explain: "設 1 份是 □ 元,甲原有 " + a + " × □、乙原有 " + b + " × □。花掉 " + dsh(kq) + " 元後:(" + a + " × □ - " + dsh(kq) + "):(" + b + " × □ - " + dsh(kq) + ") = " + c + ":" + d + "。\n交叉相乘 " + d + " × (" + a + " × □ - " + dsh(kq) + ") = " + c + " × (" + b + " × □ - " + dsh(kq) + "),解得 □ = " + vm(u, s) + "。\n甲原有 " + a + " × " + vm(u, s) + " = " + dsh(ans) + " 元。" };
     })
   ];
 

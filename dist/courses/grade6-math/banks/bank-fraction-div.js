@@ -10,20 +10,33 @@
   const T = "fraction-div";
   const cnt = {};
   /* 偶發的選項撞名（干擾項與正解相同）時自動重抽，最多 30 次 */
-  /* 學生看得到的字串：分母不得超過 60、不得有 9 位以上數字，否則重抽（accepted 內的則直接剔除） */
+  /* 學生看得到的字串：分母不得超過 60、不得有 9 位以上數字，否則重抽（accepted 內的則直接剔除；accepted 可含精確的長小數） */
   function badStr(x) {
     x = String(x);
     let m; const re = /(\d+)\/(\d+)/g;
     while ((m = re.exec(x))) if (Number(m[2]) > 60) return true;
     return /\d{9,}|\d+\.\d{5,}/.test(x);
   }
-  function retry(g) {
+  function badAcc(x) {
+    x = String(x);
+    let m; const re = /(\d+)\/(\d+)/g;
+    while ((m = re.exec(x))) if (Number(m[2]) > 60) return true;
+    return /\d{9,}/.test(x.replace(/\.\d+/, ""));
+  }
+  /* fill／calc／word 的答案若是分數（含無限小數的情形），題幹補「（請以分數作答）」，已提到分數就不重複 */
+  function addHint(r, type) {
+    if ((type === "fill" || type === "calc" || type === "word") && typeof r.answer === "string" && /\//.test(r.answer) && !/分數/.test(r.stem)) {
+      r.stem = r.stem + (/____/.test(r.stem) && /____[。]?$/.test(r.stem) ? "" : "") + "(請以分數作答)";
+    }
+    return r;
+  }
+  function retry(g, type) {
     return function (kit) {
       let last;
       for (let t = 0; t < 300; t++) {
         try {
-          const r = g(kit);
-          if (r.accepted) r.accepted = r.accepted.filter(function (x) { return !badStr(x); });
+          const r = addHint(g(kit), type);
+          if (r.accepted) r.accepted = r.accepted.filter(function (x) { return !badAcc(x); });
           const seen = [r.stem, r.explain, r.trapNote || "", String(r.answer)].concat(r.options || []);
           if (seen.some(badStr)) throw new Error("重抽");
           return r;
@@ -35,7 +48,7 @@
   function mk(type, level, tag, gen) {
     cnt[type] = (cnt[type] || 0) + 1;
     const n = cnt[type];
-    return { id: T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n, type: type, level: level, tag: tag, gen: retry(gen) };
+    return { id: T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n, type: type, level: level, tag: tag, gen: retry(gen, type) };
   }
   function S(correct, cands) {
     const w = K.distractors(correct, cands, 3);
@@ -205,8 +218,8 @@
       ];
       const goods = shuffle(trues).slice(0, int(2, 3)), bads = shuffle(falses).slice(0, 2);
       return M("下列敘述,哪些是正確的?選出所有正確的。", goods, bads,
-        "除以大於 1 的數商變小;除以小於 1 的數(真分數、小於 1 的小數)商變大。除以一個數等於乘以它的倒數;除以整數 k,是把原數平分成 k 份。\n正確的敘述是:" + goods.join(";") + "。",
-        "常見錯誤:認為除法的商一定比被除數小(除以小於 1 的數時商變大);整數除以分數時忘了翻倒數;把「÷ k」做成「× k」。");
+        "除以大於 1 的數商變小;除以小於 1 的數(真分數、小於 1 的小數)商變大。除以一個數等於乘以它的倒數;除以整數(例如 ÷ 3),是把原數平分成 3 份。\n正確的敘述是:" + goods.join(";") + "。",
+        "常見錯誤:認為除法的商一定比被除數小(除以小於 1 的數時商變大);整數除以分數時忘了翻倒數;把「÷ 3」做成「× 3」。");
     }),
     mk("multi", 4, "trap", function () {
       const fN = K.flavor(["int", "dec", "frac", "mixed"]);
@@ -274,7 +287,7 @@
         { s: sA + " ÷ " + qFrac(Q(1, k)) + " = " + sA + " ÷ " + k, a: false, w: "除以 1/" + k + " 等於乘以 " + k + ",不是除以 " + k + "。" }
       ];
       const x = pick(pool);
-      return { stem: x.s + "。", answer: x.a, explain: x.w, trapNote: "易錯:除以 k 是乘以 1/k;除以分數(或小數)要乘以它的倒數;除以 1/k 等於乘以 k。小數先化成分數再翻倒數。" };
+      return { stem: x.s + "。", answer: x.a, explain: x.w, trapNote: "易錯:除以 " + k + " 是乘以 1/" + k + ";除以分數(或小數)要乘以它的倒數;除以 1/" + k + " 等於乘以 " + k + "。小數先化成分數再翻倒數。" };
     }),
     mk("tf", 4, "basic", function () {
       const right = Math.random() < 0.5, p = pair(F3, F3);

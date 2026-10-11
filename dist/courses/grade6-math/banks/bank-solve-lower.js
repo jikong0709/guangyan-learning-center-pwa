@@ -386,7 +386,7 @@
       if (qv(F) < 28 || qv(F) > 52 || ![F, c, add(F, t), add(c, t)].every(x => nice(x, fl))) return null;
       const f = x => sh(x, fl);
       return Object.assign({ stem: `今年爸爸的年齡是兒子的 ${set[0]} 倍，${f(t)} 年後爸爸的年齡變成兒子的 ${set[1]} 倍。爸爸今年幾歲？`, units: ["歲"],
-        explain: `解析：設兒子今年 c 歲，爸爸 ${set[0]}c 歲；${f(t)} 年後 ${set[0]}c＋${f(t)}＝${set[1]}(c＋${f(t)})，整理得 ${set[0] - set[1]}c＝${set[1] - 1}×${f(t)}，c＝${f(c)}，爸爸＝${set[0]}×${f(c)}＝${f(F)}（歲）。（檢驗：${f(t)} 年後爸爸 ${f(add(F, t))}、兒子 ${f(add(c, t))}，${f(add(F, t))}÷${f(add(c, t))}＝${set[1]} 倍。）` }, ans(F, fl));
+        explain: `解析：設兒子今年 □ 歲，爸爸就是 ${set[0]} 個 □ 歲；${f(t)} 年後：${set[0]} 個 □＋${f(t)}＝${set[1]}×(□＋${f(t)})，整理得 ${set[0] - set[1]} 個 □＝${set[1] - 1}×${f(t)}，□＝${f(c)}，爸爸＝${set[0]}×${f(c)}＝${f(F)}（歲）。（檢驗：${f(t)} 年後爸爸 ${f(add(F, t))}、兒子 ${f(add(c, t))}，${f(add(F, t))}÷${f(add(c, t))}＝${set[1]} 倍。）` }, ans(F, fl));
     }))
   ]);
 })();

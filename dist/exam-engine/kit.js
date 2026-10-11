@@ -54,6 +54,8 @@
     const w = kit.int(Math.max(1, Math.ceil(lo)), Math.max(1, Math.floor(hi))); do { n = kit.int(1, d - 1); } while (kit.gcd(n, d) !== 1 && d > 2); return Q(w * d + n, d);
   };
   /* 把有理數答案包成 {answer, accepted}：flavor 決定標準答案的樣式，其餘等價寫法放 accepted（小數／假分數／帶分數） */
-  kit.qAnswer = (a, flavor) => { const forms = [kit.qFrac(a), kit.qMixed(a)]; const dec = kit.qDec(a); if (dec !== null) forms.push(dec); const main = kit.qShow(a, flavor); return { answer: main, accepted: Array.from(new Set(forms)).filter(x => x !== main) }; };
+  /* 精確有限小數（最多 8 位，可超過 qDec 的 4 位上限）；不是有限小數或位數太多回 null。只給 accepted 用，不拿來顯示 */
+  kit.qDecExact = a => { if (!kit.qIsTerminating(a)) return null; const v = a.n * 1e8 / a.d; if (!Number.isInteger(v)) return null; let str = String(Math.abs(v)).padStart(9, "0"); str = str.slice(0, -8) + "." + str.slice(-8); str = str.replace(/0+$/, "").replace(/[.]$/, ""); return (a.n < 0 ? "-" : "") + str; };
+  kit.qAnswer = (a, flavor) => { const forms = [kit.qFrac(a), kit.qMixed(a)]; const dec = kit.qDecExact(a); if (dec !== null) forms.push(dec); const main = kit.qShow(a, flavor); return { answer: main, accepted: Array.from(new Set(forms)).filter(x => x !== main) }; };
   global.ExamKit = kit;
 })(window);

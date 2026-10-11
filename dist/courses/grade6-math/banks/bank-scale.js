@@ -9,6 +9,10 @@
   function post(o) {
     ["stem", "explain", "trapNote"].forEach(function (f) { if (o[f] !== undefined) o[f] = fixSq(o[f]); });
     if (o.options) o.options = o.options.map(fixSq);
+    if (typeof o.answer === "string" && o.stem && !/分數/.test(o.stem)) {
+      const hm = o.answer.match(/(\d+)\/(\d+)$/);
+      if (hm) { let dn = +hm[2]; while (dn % 2 === 0) dn /= 2; while (dn % 5 === 0) dn /= 5; if (dn !== 1) o.stem += "（請以分數作答）"; }
+    }
     const all = [o.stem, o.explain, o.trapNote, o.answer, o.options ? o.options.join(" ") : ""].join(" ");
     const re = /(\d+)\/(\d+)/g; let m;
     while ((m = re.exec(all))) { if (+m[2] > 60) throw new Error("retry"); }
