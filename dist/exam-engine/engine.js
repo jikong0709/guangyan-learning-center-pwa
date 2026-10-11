@@ -101,7 +101,9 @@
       for (const c of cands) {
         const p = prep(c, item.units);
         if (!p) continue;
-        if (u === p || uc === p.replace(/ /g, "")) return true;
+        /* 空白剝除比對只給乘積寫法（2 × 3）；帶分數 "1 1/2" 與 "11/2" 數值不同，不可剝空白 */
+        const mixedLike = s => /\d\s+\d+\/\d+/.test(s);
+        if (u === p || (!mixedLike(u) && !mixedLike(p) && uc === p.replace(/ /g, ""))) return true;
         if (un !== null && typeof config.numberParser === "function") {
           const pn = config.numberParser(p);
           if (pn !== null && isFinite(un) && isFinite(pn) && Math.abs(un - pn) <= 1e-9 * Math.max(1, Math.abs(pn))) return true;

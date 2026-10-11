@@ -57,14 +57,14 @@
       return r;
     }),
     mk("single", 2, "basic", function () {
-      const g = int(2, 12), p = coprime(2, 9), m = p[0], n = p[1], a = g * m, b = g * n;
+      const g = (Math.random() < 0.5 ? int(2, 12) : int(12 + 1, 12 * 3)), p = coprime(2, 9), m = p[0], n = p[1], a = g * m, b = g * n;
       const r = S(String(g), [lcm(a, b), Math.abs(a - b) === g ? g + 1 : Math.abs(a - b), g * 2, g + 1, Math.min(a, b), m * n, g + 2].map(String));
       r.stem = a + " 和 " + b + " 的最大公因數是多少?";
       r.explain = a + " = " + g + "×" + m + ",\n" + b + " = " + g + "×" + n + ",\n" + m + " 和 " + n + " 互質,所以最大公因數 = " + g + "。";
       return r;
     }),
     mk("single", 3, "trap", function () {
-      const g = int(2, 9), p = coprime(2, 7), m = p[0], n = p[1], a = g * m, b = g * n, L = g * m * n;
+      const g = (Math.random() < 0.5 ? int(2, 9) : int(9 + 1, 9 * 3)), p = coprime(2, 7), m = p[0], n = p[1], a = g * m, b = g * n, L = g * m * n;
       const r = S(String(L), [a * b, g, m * n, a + b, L + g, a * n].map(String));
       r.stem = a + " 和 " + b + " 的最小公倍數是多少?";
       r.explain = a + " = " + g + "×" + m + ",\n" + b + " = " + g + "×" + n + "。\n最小公倍數 = " + g + "×" + m + "×" + n + " = " + L + "。";
@@ -195,7 +195,7 @@
         trapNote: "易錯:以為最小公倍數一定等於兩數相乘。只有兩數互質(最大公因數是 1)時才成立,有公因數時要再除掉公因數。" };
     }),
     mk("tf", 4, "basic", function () {
-      const g = int(2, 9), p = coprime(2, 7), a = g * p[0], b = g * p[1];
+      const g = (Math.random() < 0.5 ? int(2, 9) : int(9 + 1, 9 * 3)), p = coprime(2, 7), a = g * p[0], b = g * p[1];
       const right = Math.random() < 0.5;
       const x = right ? g : pick([lcm(a, b), g + 1, Math.min(a, b), g * 2].filter(function (v) { return v !== g; }));
       return { stem: a + " 和 " + b + " 的最大公因數是 " + x + "。", answer: right,
@@ -216,7 +216,7 @@
       return { stem: "比 " + a + " 大的最小質數是 ____。", answer: String(p), explain: "從 " + (a + 1) + " 往上逐一檢查:" + (a + 1) + " 到 " + (p - 1) + " 都有質數以外的因數,第一個只有 1 和自己兩個因數的是 " + p + "。" };
     }),
     mk("fill", 2, "basic", function () {
-      const g = int(2, 9), p = coprime(2, 8), a = g * p[0], b = g * p[1], L = g * p[0] * p[1];
+      const g = (Math.random() < 0.5 ? int(2, 9) : int(9 + 1, 9 * 3)), p = coprime(2, 8), a = g * p[0], b = g * p[1], L = g * p[0] * p[1];
       return { stem: a + " 和 " + b + " 的最小公倍數是 ____。", answer: String(L), explain: a + " = " + g + "×" + p[0] + ",\n" + b + " = " + g + "×" + p[1] + "。\n最小公倍數 = " + g + "×" + p[0] + "×" + p[1] + " = " + L + "。" };
     }),
     mk("fill", 3, "basic", function () {
@@ -243,15 +243,15 @@
 
   const calc = [
     mk("calc", 1, "basic", function () {
-      const g = int(2, 12), p = coprime(2, 9), a = g * p[0], b = g * p[1];
+      const g = (Math.random() < 0.5 ? int(2, 12) : int(12 + 1, 12 * 3)), p = coprime(2, 9), a = g * p[0], b = g * p[1];
       return { stem: "求 " + a + " 和 " + b + " 的最大公因數。", answer: String(g), explain: "短除法:" + a + " 和 " + b + " 同除以 " + g + ",得 " + p[0] + " 和 " + p[1] + ",已互質。最大公因數 = " + g + "。" };
     }),
     mk("calc", 2, "basic", function () {
-      const g = int(2, 8), p = coprime(2, 9), a = g * p[0], b = g * p[1], L = g * p[0] * p[1];
+      const g = (Math.random() < 0.5 ? int(2, 8) : int(8 + 1, 8 * 3)), p = coprime(2, 9), a = g * p[0], b = g * p[1], L = g * p[0] * p[1];
       return { stem: "求 " + a + " 和 " + b + " 的最小公倍數。", answer: String(L), explain: "短除法:同除以 " + g + ",商 " + p[0] + " 和 " + p[1] + " 互質。最小公倍數 = " + g + "×" + p[0] + "×" + p[1] + " = " + L + "。" };
     }),
     mk("calc", 3, "basic", function () {
-      const g = int(6, 24), p = coprime(3, 9), a = g * p[0], b = g * p[1];
+      const g = (Math.random() < 0.5 ? int(6, 24) : int(24 + 1, 24 * 3)), p = coprime(3, 9), a = g * p[0], b = g * p[1];
       const G = gcd(a, b);
       return { stem: "利用短除法或質因數分解,求 " + a + " 和 " + b + " 的最大公因數。", answer: String(G),
         explain: a + " = " + factorize(a).join("×") + ",\n" + b + " = " + factorize(b).join("×") + "。\n共同的質因數相乘,最大公因數 = " + G + "。" };
@@ -289,7 +289,7 @@
         explain: "人數要同時能整除 " + a + " 和 " + b + ",要最多就是最大公因數。\n" + a + " 和 " + b + " 的最大公因數 = " + G + "。\n答:" + G + " 位。" };
     }),
     mk("word", 4, "trap", function () {
-      const g = int(3, 12), p = coprime(2, 5), a = g * p[0], b = g * p[1], n = p[0] * p[1];
+      const g = (Math.random() < 0.5 ? int(3, 12) : int(12 + 1, 12 * 3)), p = coprime(2, 5), a = g * p[0], b = g * p[1], n = p[0] * p[1];
       return { stem: "一塊長 " + a + " 公分、寬 " + b + " 公分的長方形紙板,要剪成大小相同的正方形,而且正方形的邊長要盡量長、紙板不能有剩。可以剪出幾個正方形?", answer: String(n), units: ["個", "張", "塊"],
         explain: "正方形邊長最大 = " + a + " 和 " + b + " 的最大公因數 = " + g + " 公分。\n長邊可剪 " + a + "÷" + g + " = " + p[0] + " 個,寬邊可剪 " + b + "÷" + g + " = " + p[1] + " 個。\n共 " + p[0] + "×" + p[1] + " = " + n + " 個。",
         trapNote: "常見錯誤:算出最大公因數 " + g + " 就當成答案。" + g + " 是正方形的邊長(公分),題目問的是「個數」,還要用長寬各自除以邊長再相乘。" };
