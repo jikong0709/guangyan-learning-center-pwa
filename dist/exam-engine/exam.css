@@ -69,6 +69,10 @@ body.ex-body {
 .ex-headbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .ex-progress { font-weight: 800; color: var(--ex-brand-dark); margin-right: auto; }
 .ex-section { display: grid; gap: 12px; }
+.ex-bigsec { margin-top: 18px; padding-top: 14px; border-top: 3px double var(--ex-brand); }
+.ex-work { width: 100%; min-height: 56px; padding: 8px 12px; border: 2px dashed var(--line); border-radius: 12px; font: inherit; background: #fffdfb; color: var(--ink); resize: vertical; }
+.ex-yourwork { white-space: pre-wrap; background: #f6f0f8; border-radius: 10px; padding: 6px 10px; }
+.ex-printlines { display: none; }
 .ex-sec-title { margin: 8px 0 0; font-size: 1.15rem; color: var(--ex-brand-dark); border-left: 5px solid var(--ex-brand); padding-left: 10px; }
 .ex-sec-hint { margin: -6px 0 0; color: var(--muted); font-size: .85rem; }
 .ex-q, .ex-review { background: rgba(255, 255, 255, .97); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; min-width: 0; }
@@ -136,7 +140,10 @@ body.ex-body {
   .ex-opt, .ex-tf { border-color: #999; }
   .ex-opt input, .ex-tf { -webkit-print-color-adjust: exact; }
   .ex-input { display: none; }
-  .ex-label { display: none; }
+  .ex-label, .ex-work { display: none; }
+  .ex-printlines { display: block; height: 90px; border-bottom: 1px solid #333; background: repeating-linear-gradient(transparent 0, transparent 29px, #999 29px, #999 30px); margin-top: 6px; }
+  .ex-bigsec { break-before: auto; border-top: 3px double #333; }
+  .ex-sec-title, .ex-sec-hint { break-after: avoid; }
   .ex-printline { display: block; border-bottom: 1px solid #333; height: 28px; margin-top: 6px; }
   .ex-feedback { display: none !important; }
   .ex-printkey { display: block; break-before: page; page-break-before: always; }

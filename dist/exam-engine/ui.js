@@ -24,7 +24,7 @@
     const storeKey = cfg.storagePrefix + verKey;
     const typeByKey = {}; cfg.types.forEach(t => { typeByKey[t.key] = t; });
     const LETTERS = "ABCDE";
-    const state = { view: "setup", sel: null, exam: null, resp: {}, checked: {}, submitted: false, warned: false };
+    const state = { view: "setup", sel: null, exam: null, resp: {}, work: {}, checked: {}, submitted: false, warned: false };
 
     /* ----- 儲存（失敗不可壞掉） ----- */
     function loadSel() {
@@ -197,7 +197,7 @@
         const m = document.querySelector(".ex-msg"); if (m) m.textContent = "出題失敗：" + (e && e.message ? e.message : e);
         return;
       }
-      state.resp = {}; state.checked = {}; state.submitted = false; state.warned = false;
+      state.resp = {}; state.work = {}; state.checked = {}; state.submitted = false; state.warned = false;
       renderExam();
     }
     function redo() {
@@ -234,12 +234,9 @@
       } else {
         const nums = "一二三四五六";
         ex.sections.forEach((s, si) => {
-          const per = s.items.map(i => i.points);
-          const same = per.every(p => p === per[0]);
-          const ptxt = same ? "每題 " + per[0] + " 分" : "每題 " + per.join("／") + " 分";
-          body.push(h("section", { class: "ex-section" }, [
-            h("h2", { class: "ex-sec-title", text: nums[si] + "、" + s.name + "（共 " + s.count + " 題，" + ptxt + "，共 " + s.points + " 分）" }),
-            h("p", { class: "ex-sec-hint", text: typeByKey[s.type].hint })
+          body.push(h("section", { class: "ex-section ex-bigsec", "data-type": s.type }, [
+            h("h2", { class: "ex-sec-title", text: nums[si] + "、" + s.name + "（每題 " + s.each + " 分，共 " + s.points + " 分）" }),
+            h("p", { class: "ex-sec-hint", text: s.intro + "（共 " + s.count + " 題）" })
           ].concat(s.items.map(it => itemCard(it, practice, upd)))));
         });
       }
@@ -323,6 +320,14 @@
         area.appendChild(input);
         area.appendChild(h("span", { class: "ex-printline", "aria-hidden": "true" }));
       }
+      if (typeByKey[it.type].showWork && !practice) {
+        const wid = id + "-work";
+        const work = h("textarea", { class: "ex-work", id: wid, rows: "2", placeholder: "列式（選填，不計分）", autocomplete: "off", spellcheck: "false" });
+        work.addEventListener("input", () => { state.work[it.no] = work.value; });
+        area.insertBefore(h("label", { class: "ex-label", for: wid }, ["第 " + it.no + " 題列式（選填，不計分）"]), area.firstChild);
+        area.insertBefore(work, area.children[1]);
+        area.appendChild(h("span", { class: "ex-printlines", "aria-hidden": "true" }));
+      }
       card.appendChild(area);
 
       if (practice) {
@@ -392,10 +397,16 @@
           h("p", { class: "ex-stem", text: it.stem }),
           h("p", {}, [h("b", { text: "你的答案：" }), engine.describeResponse(it, resp)]),
           h("p", {}, [h("b", { text: "正確答案：" }), engine.describeAnswer(it)]),
-          h("p", { class: "ex-explain", text: it.explain }),
+          state.work[it.no] && state.work[it.no].trim() ? h("p", { class: "ex-yourwork", text: "你的列式：" + state.work[it.no].trim() }) : null,
+          h("p", { class: "ex-explain", text: "標準解析：" + it.explain }),
           it.tag === "trap" && it.trapNote ? h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }) : null
         ]);
       });
+      const secRows = (sum.bySection || []).map((sc, i) => h("li", { class: "ex-stat ex-secscore" }, [
+        h("span", { class: "ex-stat-label", text: "一二三四五六"[i] + "、" + sc.name }),
+        h("span", { class: "ex-stat-bar", "aria-hidden": "true" }, [h("i", { style: "width:" + (sc.max ? Math.round(sc.earned * 100 / sc.max) : 0) + "%" })]),
+        h("span", { class: "ex-stat-num", text: sc.earned + "／" + sc.max + "（答對 " + sc.right + "／" + sc.total + " 題）" })
+      ]));
 
       const node = h("div", { class: "ex-view ex-resultview" }, [
         h("section", { class: "ex-card ex-scorecard" }, [
@@ -409,6 +420,7 @@
             h("button", { type: "button", class: "ex-btn", onclick: () => window.print(), text: "🖨️ 列印／存成 PDF" })
           ])
         ]),
+        secRows.length ? h("section", { class: "ex-card", id: "ex-secscores" }, [h("h2", { text: "各大題得分（總分 " + sum.score + "／" + sum.total + "）" }), h("ul", { class: "ex-stats" }, secRows)]) : null,
         h("section", { class: "ex-card" }, [h("h2", { text: "依標籤統計" }), h("ul", { class: "ex-stats" }, tagRows)]),
         h("section", { class: "ex-card" }, [h("h2", { text: "依單元統計" }), h("ul", { class: "ex-stats" }, unitRows)]),
         h("section", { class: "ex-card" }, [

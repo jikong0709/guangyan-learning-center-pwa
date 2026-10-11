@@ -82,14 +82,15 @@
     }
   };
 
-  /* 題型：count/weight 即規格第 7 節「一百分卷」預設題數與小計 */
+  /* 題型（依段考卷大題順序）：stdCount/stdPts＝標準段考版型；minCount~maxCount、minPts~maxPts＝只勾部分題型時的硬限制範圍；
+     stdWith：與指定題型同時勾選時的標準（複選從單選借分）；showWork：題目下方提供選填「列式」欄。 */
   const types = [
-    { key: "single", name: "單選題", short: "單選", kind: "single", count: 8, weight: 24, hint: "請選出一個正確的答案。" },
-    { key: "multi", name: "複選題", short: "複選", kind: "multi", count: 3, weight: 15, hint: "選出所有正確的答案，全部答對才給分。" },
-    { key: "tf", name: "是非題", short: "是非", kind: "tf", count: 5, weight: 10, hint: "判斷敘述對或錯。" },
-    { key: "fill", name: "填空題", short: "填空", kind: "text", count: 6, weight: 18, hint: "請填入答案（分數可寫 3/4，帶分數可寫 1 1/2）。" },
-    { key: "calc", name: "算式題", short: "算式", kind: "text", count: 4, weight: 16, hint: "請算出最後答案（分數可寫 3/4）。" },
-    { key: "word", name: "應用題", short: "應用", kind: "text", count: 3, weight: 17, hint: "請寫出答案和單位。" }
+    { key: "tf", name: "是非題", short: "是非", kind: "tf", stdCount: 5, stdPts: 2, minCount: 2, maxCount: 20, minPts: 1, maxPts: 4, hint: "對的打 ○，錯的打 ✕。" },
+    { key: "single", name: "單選題", short: "單選", kind: "single", stdCount: 10, stdPts: 2, minCount: 2, maxCount: 25, minPts: 2, maxPts: 4, stdWith: { multi: { count: 7, pts: 2 } }, hint: "請選出一個正確的答案。" },
+    { key: "multi", name: "複選題（全對才給分）", short: "複選", kind: "multi", stdCount: 2, stdPts: 3, minCount: 2, maxCount: 8, minPts: 3, maxPts: 6, hint: "選出所有正確的答案，全部答對才給分，不倒扣。" },
+    { key: "fill", name: "填充題", short: "填充", kind: "text", stdCount: 12, stdPts: 2, minCount: 2, maxCount: 25, minPts: 2, maxPts: 5, hint: "請在 □ 或 （　） 內填入正確答案（分數可寫 3/4，帶分數可寫 1 1/2）。" },
+    { key: "calc", name: "計算題", short: "計算", kind: "text", stdCount: 3, stdPts: 6, minCount: 2, maxCount: 10, minPts: 4, maxPts: 10, showWork: true, hint: "請列出算式並計算出答案（只批改最後答案；列式欄選填、不計分）。" },
+    { key: "word", name: "應用題", short: "應用", kind: "text", stdCount: 4, stdPts: 7, minCount: 2, maxCount: 10, minPts: 5, maxPts: 12, showWork: true, hint: "請寫出算式與答案（答案請含單位；列式欄選填、不計分）。" }
   ];
 
   /* 數值解析：3/4、.75、0.75、1 1/2、1又1/2、25%（輸入已經過全形轉半形與空白整理） */

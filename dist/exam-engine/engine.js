@@ -267,7 +267,42 @@
       });
       return items;
     }
-    function assemble(selection, mode, ctx, pools) {
+    /* ----- 計分卷版型規劃：整數題數 × 整數每題配分，總分剛好 total，偏差最小（範圍為硬限制，無解才逐級放寬） ----- */
+    function stdFor(k, keys) {
+      const t = typeByKey[k]; let c = t.stdCount || t.count || 4, p = t.stdPts || 2;
+      if (t.stdWith) Object.keys(t.stdWith).forEach(o => { if (keys.indexOf(o) >= 0) { c = t.stdWith[o].count; p = t.stdWith[o].pts; } });
+      return { count: c, pts: p };
+    }
+    function planScore(keys, fixed) {
+      const total = scoreCfg.total;
+      const stds = keys.map(k => stdFor(k, keys));
+      const wsum = stds.reduce((a, s) => a + s.count * s.pts, 0);
+      for (let relax = 0; relax <= 6; relax++) {
+        const INF = 1e15; let dp = new Array(total + 1).fill(INF); dp[0] = 0; const back = [];
+        keys.forEach((k, i) => {
+          const t = typeByKey[k];
+          const T = total * (stds[i].count * stds[i].pts) / wsum;
+          const cmin = fixed ? fixed[k] : (t.minCount || scoreCfg.minPerType), cmax = fixed ? fixed[k] : (t.maxCount || 25) * (1 + relax);
+          const pmin = t.minPts || 1, pmax = (t.maxPts || 12) * (1 + relax);
+          const nd = new Array(total + 1).fill(INF); const bk = new Array(total + 1).fill(null);
+          for (let n = cmin; n <= cmax; n++) for (let p = pmin; p <= pmax; p++) {
+            const pts = n * p; if (pts > total) continue;
+            const cost = (pts - T) * (pts - T) + 25 * (p - stds[i].pts) * (p - stds[i].pts) + (n - stds[i].count) * (n - stds[i].count) * 0.01;
+            for (let s = 0; s + pts <= total; s++) if (dp[s] < INF && dp[s] + cost < nd[s + pts]) { nd[s + pts] = dp[s] + cost; bk[s + pts] = { n, p, from: s }; }
+          }
+          dp = nd; back.push(bk);
+        });
+        if (dp[total] < INF) {
+          const plan = {}; let s = total;
+          for (let i = keys.length - 1; i >= 0; i--) { const b = back[i][s]; plan[keys[i]] = { n: b.n, p: b.p }; s = b.from; }
+          Object.defineProperty(plan, "relaxed", { value: relax, enumerable: false });
+          return plan;
+        }
+      }
+      return null;
+    }
+
+    function assemble(selection, mode, ctx, pools, plan) {
       const keys = types.map(t => t.key).filter(k => selection[k] && selection[k].length);
       const sections = []; let flat = [];
       if (mode === "practice") {
@@ -277,14 +312,19 @@
         flat.forEach(it => { it.points = practiceCfg.pointEach; });
         sections.push({ type: null, name: "", items: flat, count: flat.length, points: flat.length * practiceCfg.pointEach });
       } else {
-        const weights = keys.map(k => typeByKey[k].weight || 1);
+        const weights = keys.map(k => typeByKey[k].weight || (typeByKey[k].stdCount * typeByKey[k].stdPts) || 1);
         const typePts = apportion(scoreCfg.total, weights);
         keys.forEach((k, ki) => {
           const items = stableSortByLevel(realizeAll(selection[k], pools, ctx));
           const n = items.length; if (!n) return;
-          const base = Math.floor(typePts[ki] / n); let rem = typePts[ki] - base * n;
-          items.forEach(it => { it.points = base + (rem > 0 ? 1 : 0); if (rem > 0) rem--; });
-          sections.push({ type: k, name: typeByKey[k].name, items, count: n, points: typePts[ki] });
+          let secPts;
+          if (plan && plan[k]) { items.forEach(it => { it.points = plan[k].p; }); secPts = plan[k].p * n; }
+          else {
+            const base = Math.floor(typePts[ki] / n); let rem = typePts[ki] - base * n;
+            items.forEach(it => { it.points = base + (rem > 0 ? 1 : 0); if (rem > 0) rem--; });
+            secPts = typePts[ki];
+          }
+          sections.push({ type: k, name: typeByKey[k].name, intro: typeByKey[k].hint || "", items, count: n, points: secPts, each: items[0].points });
           flat = flat.concat(items);
         });
       }
@@ -303,18 +343,18 @@
       const avail = wantTypes.filter(k => pools[k].length > 0);
       if (!avail.length) throw new Error("所選條件沒有可用題目（題庫可能尚未準備）");
       if (avail.length < wantTypes.length) console.warn("ExamEngine: 這些題型沒有可用題目，已略過：" + wantTypes.filter(k => avail.indexOf(k) < 0).join(","));
-      const counts = {};
+      const counts = {}; let scorePlan = null;
       if (mode === "practice") {
         const base = Math.floor(practiceCfg.count / avail.length); let rem = practiceCfg.count - base * avail.length;
         avail.forEach(k => { counts[k] = base + (rem > 0 ? 1 : 0); if (rem > 0) rem--; });
       } else {
-        const sumAll = types.reduce((a, t) => a + (t.count || 0), 0);
-        const sumSel = avail.reduce((a, k) => a + typeByKey[k].count, 0);
-        const scale = Math.min(scoreCfg.maxScale, sumAll / sumSel);
-        avail.forEach(k => { counts[k] = Math.max(scoreCfg.minPerType, Math.round(typeByKey[k].count * scale)); });
+        scorePlan = planScore(avail, null);
+        if (!scorePlan) throw new Error("無法規劃計分卷版型");
+        avail.forEach(k => { counts[k] = scorePlan[k].n; });
       }
       const selection = selectSpecs(pools, counts, mode === "score" ? opts.mix : null, mode === "practice");
-      const exam = assemble(selection, mode, { topicUnits }, pools);
+      const exam = assemble(selection, mode, { topicUnits }, pools, scorePlan);
+      if (scorePlan) exam.relaxed = scorePlan.relaxed;
       exam.opts = { mode, units: opts.units, types: wantTypes.slice(), levelMin: lvMin, levelMax: lvMax };
       return exam;
     }
@@ -322,7 +362,9 @@
     function rebuildFromItems(exam, items) {
       const selection = {};
       items.forEach(it => { const s = bank.byId(it.specId); if (!s) return; (selection[s.type] = selection[s.type] || []).push(s); });
-      const out = assemble(selection, exam.mode, exam.ctx, null);
+      let plan = null;
+      if (exam.mode === "score") { const keys = types.map(t => t.key).filter(k => selection[k] && selection[k].length); const fixed = {}; keys.forEach(k => { fixed[k] = selection[k].length; }); plan = planScore(keys, fixed); }
+      const out = assemble(selection, exam.mode, exam.ctx, null, plan);
       out.opts = exam.opts;
       return out;
     }
@@ -379,11 +421,16 @@
           u.total++; if (g.correct) u.right++;
         });
       });
+      res.bySection = exam.sections.filter(sc => sc.type).map(sc => {
+        const set = new Set(sc.items); let earned = 0, right = 0;
+        res.details.forEach(d => { if (set.has(d.item)) { earned += d.grade.earned; if (d.grade.correct) right++; } });
+        return { type: sc.type, name: sc.name, earned, max: sc.points, right, total: sc.items.length };
+      });
       return res;
     }
 
     return {
-      config, bank, buildExam, rebuildFromItems, gradeItem, isAnswered, isCorrect, sameAnswer,
+      config, bank, buildExam, rebuildFromItems, planScore, gradeItem, isAnswered, isCorrect, sameAnswer,
       describeAnswer, describeResponse, summarize, topicsOfUnits, buildPools, realize, apportion,
       availableTypes(units) { const tp = topicsOfUnits(units); return types.map(t => t.key).filter(k => tp.topics.some(tt => bank.specsOf(tt).some(s => s.type === k))); }
     };

@@ -64,16 +64,17 @@ const ALL = cfg.types.map(t => t.key);
 function pickUnits(ver, n) { return require("crypto") && unitsOf(ver).slice().sort(() => Math.random() - 0.5).slice(0, n); }
 let okCount = true, okSum = true, okSec = true, okAsc = true, okWord = true, okUniq = true, okTE = true, okBal = true, okFields = true, okAnsw = true;
 let detail = "";
-const secExpect = { single: [8, 24], multi: [3, 15], tf: [5, 10], fill: [6, 18], calc: [4, 16], word: [3, 17] };
+const secExpect = { tf: [5, 10], single: [7, 14], multi: [2, 6], fill: [12, 24], calc: [3, 18], word: [4, 28] };
+const secEach = { tf: 2, single: 2, multi: 3, fill: 2, calc: 6, word: 7 };
 for (let r = 0; r < 60; r++) {
   const ver = ["hanlin", "kanghsuan", "nani"][r % 3];
   const units = pickUnits(ver, 2 + (r % 5));
   const ex = engine.buildExam({ mode: "score", units, types: ALL });
-  if (ex.items.length !== 29) { okCount = false; detail = "題數 " + ex.items.length; }
+  if (ex.items.length !== 33) { okCount = false; detail = "題數 " + ex.items.length; }
   if (ex.total !== 100 || ex.items.reduce((a, i) => a + i.points, 0) !== 100) okSum = false;
-  ex.sections.forEach(s => { const e = secExpect[s.type]; if (s.count !== e[0] || s.points !== e[1] || s.items.reduce((a, i) => a + i.points, 0) !== e[1]) okSec = false; });
+  ex.sections.forEach(s => { const e = secExpect[s.type]; if (s.count !== e[0] || s.each !== secEach[s.type] || s.items.some(i => i.points !== secEach[s.type]) || s.points !== e[1] || s.items.reduce((a, i) => a + i.points, 0) !== e[1]) okSec = false; });
   ex.sections.forEach(s => { for (let i = 1; i < s.items.length; i++) if (s.items[i].level < s.items[i - 1].level) okAsc = false; });
-  const w = ex.sections.find(s => s.type === "word"); if (w.items.map(i => i.points).join() !== "6,6,5") okWord = false;
+  if (ex.sections.map(s => s.type).join() !== "tf,single,multi,fill,calc,word") okWord = false;
   if (new Set(ex.items.map(i => i.specId)).size !== ex.items.length) okUniq = false;
   const trap = ex.items.filter(i => i.tag === "trap").length, ext = ex.items.filter(i => i.tag === "extend").length;
   if (trap < 2 || ext < 2 || trap > 10 || ext > 10) { okTE = false; detail = "trap=" + trap + " ext=" + ext; }
@@ -82,11 +83,11 @@ for (let r = 0; r < 60; r++) {
   ex.items.forEach((it, idx) => { if (it.no !== idx + 1 || !it.stem || !it.explain || !it.unitIds.length) okFields = false; if (it.tag === "trap" && !it.trapNote) okFields = false; });
   ex.items.forEach(it => { if (it.type === "single" && !(it.options[it.answer] && /^\d+$/.test(it.options[it.answer]) && String(Number(it.stem.match(/n=(\d+)/)[1]) * 2) === it.options[it.answer])) okAnsw = false; });
 }
-check("100分卷: 預設共 29 題 (8/3/5/6/4/3)", okCount, detail);
+check("100分卷: 六型全選=標準段考版型共 33 題 (是非5/單選7/複選2/填充12/計算3/應用4)", okCount, detail);
 check("100分卷: 總分剛好 100", okSum);
-check("100分卷: 各大題題數與配分 24/15/10/18/16/17", okSec);
+check("100分卷: 各大題題數×每題＝5×2,7×2,2×3,12×2,3×6,4×7 (10/14/6/24/18/28)", okSec);
 check("100分卷: 大題內由簡入深 (level 升冪)", okAsc);
-check("100分卷: 應用題配分 6/6/5", okWord);
+check("100分卷: 大題順序 是非→單選→複選→填充→計算→應用", okWord);
 check("100分卷: 同卷 spec 不重複", okUniq);
 check("100分卷: trap 與 extend 各 >=2 且約 20%", okTE, detail);
 check("100分卷: 多單元 topic 題數差距 <=1", okBal, detail);
@@ -102,7 +103,7 @@ check("洗牌後單選答案索引仍指向正解文字", okAnsw);
       const tot = ex.items.reduce((a, i) => a + i.points, 0);
       if (tot !== 100 || ex.total !== 100) { ok = false; d = sub.join() + " total=" + tot; }
       if (ex.sections.some(s => s.count < 2)) { ok = false; d = sub.join() + " 題數<2"; }
-      if (ex.sections.map(s => s.type).join() !== sub.join()) { ok = false; d = "順序 " + ex.sections.map(s => s.type).join(); }
+      if (ex.sections.map(s => s.type).join() !== ALL.filter(k => sub.indexOf(k) >= 0).join()) { ok = false; d = "順序 " + ex.sections.map(s => s.type).join(); }
     }
   });
   check("子集題型: 等比例配分且總分剛好 100、每型>=2 題", ok, d);
@@ -165,6 +166,45 @@ check("洗牌後單選答案索引仍指向正解文字", okAnsw);
   const avgLv = key => { const lv = cfg.levelRanges.find(l => l.key === key); let a = 0; for (let r = 0; r < 20; r++) { const ex = engine.buildExam({ mode: "score", units: pickUnits("hanlin", 3), types: ALL, levelMin: lv.min, levelMax: lv.max, mix: lv.mix }); a += ex.items.reduce((x, i) => x + i.level, 0) / ex.items.length; } return a / 20; };
   const ae = avgLv("easy"), ah = avgLv("hard");
   check("難度分布: 簡單檔平均 level < 困難檔 (" + ae.toFixed(2) + " < " + ah.toFixed(2) + ")", ae < ah);
+}
+
+/* 第 15 節：段考版型 */
+{
+  const subsets = [["tf"], ["single"], ["multi"], ["fill"], ["calc"], ["word"], ["single", "calc"], ["tf", "word"], ["multi", "fill"], ["tf", "single"], ["single", "multi"], ["calc", "word"],
+    ["tf", "single", "fill"], ["single", "multi", "calc"], ["fill", "calc", "word"], ["tf", "multi", "word"], ["tf", "single", "fill", "calc"], ["single", "multi", "fill", "word"], ["tf", "single", "multi", "calc"], ["tf", "single", "fill", "calc", "word"], ALL];
+  const names = { tf: "是非題", single: "單選題", multi: "複選題（全對才給分）", fill: "填充題", calc: "計算題", word: "應用題" };
+  const infeasible = k => k.length === 1 && (k[0] === "tf" || k[0] === "multi");
+  let ok = true, d = "", n = 0, relaxedSeen = [];
+  subsets.forEach(sub => cfg.levelRanges.forEach(lv => {
+    n++;
+    const ex = engine.buildExam({ mode: "score", units: pickUnits("hanlin", 3), types: sub, levelMin: lv.min, levelMax: lv.max, mix: lv.mix });
+    const want = ALL.filter(k => sub.indexOf(k) >= 0);
+    const tot = ex.items.reduce((a, i) => a + i.points, 0);
+    if (ex.sections.map(x => x.type).join() !== want.join()) { ok = false; d = sub + " 大題順序 " + ex.sections.map(x => x.type); }
+    if (tot !== 100 || ex.total !== 100) { ok = false; d = sub + " 總分 " + tot; }
+    if (!ex.items.every(i => sub.indexOf(i.type) >= 0 && i.level >= lv.min && i.level <= lv.max)) { ok = false; d = sub + " 題型/level 越界"; }
+    if (!ex.items.every((i, k) => i.no === k + 1)) { ok = false; d = sub + " 題號不連續"; }
+    ex.sections.forEach(sc => {
+      const t = cfg.types.find(x => x.key === sc.type);
+      const uniform = sc.items.every(i => i.points === sc.items[0].points && Number.isInteger(i.points));
+      if (!uniform) { ok = false; d = sub + " " + sc.type + " 大題內配分不一致"; }
+      if (sc.name !== names[sc.type] || !sc.intro) { ok = false; d = sub + " 大題名稱/說明句"; }
+      const p = sc.items[0].points, c = sc.items.length;
+      if (infeasible(sub)) { relaxedSeen.push(sub[0]); return; }
+      if (p < t.minPts || p > t.maxPts || c < t.minCount || c > t.maxCount) { ok = false; d = sub + " " + sc.type + " 超出硬限制 c=" + c + " p=" + p; }
+    });
+    if (sub.length === ALL.length) { /* 全選＝標準版型，由前面的測試驗證 */ }
+  }));
+  check("段考版型: 21 組題型子集(單/兩/三/四/五/六型,含複選)×四檔難度=" + n + " 組: 大題內每題配分相同且整數、在硬限制範圍、總分100、題型屬勾選、大題順序、題號連續、有大題說明句", ok, d);
+  const ex2 = engine.buildExam({ mode: "score", units: pickUnits("hanlin", 2), types: ["single", "calc"] });
+  check("只勾單選＋計算: " + ex2.sections.map(x => x.name + x.count + "題×" + x.items[0].points).join("、"), ex2.total === 100);
+  const noMulti = engine.buildExam({ mode: "score", units: pickUnits("hanlin", 2), types: ["tf", "single", "fill", "calc", "word"] });
+  check("未勾複選: 單選回到標準 10×2、整份 5/10/12/3/4 題 100 分", noMulti.sections.map(x => x.count + "x" + x.each).join() === "5x2,10x2,12x2,3x6,4x7");
+  check("無解子集(是非單型/複選單型)放寬範圍後仍總分100且整數 (已放寬: " + relaxedSeen.join(",") + ")", relaxedSeen.length > 0);
+  const m = engine.buildExam({ mode: "practice", units: pickUnits("hanlin", 2), types: ALL });
+  check("二十題模式不受影響: 20 題×5 分、單一大題無名稱", m.items.length === 20 && m.items.every(i => i.points === 5) && m.sections.length === 1 && m.sections[0].type === null);
+  const sm = engine.summarize(ex2, {});
+  check("結果統計含各大題得分 bySection (名稱/得分/滿分)", sm.bySection.length === 2 && sm.bySection.reduce((a, x) => a + x.max, 0) === 100);
 }
 
 /* 難度範圍 */
@@ -237,11 +277,11 @@ check("批改: 單選／是非", engine.gradeItem(S, 1).earned === 3 && engine.g
   });
   const sum = engine.summarize(ex, resp);
   const expectScore = ex.items.filter((_, i) => i % 2 === 0).reduce((a, i) => a + i.points, 0);
-  check("統計: 得分／答對題數／錯題清單", sum.score === expectScore && sum.correctCount === 15 && sum.wrong.length === 14 && sum.total === 100);
+  check("統計: 得分／答對題數／錯題清單", sum.score === expectScore && sum.correctCount === 17 && sum.wrong.length === 16 && sum.total === 100);
   const tagTotal = Object.keys(sum.byTag).reduce((a, k) => a + sum.byTag[k].total, 0);
-  check("統計: 依標籤／依單元合計一致", tagTotal === 29 && Object.keys(sum.byUnit).every(u => units.some(x => x.unitId === u)));
+  check("統計: 依標籤／依單元合計一致", tagTotal === 33 && Object.keys(sum.byUnit).every(u => units.some(x => x.unitId === u)));
   const redo = engine.rebuildFromItems(ex, sum.wrong);
-  check("只重做錯題: 題數等於錯題數、總分 100、題號重編", redo.items.length === 14 && redo.total === 100 && redo.items.every((it, i) => it.no === i + 1));
+  check("只重做錯題: 題數等於錯題數、總分 100、題號重編", redo.items.length === 16 && redo.total === 100 && redo.items.every((it, i) => it.no === i + 1));
   check("describeAnswer/Response 不丟錯", ex.items.every(it => typeof engine.describeAnswer(it) === "string" && typeof engine.describeResponse(it, resp[it.no]) === "string"));
 }
 
