@@ -6,10 +6,18 @@
   const int = K.int, pick = K.pick, gcd = K.gcd, lcm = K.lcm, shuffle = K.shuffle;
   const T = "factor";
   const cnt = {};
+  /* 解法一與解法二的字面相似度（二連字重疊比例） */
+  function simTxt(a, b) {
+    const sq = function (s) { return String(s).replace(/s+/g, "").replace(/[，。；：、（）()]/g, ""); };
+    const gr = function (s) { const q = sq(s), g = new Set(); for (let i = 0; i < q.length - 1; i++) g.add(q.slice(i, i + 2)); return g; };
+    const A = gr(a), B = gr(b); let n = 0; A.forEach(function (x) { if (B.has(x)) n++; });
+    return n / Math.max(1, Math.min(A.size, B.size));
+  }
   function mk(type, level, tag, gen) {
     cnt[type] = (cnt[type] || 0) + 1;
     const n = cnt[type];
-    return { id: T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n, type: type, level: level, tag: tag, gen: retry(gen, type) };
+    const idv = T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n;
+    return { id: idv, type: type, level: level, tag: tag, gen: retry(function (kit) { const r = gen(kit); const f = ALT[idv]; if (f && !r.explain2) r.explain2 = f(r); const p1 = PRE[idv]; if (p1) r.explain = p1(r) + r.explain; r.explain = pi(pm(r.explain)); r.explain2 = pi(pm(r.explain2)); r.stem = pm(r.stem); if (r.options) r.options = r.options.map(pm); return r; }, type) };
   }
   /* 學生看得到的字串：分母不得超過 100、不得有 9 位以上數字，否則重抽（accepted 內的則直接剔除；accepted 可含精確的長小數） */
   function badStr(x) {
@@ -48,7 +56,7 @@
         try {
           const r = addHint(g(kit), type);
           if (r.accepted) r.accepted = r.accepted.filter(function (x) { return !badAcc(x); });
-          const seen = [r.stem, r.explain, r.trapNote || "", String(r.answer)].concat(r.options || []);
+          const seen = [r.stem, r.explain, r.explain2 || "", r.trapNote || "", String(r.answer)].concat(r.options || []);
           if (seen.some(badStr)) throw new Error("重抽");
           return r;
         } catch (e) { if (!/選項重複|干擾項不足|重抽/.test(e.message)) throw e; last = e; }
@@ -376,5 +384,199 @@
     })
   ];
 
+  /* ===== 解法二（規格第 16 節）：與解法一不同的思路，用這一題實際的數字動態產生 ===== */
+  const NM = function (s) { return (String(s).match(/\d+/g) || []).map(Number); };
+  function spf(n) { for (let d = 2; d * d <= n; d++) if (n % d === 0) return d; return n; }
+  function eu(a, b) { let x = Math.max(a, b), y = Math.min(a, b); const st = []; while (y) { st.push(x + " ÷ " + y + " = " + Math.floor(x / y) + " 餘 " + (x % y)); const t = x % y; x = y; y = t; } return { s: st.join(";"), g: x }; }
+  function lcmTxt(a, b) {
+    const e = eu(a, b), L = a / e.g * b, mx = Math.max(a, b), mn = Math.min(a, b);
+    if (L / mx <= 10) { const ms = []; for (let k = 1; k <= L / mx; k++) ms.push(mx * k); return mx + " 的倍數:" + ms.join("、") + ",第一個也是 " + mn + " 的倍數的是 " + L; }
+    return "先求最大公因數 " + e.g + "(" + e.s + "),再算 " + a + " ÷ " + e.g + " × " + b + " = " + L;
+  }
+  function cdTxt(a, b) {
+    const da = divisors(a), db = divisors(b);
+    if (da.length > 12 || db.length > 12) { const e = eu(a, b); return "用輾轉相除法:" + e.s + ";最後的除數 " + e.g + " 就是最大公因數"; }
+    const cd = da.filter(function (x) { return b % x === 0; });
+    return a + " 的因數:" + da.join("、") + ";" + b + " 的因數:" + db.join("、") + ";共同的有 " + cd.join("、") + ",最大的是 " + cd[cd.length - 1];
+  }
+  function chain(N) { const st = []; let n = N; while (n > 1) { const d = spf(n); st.push(n + " ÷ " + d + " = " + (n / d)); n /= d; } return st.join(";"); }
+  function expMap(n) { const m = {}; factorize(n).forEach(function (p) { m[p] = (m[p] || 0) + 1; }); return m; }
+  function fstr(n) { return factorize(n).join("×"); }
+  /* 自我核對：解法二算出來的值必須和標準答案一致，否則丟錯 */
+  function fk(v, r) { if (String(v) !== String(r.answer)) throw new Error("explain2 與答案不一致:" + v); }
+  function fkOpt(v, r) { if (String(v) !== String(r.options[r.answer])) throw new Error("explain2 與答案不一致:" + v); }
+  function ftf(r, truth) { if (!!truth !== !!r.answer) throw new Error("explain2 與答案不一致(是非)"); }
+  function fm(r, flags) { const want = flags.map(function (x, i) { return x ? i : -1; }).filter(function (i) { return i >= 0; }).join(","); if (r.answer.join(",") !== want) throw new Error("explain2 與答案不一致(複選)"); }
+  function fs1(r, flags) { if (!flags[r.answer] || flags.filter(Boolean).length !== 1) throw new Error("explain2 與答案不一致(單選)"); }
+  function fdesc(n) { return factorize(n).length === 1 ? n + " 是質數" : n + " = " + fstr(n); }
+  /* 短除法：同除以共同的質數，直到兩個商互質 */
+  function sdText(a, b) {
+    const st = [], dv = []; let x = a, y = b;
+    for (;;) {
+      let p = 0;
+      for (let d = 2; d <= Math.min(x, y); d++) if (isPrime(d) && x % d === 0 && y % d === 0) { p = d; break; }
+      if (!p) break;
+      st.push("同除以 " + p + " 得 " + (x / p) + "、" + (y / p)); dv.push(p); x /= p; y /= p;
+    }
+    const g = dv.reduce(function (m, v) { return m * v; }, 1);
+    return { g: g, x: x, y: y, text: a + " 和 " + b + " 用短除法:" + (st.length ? st.join(";") : "沒有共同的質因數") + (dv.length > 1 ? ";除數相乘 " + dv.join("×") + " = " + g : dv.length ? ";除數是 " + g : "") };
+  }
+  function unitOf(r) { return r.units && r.units[0] ? " " + r.units[0] : ""; }
+  function goodsOf(r) { return r.answer.map(function (i) { return r.options[i]; }).join("、"); }
+  function stmtV(s) {
+    let m;
+    if ((m = s.match(/^(\d+) 是質數,因為它只有 1 和 \d+ 兩個因數。$/))) return [true, m[1] + " 只有 1 和 " + m[1] + " 兩個因數"];
+    if (s === "1 既不是質數,也不是合數。") return [true, "1 只有 1 個因數"];
+    if ((m = s.match(/^(\d+) 是合數,因為它除了 1 和 \d+ 之外,還有因數 (\d+)。$/))) return [true, m[1] + " ÷ " + m[2] + " = " + (m[1] / m[2]) + " 整除"];
+    if (s === "2 是唯一的偶質數" || s === "2 是質數,而且是唯一的偶質數。") return [true, "別的偶數都能被 2 整除"];
+    if ((m = s.match(/^(\d+) 是奇數,所以 \d+ 一定是質數。$/))) { const d = spf(+m[1]); return [false, m[1] + " ÷ " + d + " = " + (m[1] / d) + ",是合數"]; }
+    if (s === "質數都是奇數。") return [false, "2 是偶數卻是質數"];
+    if (s === "1 是最小的質數。") return [false, "1 只有 1 個因數,不是質數"];
+    if (s === "兩個質數相加,和一定是質數。") return [false, "3 + 5 = 8 是合數"];
+    return [null, "?"];
+  }
+  function tf2t(s) {
+    if (s === "2 是質數,也是偶數。" || s === "最小的合數是 4。") return true;
+    if (s === "1 是質數。" || s === "所有的質數都是奇數。" || s === "1 是合數。" || /是奇數,所以它是質數。$/.test(s) || /的倍數裡/.test(s)) return false;
+    throw new Error("explain2 找不到對應的敘述:" + s);
+  }
+  function tf2(s) {
+    let m;
+    if (s === "1 是質數。") return "1 只有 1 個因數,質數要恰好 2 個因數";
+    if (s === "2 是質數,也是偶數。") return "2 的因數只有 1 和 2;2 ÷ 2 = 1 整除,是偶數";
+    if (s === "所有的質數都是奇數。") return "舉反例:2 是質數,卻是偶數";
+    if (s === "最小的合數是 4。") return "合數至少有 3 個因數;2、3 只有 2 個,4 有 1、2、4 三個";
+    if ((m = s.match(/^(\d+) 是奇數,所以它是質數。$/))) { const d = spf(+m[1]); return "試除:" + m[1] + " ÷ " + d + " = " + (m[1] / d) + ",有別的因數"; }
+    if ((m = s.match(/^(\d+) 是質數,所以 \d+ 的倍數裡,(\d+) 也是質數。$/))) return m[2] + " ÷ 2 = " + (m[2] / 2) + ",有因數 2,不是質數";
+    if (s === "1 是合數。") return "合數至少有 3 個因數,1 只有 1 個";
+    return "舉例檢查";
+  }
+
+  /* 帶分數參與運算時一律加括號，例如 (2 1/2) ÷ 5 */
+  /* 複選解法二：逐項檢驗（每個選項含錯項都寫出算式或理由） */
+  function rows(r, flags, whys) { return r.options.map(function (o, i) { return (i + 1) + ". " + o + " → " + (flags[i] ? "對" : "錯") + "," + whys[i]; }).join(";\n"); }
+  function pickIdx(r) { return r.answer.map(function (i) { return i + 1; }).join("、"); }
+  function pm(s) {
+    return String(s)
+      .replace(/(?<![(\d\/])(\d+ \d+\/\d+)(?=\s*[×÷+]|\s+-\s)/g, "($1)")
+      .replace(/(?<=[×÷+]\s|\s-\s)(\d+ \d+\/\d+)(?![\d\/)])/g, "($1)");
+  }
+  /* 解析文字裡「某分數 = 同一個分數」的巧合（結果剛好等於其中一個運算數），改寫成「結果是」，避免看起來像恆等式 */
+  function pi(s) {
+    const fix = function (t) { return t.replace(/(?<![\d.\/])(\d+\/\d+)\s*=\s*(\1)(?![\d.\/])/g, function (m, a, b) { return a + ",結果是 " + b; }); };
+    return String(s).split("\n").map(function (ln) { const k = ln.indexOf(" → "); return /^\d+\. /.test(ln) && k >= 0 ? ln.slice(0, k) + fix(ln.slice(k)) : fix(ln); }).join("\n");
+  }
+  const PRE = {};
+
+  const ALT = {
+    "factor-single-L1-01": function (r) {
+      const wantP = /質數/.test(r.stem), ns = r.options.map(Number); fs1(r, ns.map(function (n) { return wantP ? isPrime(n) : (n > 1 && !isPrime(n)); }));
+      const ls = ns.map(function (n) { const d = spf(n); return n + (d === n ? " 試除沒有別的因數" : " ÷ " + d + " = " + (n / d)); });
+      return "排除法:逐一試除。" + ls.join(";") + "。所以" + (wantP ? "質數" : "合數") + "是 " + r.options[r.answer] + "。";
+    },
+    "factor-single-L2-02": function (r) { const [a, b] = NM(r.stem), e = eu(a, b); fkOpt(e.g, r); return "輾轉相除法:" + e.s + "。最後的除數 " + e.g + " 就是最大公因數,選 " + r.options[r.answer] + "。"; },
+    "factor-single-L3-03": function (r) { const [a, b] = NM(r.stem), sd = sdText(a, b), L = sd.g * sd.x * sd.y; fkOpt(L, r); return "用短除法:" + sd.text + "。\n最小公倍數 = 除數和最後的商全部相乘 = " + (sd.g > 1 ? sd.g + " × " : "") + sd.x + " × " + sd.y + " = " + L + ",選 " + r.options[r.answer] + "。"; },
+    "factor-single-L4-04": function (r) {
+      const N = NM(r.stem)[0], flags = r.options.map(function (o) { const fa = o.split("×").map(Number); return fa.reduce(function (x, y) { return x * y; }, 1) === N && fa.every(isPrime); });
+      fs1(r, flags);
+      const ls = r.options.map(function (o) { const fa = o.split("×").map(Number), p = fa.reduce(function (x, y) { return x * y; }, 1); return o + " = " + p + (fa.every(function (x) { return isPrime(x); }) ? "" : "(含合數或 1)"); });
+      return "把每個選項乘回去檢查:" + ls.join(";") + "。要乘積正確、而且每個因數都是質數,選 " + r.options[r.answer] + "。";
+    },
+    "factor-single-L5-05": function (r) { const [g, L, a] = NM(r.stem), b = Number(r.options[r.answer]); if (gcd(a, b) !== g || lcm(a, b) !== L) throw new Error("explain2 與答案不一致"); return "代入檢查:乙數是 " + b + " 時," + a + " 與 " + b + " 的最大公因數是 " + gcd(a, b) + "、最小公倍數是 " + lcm(a, b) + ",和題目的 " + g + "、" + L + " 一樣。所以乙數是 " + b + "。"; },
+    "factor-single-L1-06": function (r) {
+      const [A, B] = NM(r.stem), k = A / B, c = Math.max(1, Math.floor(k / 2)); fs1(r, r.options.map(function (o) { return B * Number(o) === A; }));
+      return "數一數 " + A + " 裡面有幾個 " + B + ":先拿 " + c + " 個 " + B + ",是 " + c + " × " + B + " = " + (c * B) + ",還剩 " + A + " - " + (c * B) + " = " + (A - c * B) + ";剩下的 " + (A - c * B) + " 又有 " + (k - c) + " 個 " + B + "。\n合起來 " + c + " + " + (k - c) + " = " + k + " 個,所以 □ = " + r.options[r.answer] + "。";
+    },
+    "factor-multi-L2-01": function (r) {
+      const ns = r.options.map(Number), fl = ns.map(isPrime); fm(r, fl);
+      const wh = ns.map(function (n) { const d = spf(n); return d === n ? "試除 2 到 " + (n - 1) + " 都除不盡,只有 1 和 " + n + " 兩個因數" : n + " ÷ " + d + " = " + (n / d) + ",多了因數 " + d; });
+      return "逐一檢查每個數有沒有別的因數:\n" + rows(r, fl, wh) + "。\n所以質數是第 " + pickIdx(r) + " 個。";
+    },
+    "factor-multi-L3-02": function (r) {
+      const [a, b] = NM(r.stem), xs = r.options.map(Number), fl = xs.map(function (x) { return a % x === 0 && b % x === 0; }); fm(r, fl);
+      const wh = xs.map(function (x) { return a % x !== 0 ? a + " ÷ " + x + " 除不盡" : b % x !== 0 ? b + " ÷ " + x + " 除不盡" : a + " ÷ " + x + " = " + (a / x) + ",且 " + b + " ÷ " + x + " = " + (b / x); });
+      return "把每個選項分別去除 " + a + " 和 " + b + ":\n" + rows(r, fl, wh) + "。\n所以公因數是第 " + pickIdx(r) + " 個。";
+    },
+    "factor-multi-L3-03": function (r) {
+      const flags = [], wh = r.options.map(function (o) { const v = stmtV(o); if (v[0] === null) throw new Error("explain2 找不到對應的敘述:" + o); flags.push(v[0]); return v[1]; }); fm(r, flags);
+      return "舉例子逐句檢查:\n" + rows(r, flags, wh) + "。\n所以正確的是第 " + pickIdx(r) + " 個。";
+    },
+    "factor-multi-L4-04": function (r) {
+      const [a, b] = NM(r.stem), xs = r.options.map(Number), fl = xs.map(function (x) { return x % a === 0 && x % b === 0; }); fm(r, fl);
+      const wh = xs.map(function (x) { return x % a !== 0 ? x + " ÷ " + a + " 除不盡,不是 " + a + " 的倍數" : x % b !== 0 ? x + " ÷ " + b + " 除不盡,不是 " + b + " 的倍數" : x + " ÷ " + a + " = " + (x / a) + ",x ÷ ".replace("x", x) + b + " = " + (x / b); });
+      return "公倍數要同時是 " + a + " 和 " + b + " 的倍數:\n" + rows(r, fl, wh) + "。\n所以公倍數是第 " + pickIdx(r) + " 個。";
+    },
+    "factor-multi-L5-05": function (r) {
+      const n = NM(r.stem), a = n[0], b = n[1], lo = n[2], hi = n[3], xs = r.options.map(Number), fl = xs.map(function (x) { return x % a === 0 && x % b === 0 && x >= lo && x <= hi; }); fm(r, fl);
+      const wh = xs.map(function (x) { return x % a !== 0 || x % b !== 0 ? "不是 " + a + " 和 " + b + " 的公倍數" : x < lo ? "太小,比 " + lo + " 還小" : x > hi ? "太大,比 " + hi + " 還大" : x + " ÷ " + a + " = " + (x / a) + "、" + x + " ÷ " + b + " = " + (x / b) + ",又在範圍內"; });
+      return "要同時是公倍數又在 " + lo + " 到 " + hi + " 之間:\n" + rows(r, fl, wh) + "。\n所以選第 " + pickIdx(r) + " 個。";
+    },
+    "factor-tf-L1-01": function (r) {
+      const n = NM(r.stem)[0], rt = Math.floor(Math.sqrt(n)), ls = []; let hit = 0;
+      for (let d = 2; d <= rt && !hit; d++) { ls.push(n + " ÷ " + d + " 餘 " + (n % d)); if (n % d === 0) hit = d; }
+      ftf(r, !hit);
+      return "只要試除到 " + rt + " 就夠了,因為 " + (rt + 1) + " × " + (rt + 1) + " 已經比 " + n + " 大,再大的因數一定會和前面的配成對。\n" + (ls.length ? ls.join(";") + "。" : "") + (hit ? "餘 0,表示 " + hit + " 能整除,不是質數。" : "都有餘數,沒有別的因數,是質數。") + "所以敘述" + (r.answer ? "正確" : "錯誤") + "。";
+    },
+    "factor-tf-L2-02": function (r) { ftf(r, tf2t(r.stem)); return "查一查定義:" + tf2(r.stem) + "。所以這句話" + (r.answer ? "正確" : "錯誤") + "。"; },
+    "factor-tf-L3-03": function (r) { const [a, b, c] = NM(r.stem), L = lcm(a, b); ftf(r, L === c); return "列倍數法:" + lcmTxt(a, b) + "。最小公倍數是 " + L + (L === c ? ",和敘述的 " + c + " 一樣" : ",不是 " + c) + "。所以敘述" + (r.answer ? "正確" : "錯誤") + "。"; },
+    "factor-tf-L4-04": function (r) { const [a, b, x] = NM(r.stem), sd = sdText(a, b); ftf(r, sd.g === x); return "用短除法找最大公因數:" + sd.text + "。\n最大公因數是 " + sd.g + (sd.g === x ? ",和敘述的 " + x + " 一樣" : ",不是敘述的 " + x) + "。所以敘述" + (r.answer ? "正確" : "錯誤") + "。"; },
+    "factor-tf-L5-05": function (r) {
+      const [g, L, X] = NM(r.stem), k = L / g; let m = 1, n = k;
+      for (let d = 2; d * d <= k; d++) if (k % d === 0 && gcd(d, k / d) === 1) { m = d; n = k / d; }
+      ftf(r, g * L === X);
+      const p = g * m, q = g * n;
+      return "找一組真的數來試試:甲數 = " + g + " × " + m + " = " + p + ",乙數 = " + g + " × " + n + " = " + q + "。\n它們的最大公因數是 " + gcd(p, q) + "、最小公倍數是 " + lcm(p, q) + ",和題目一樣。\n乘積 " + p + " × " + q + " = " + (p * q) + (p * q === X ? ",和敘述的 " + X + " 一樣。" : ",不是敘述的 " + X + "。") + "所以敘述" + (r.answer ? "正確" : "錯誤") + "。";
+    },
+    "factor-tf-L3-06": function (r) { const [a, b, x] = NM(r.stem), sd = sdText(a, b); ftf(r, sd.g === x); return "同時是 " + a + " 和 " + b + " 的因數,就是它們的公因數;公因數中最大的就是最大公因數。\n用短除法求最大公因數:" + sd.text + "。\n最大是 " + sd.g + (sd.g === x ? ",和敘述的 " + x + " 一樣" : ",不是敘述的 " + x) + "。所以敘述" + (r.answer ? "正確" : "錯誤") + "。"; },
+    "factor-fill-L1-01": function (r) { const a = NM(r.stem)[0], p = Number(r.answer), ps = []; for (let n = 2; n <= p; n++) if (isPrime(n)) ps.push(n); if (!(ps[ps.length - 1] === p && p > a && ps.filter(function (x) { return x > a; }).length === 1)) throw new Error("explain2 與答案不一致"); return "查質數表:" + ps.join("、") + "……。比 " + a + " 大的第一個質數是 " + p + "。"; },
+    "factor-fill-L2-02": function (r) { const [a, b] = NM(r.stem); fk(lcm(a, b), r); return "列倍數法:" + lcmTxt(a, b) + "。答案是 " + r.answer + "。"; },
+    "factor-fill-L3-03": function (r) { const N = NM(r.stem)[0]; fk(Math.max.apply(null, factorize(N)), r); return "連續用質數去除:" + chain(N) + "。用到的質數中最大的是 " + r.answer + "。"; },
+    "factor-fill-L4-04": function (r) { const [a, b] = NM(r.stem), cd = divisors(a).filter(function (x) { return b % x === 0; }); fk(cd.length, r); return "列出每個數的因數:" + a + " 的因數:" + divisors(a).join("、") + ";" + b + " 的因數:" + divisors(b).join("、") + "。共同的有 " + cd.join("、") + ",共 " + cd.length + " 個。"; },
+    "factor-fill-L5-05": function (r) {
+      const [a, b, c] = NM(r.stem); fk(lcm(lcm(a, b), c), r); const ms = [a, b, c].map(expMap), mx = {};
+      ms.forEach(function (m) { Object.keys(m).forEach(function (p) { mx[p] = Math.max(mx[p] || 0, m[p]); }); });
+      const parts = []; Object.keys(mx).forEach(function (p) { for (let i = 0; i < mx[p]; i++) parts.push(p); });
+      return "分解質因數:" + fdesc(a) + ",\n" + fdesc(b) + ",\n" + fdesc(c) + "。\n每個質數取出現最多次的:" + parts.join("×") + " = " + r.answer + "。";
+    },
+    "factor-fill-L2-06": function (r) { const [a, b] = NM(r.stem); fk(gcd(a, b), r); return "列出共同的因數:" + cdTxt(a, b) + "。所以 □ = " + r.answer + "。"; },
+    "factor-calc-L1-01": function (r) { const [a, b] = NM(r.stem); fk(gcd(a, b), r); return "列出共同的因數:" + cdTxt(a, b) + "。答案是 " + r.answer + "。"; },
+    "factor-calc-L2-02": function (r) { const [a, b] = NM(r.stem); fk(lcm(a, b), r); return "列倍數法:" + lcmTxt(a, b) + "。答案是 " + r.answer + "。"; },
+    "factor-calc-L3-03": function (r) { const [a, b] = NM(r.stem), e = eu(a, b); fk(e.g, r); return "輾轉相除法:" + e.s + "。最後的除數 " + e.g + " 就是最大公因數,答案是 " + r.answer + "。"; },
+    "factor-calc-L4-04": function (r) { const N = NM(r.stem)[0], ds = []; factorize(N).forEach(function (p) { if (ds.indexOf(p) < 0) ds.push(p); }); fk(ds.reduce(function (x, y) { return x + y; }, 0), r); return "連續用質數去除:" + chain(N) + "。用到的不同質數有 " + ds.join("、") + ",相加 " + ds.join(" + ") + " = " + r.answer + "。"; },
+    "factor-calc-L5-05": function (r) {
+      const [a, b] = NM(r.stem), ma = expMap(a), mb = expMap(b), keys = {}; Object.keys(ma).concat(Object.keys(mb)).forEach(function (p) { keys[p] = 1; });
+      const lo = [], hi = []; Object.keys(keys).forEach(function (p) { const x = ma[p] || 0, y = mb[p] || 0; for (let i = 0; i < Math.min(x, y); i++) lo.push(p); for (let i = 0; i < Math.max(x, y); i++) hi.push(p); });
+      const g = lo.length ? lo.reduce(function (m, v) { return m * Number(v); }, 1) : 1, L = hi.reduce(function (m, v) { return m * Number(v); }, 1); fk(g + L, r);
+      return "把兩個數分解質因數:" + fdesc(a) + ";" + fdesc(b) + "。\n最大公因數取共同的、次數少的:" + (lo.length > 1 ? lo.join("×") + " = " : "") + (lo.length ? g : "沒有共同的質因數,是 1") + ";最小公倍數每個質數都取次數多的:" + (hi.length > 1 ? hi.join("×") + " = " : "") + L + "。\n兩個相加:" + g + " + " + L + " = " + r.answer + "。";
+    },
+    "factor-calc-L4-06": function (r) { const [a, g, L0] = NM(r.stem), m = a / g, n = L0 / a; fk(g * n, r); if (gcd(a, g * n) !== g || lcm(a, g * n) !== L0) throw new Error("explain2 與答案不一致"); return "最大公因數是 " + g + ",所以兩個數都是 " + g + " 的倍數,可以寫成 " + a + " = " + g + " × " + m + " 和 □ = " + g + " × (另一個數,和 " + m + " 互質)。\n最小公倍數 = " + g + " × " + m + " × (另一個數) = " + L0 + ",所以(另一個數)= " + L0 + " ÷ " + a + " = " + n + "。\n□ = " + g + " × " + n + " = " + r.answer + "。"; },
+    "factor-word-L2-01": function (r) { const [a, b] = NM(r.stem); fk(lcm(a, b), r); return "列時間表:" + lcmTxt(a, b) + "。所以至少再過 " + r.answer + unitOf(r) + "。"; },
+    "factor-word-L3-02": function (r) { const [a, b] = NM(r.stem), sd = sdText(a, b); fk(sd.g, r); return "人數要能同時整除 " + a + " 和 " + b + ",最多就是最大公因數。\n" + sd.text + "。所以最多 " + r.answer + unitOf(r) + "。"; },
+    "factor-word-L4-03": function (r) { const [a, b] = NM(r.stem), sd = sdText(a, b), g = sd.g; fk(a * b / (g * g), r); return "正方形的邊長要最長又剛好剪完,邊長就是兩邊的最大公因數。\n" + sd.text + ",邊長是 " + g + " 公分。\n用面積想:紙板面積 " + a + " × " + b + " = " + (a * b) + ",一個正方形面積 " + g + " × " + g + " = " + (g * g) + ",共 " + (a * b) + " ÷ " + (g * g) + " = " + r.answer + unitOf(r) + "。"; },
+    "factor-word-L4-04": function (r) { const [a, b, c] = NM(r.stem), e = eu(a, b), e2 = eu(e.g, c); fk(e2.g, r); return "先看 " + a + " 和 " + b + ":" + e.s + ",最大公因數 " + e.g + "。\n再看 " + e.g + " 和 " + c + ":" + e2.s + ",最大公因數 " + e2.g + "。\n每段最長 " + r.answer + unitOf(r) + "。"; },
+    "factor-word-L5-05": function (r) {
+      const [a, b, c] = NM(r.stem); fk(lcm(lcm(a, b), c), r); const ms = [a, b, c].map(expMap), mx = {};
+      ms.forEach(function (m) { Object.keys(m).forEach(function (p) { mx[p] = Math.max(mx[p] || 0, m[p]); }); });
+      const parts = []; Object.keys(mx).forEach(function (p) { for (let i = 0; i < mx[p]; i++) parts.push(p); });
+      return "分解質因數:" + fdesc(a) + "," + fdesc(b) + ",\n" + fdesc(c) + "。\n每個質數取出現最多次的相乘:" + parts.join("×") + " = " + r.answer + "。所以再過 " + r.answer + unitOf(r) + "。";
+    },
+    "factor-word-L5-06": function (r) { const n = NM(r.stem), a = n[0], L0 = n[1], g = n[3], m = a / g, k = L0 / a; fk(g * k, r); if (gcd(a, g * k) !== g || lcm(a, g * k) !== L0) throw new Error("explain2 與答案不一致"); return "最大公因數是 " + g + ",所以兩個數都是 " + g + " 的倍數,可以寫成 " + a + " = " + g + " × " + m + " 和 □ = " + g + " × (另一個數,和 " + m + " 互質)。\n再過 " + L0 + " 天才會同一天,最小公倍數 " + L0 + " = " + g + " × " + m + " × (另一個數),所以(另一個數)= " + L0 + " ÷ " + a + " = " + k + "。\n□ = " + g + " × " + k + " = " + r.answer + unitOf(r) + "。"; }
+  };
+
+
+  /* PRE（解法一的方法說明） */
+PRE["factor-single-L3-03"] = function () { return "方法:把兩個數拆成「最大公因數 × 互質的數」,最大公因數和最小公倍數就能直接讀出來。\n"; };
+PRE["factor-tf-L2-02"] = function () { return "方法:把兩個數拆成「最大公因數 × 互質的數」,最大公因數和最小公倍數就能直接讀出來。\n"; };
+PRE["factor-tf-L4-04"] = function () { return "方法:把兩個數拆成「最大公因數 × 互質的數」,最大公因數和最小公倍數就能直接讀出來。\n"; };
+PRE["factor-tf-L5-05"] = function () { return "方法:把兩個數拆成「最大公因數 × 互質的數」,最大公因數和最小公倍數就能直接讀出來。\n"; };
+PRE["factor-calc-L5-05"] = function () { return "方法:把兩個數拆成「最大公因數 × 互質的數」,最大公因數和最小公倍數就能直接讀出來。\n"; };
+PRE["factor-word-L3-02"] = function () { return "方法:把兩個數拆成「最大公因數 × 互質的數」,最大公因數和最小公倍數就能直接讀出來。\n"; };
+PRE["factor-single-L1-06"] = function () { return "方法:先看 □ 站在算式的哪個位置,再用逆運算(加減互逆、乘除互逆)把 □ 單獨留在一邊。\n"; };
+PRE["factor-tf-L3-06"] = function () { return "方法:先看 □ 站在算式的哪個位置,再用逆運算(加減互逆、乘除互逆)把 □ 單獨留在一邊。\n"; };
+PRE["factor-calc-L4-06"] = function () { return "方法:先看 □ 站在算式的哪個位置,再用逆運算(加減互逆、乘除互逆)把 □ 單獨留在一邊。\n"; };
+PRE["factor-tf-L3-03"] = function () { return "想法:先找出兩數的最小公倍數,再和敘述裡的數比一比。" + String.fromCharCode(10); };
+PRE["factor-fill-L4-04"] = function () { return "想法:公因數都是最大公因數的因數,數一數就知道有幾個。" + String.fromCharCode(10); };
+PRE["factor-word-L4-03"] = function () { return "想法:先求正方形的邊長,再算長邊、寬邊各剪幾個。" + String.fromCharCode(10); };
+PRE["factor-fill-L3-03"] = function () { return "想法:一直用最小的質數去除,除到商是 1 為止,用到的質數就是質因數。" + String.fromCharCode(10); };
   ExamBank.register(T, "factor-basic", single.concat(multi, tf, fill, calc, word, boxes));
 })();

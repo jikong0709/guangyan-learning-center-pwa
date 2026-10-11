@@ -241,19 +241,21 @@
         });
       }
 
+      const keyEl = answerSheet(ex);
+      const keyBtn = keyToggle(keyEl);
       const node = h("div", { class: "ex-view ex-examview" }, [
         h("section", { class: "ex-card ex-examhead" }, [
           h("h1", { "data-focus": true, text: ver.name + cfg.title + (practice ? "・二十題逐題練習" : "・一百分計分卷") }),
           h("p", { class: "ex-sub", text: practice ? "每題作答後按「檢查」立即看對錯與解析。" : "全部寫完再按「交卷批改」，滿分 " + ex.total + " 分。" }),
           h("div", { class: "ex-headbar no-print" }, [
             progress,
-            h("button", { type: "button", class: "ex-btn ex-btn-small", onclick: () => window.print(), text: "🖨️ 列印／存成 PDF" }),
+            keyBtn,
+            h("button", { type: "button", class: "ex-btn ex-btn-small", id: "ex-print-exam", onclick: () => window.print(), text: "🖨️ 列印考卷" }),
             h("button", { type: "button", class: "ex-btn ex-btn-small", onclick: () => renderSetup(), text: "回設定頁" })
           ])
         ])
-      ].concat(body).concat([
-        h("div", { class: "ex-startbar no-print" }, [warn, submitBtn]),
-        printKey(ex)
+      ].concat([keyEl]).concat(body).concat([
+        h("div", { class: "ex-startbar no-print" }, [warn, submitBtn])
       ]));
       mount(node, pageTitle());
       upd();
@@ -358,18 +360,53 @@
       box.className = "ex-feedback is-show " + (g.correct ? "is-right" : "is-wrong");
       const kids = [h("p", { class: "ex-verdict", text: g.correct ? "✔ 答對了！" : (g.answered ? "✘ 答錯了" : "✘ 還沒作答") })];
       if (!g.correct) kids.push(h("p", {}, [h("b", { text: "正確答案：" }), engine.describeAnswer(it)]));
-      kids.push(h("p", { class: "ex-explain", text: it.explain }));
+      kids.push(h("p", { class: "ex-explain", text: "解法一：" + it.explain }));
+      if (it.explain2) kids.push(h("p", { class: "ex-explain", text: "解法二：" + it.explain2 }));
       if (it.tag === "trap" && it.trapNote) kids.push(h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }));
       kids.forEach(k => box.appendChild(k));
     }
 
-    function printKey(ex) {
-      return h("section", { class: "ex-printkey", "aria-hidden": "true" }, [h("h2", { text: "解答與解析" })].concat(ex.items.map(it =>
-        h("div", { class: "ex-keyitem" }, [
-          h("p", {}, [h("b", { text: it.no + ". 答案：" }), engine.describeAnswer(it)]),
-          h("p", { text: it.explain }),
-          it.tag === "trap" && it.trapNote ? h("p", { text: "易錯點：" + it.trapNote }) : null
-        ]))));
+    /* ----- 答案卷（用考卷實際那份題目的 explain/explain2，不重新 gen） ----- */
+    function keyCard(it) {
+      const typeName = typeByKey[it.type] ? typeByKey[it.type].short : it.type;
+      return h("article", { class: "ex-keycard" }, [
+        h("div", { class: "ex-keyhead" }, [
+          h("span", { class: "ex-qno", text: "第 " + it.no + " 題" }),
+          h("span", { class: "ex-chip", text: typeName }),
+          h("span", { class: "ex-qpts", text: it.points + " 分" })
+        ]),
+        h("p", { class: "ex-keyans" }, [h("b", { text: "正解：" }), h("span", { class: "ex-keyans-text", text: engine.describeAnswer(it) })]),
+        h("p", { class: "ex-keystem", text: it.stem }),
+        h("p", { class: "ex-keyexp" }, [h("b", { text: "解法一：" }), it.explain]),
+        it.explain2 ? h("p", { class: "ex-keyexp ex-keyexp2" }, [h("b", { text: "解法二：" }), it.explain2]) : null,
+        it.tag === "trap" && it.trapNote ? h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }) : null
+      ]);
+    }
+    function answerSheet(ex) {
+      const nums = "一二三四五六";
+      const kids = [h("h2", { class: "ex-keytitle", text: "📖 答案卷（" + (ex.mode === "practice" ? "二十題練習" : "一百分計分卷") + "）" })];
+      if (ex.mode === "practice") ex.items.forEach(it => kids.push(keyCard(it)));
+      else ex.sections.forEach((s, si) => {
+        kids.push(h("h3", { class: "ex-keysec", text: nums[si] + "、" + s.name + "（每題 " + s.each + " 分，共 " + s.points + " 分）" }));
+        s.items.forEach(it => kids.push(keyCard(it)));
+      });
+      return h("section", { class: "ex-card ex-key is-collapsed", id: "ex-key", "aria-label": "答案卷" }, kids);
+    }
+    function printKeyOnly() {
+      document.body.classList.add("ex-print-key");
+      const done = () => { document.body.classList.remove("ex-print-key"); window.removeEventListener("afterprint", done); };
+      window.addEventListener("afterprint", done);
+      try { window.print(); } finally { setTimeout(done, 1500); }
+    }
+    function keyToggle(keyEl) {
+      const btn = h("button", { type: "button", class: "ex-btn ex-btn-small", id: "ex-key-toggle", "aria-expanded": "false", "aria-controls": "ex-key", text: "📖 顯示答案卷" });
+      btn.addEventListener("click", () => {
+        const open = keyEl.classList.toggle("is-collapsed") === false;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        btn.textContent = open ? "📖 收合答案卷" : "📖 顯示答案卷";
+        if (open) { const pb = keyEl.querySelector("#ex-print-key"); if (!pb) { keyEl.insertBefore(h("button", { type: "button", class: "ex-btn ex-btn-small no-print", id: "ex-print-key", onclick: printKeyOnly, text: "🖨️ 列印答案卷" }), keyEl.children[1]); } }
+      });
+      return btn;
     }
 
     /* ================= 結果頁 ================= */
@@ -398,7 +435,8 @@
           h("p", {}, [h("b", { text: "你的答案：" }), engine.describeResponse(it, resp)]),
           h("p", {}, [h("b", { text: "正確答案：" }), engine.describeAnswer(it)]),
           state.work[it.no] && state.work[it.no].trim() ? h("p", { class: "ex-yourwork", text: "你的列式：" + state.work[it.no].trim() }) : null,
-          h("p", { class: "ex-explain", text: "標準解析：" + it.explain }),
+          h("p", { class: "ex-explain", text: "解法一：" + it.explain }),
+          it.explain2 ? h("p", { class: "ex-explain", text: "解法二：" + it.explain2 }) : null,
           it.tag === "trap" && it.trapNote ? h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }) : null
         ]);
       });
@@ -408,6 +446,7 @@
         h("span", { class: "ex-stat-num", text: sc.earned + "／" + sc.max + "（答對 " + sc.right + "／" + sc.total + " 題）" })
       ]));
 
+      const rKey = answerSheet(ex);
       const node = h("div", { class: "ex-view ex-resultview" }, [
         h("section", { class: "ex-card ex-scorecard" }, [
           h("h1", { "data-focus": true, text: practice ? "練習統計" : "批改結果" }),
@@ -417,9 +456,11 @@
             sum.wrong.length ? h("button", { type: "button", class: "ex-btn ex-btn-primary", id: "ex-redo-wrong", onclick: () => launch(true), text: "只重做錯題" }) : null,
             h("button", { type: "button", class: "ex-btn", id: "ex-regen", onclick: () => redo(), text: "重新出題（同設定）" }),
             h("button", { type: "button", class: "ex-btn", id: "ex-back", onclick: () => renderSetup(), text: "回設定頁" }),
+            keyToggle(rKey),
             h("button", { type: "button", class: "ex-btn", onclick: () => window.print(), text: "🖨️ 列印／存成 PDF" })
           ])
         ]),
+        rKey,
         secRows.length ? h("section", { class: "ex-card", id: "ex-secscores" }, [h("h2", { text: "各大題得分（總分 " + sum.score + "／" + sum.total + "）" }), h("ul", { class: "ex-stats" }, secRows)]) : null,
         h("section", { class: "ex-card" }, [h("h2", { text: "依標籤統計" }), h("ul", { class: "ex-stats" }, tagRows)]),
         h("section", { class: "ex-card" }, [h("h2", { text: "依單元統計" }), h("ul", { class: "ex-stats" }, unitRows)]),

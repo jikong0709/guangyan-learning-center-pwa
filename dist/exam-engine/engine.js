@@ -139,6 +139,8 @@
             specId: spec.id, topic: spec.topic, type: spec.type, level: spec.level, tag: spec.tag,
             stem: r.stem, explain: r.explain, trapNote: r.trapNote || ""
           };
+          /* 解法二可缺（向下相容）；缺就不放欄位，UI 不顯示 */
+          if (typeof r.explain2 === "string" && r.explain2.trim()) item.explain2 = r.explain2;
           if (spec.type === "single" || spec.type === "multi") {
             const opts = r.options.map(String);
             const perm = shuffle(opts.map((_, i) => i));

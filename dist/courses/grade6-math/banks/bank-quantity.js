@@ -46,7 +46,7 @@
         try {
           const r = addHint(g(kit), type);
           if (r.accepted) r.accepted = r.accepted.filter(function (x) { return !badAcc(x); });
-          const seen = [r.stem, r.explain, r.trapNote || "", String(r.answer)].concat(r.options || []);
+          const seen = [r.stem, r.explain, r.explain2 || "", r.trapNote || "", String(r.answer)].concat(r.options || []);
           if (seen.some(badStr)) throw new Error("重抽");
           return r;
         } catch (e) { if (!/選項重複|干擾項不足|重抽/.test(e.message)) throw e; last = e; }
@@ -54,10 +54,18 @@
       throw last;
     };
   }
+  /* 解法一與解法二的字面相似度（二連字重疊比例） */
+  function simTxt(a, b) {
+    const sq = function (s) { return String(s).replace(/s+/g, "").replace(/[，。；：、（）()]/g, ""); };
+    const gr = function (s) { const q = sq(s), g = new Set(); for (let i = 0; i < q.length - 1; i++) g.add(q.slice(i, i + 2)); return g; };
+    const A = gr(a), B = gr(b); let n = 0; A.forEach(function (x) { if (B.has(x)) n++; });
+    return n / Math.max(1, Math.min(A.size, B.size));
+  }
   function mk(type, level, tag, gen) {
     cnt[type] = (cnt[type] || 0) + 1;
     const n = cnt[type];
-    return { id: T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n, type: type, level: level, tag: tag, gen: retry(gen, type) };
+    const idv = T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n;
+    return { id: idv, type: type, level: level, tag: tag, gen: retry(function (kit) { const r = gen(kit); const f = ALT[idv]; if (f && !r.explain2) r.explain2 = f(r); const p1 = PRE[idv]; if (p1) r.explain = p1(r) + r.explain; r.explain = pi(pm(r.explain)); r.explain2 = pi(pm(r.explain2)); r.stem = pm(r.stem); if (r.options) r.options = r.options.map(pm); return r; }, type) };
   }
   function S(correct, cands) {
     const w = K.distractors(correct, cands, 3);
@@ -79,8 +87,8 @@
   function places(q) { const s = K.qDec(q); const i = s === null ? -1 : s.indexOf("."); return i < 0 ? 0 : s.length - i - 1; }
   function ok2(q) { return decOK(q) && places(q) <= 2; }
   function dsh(q) { return decOK(q) ? K.qDec(q) : K.qMixed(q); }
-  function shT(q, fl) { return fl === "dec" ? dsh(q) : fl === "mixed" ? K.qMixed(q) : qFrac(q); }
-  function qa(q, fl) { const o = K.qAnswer(q, fl === "int" ? "frac" : fl); const v = q.n / q.d; o.accepted = o.accepted.filter(function (x) { return !/^\d+\.\d+$/.test(x) || Math.abs(Number(x) - v) < 1e-12; }); return o; }
+  function shT(q, fl) { return fl === "dec" ? dsh(q) : (fl === "mixed" || fl === "frac") ? K.qMixed(q) : qFrac(q); }
+  function qa(q, fl) { const o = K.qAnswer(q, (fl === "int" || fl === "frac") ? "mixed" : fl); const v = q.n / q.d; o.accepted = o.accepted.filter(function (x) { return !/^\d+\.\d+$/.test(x) || Math.abs(Number(x) - v) < 1e-12; }); return o; }
   const FLQ = ["int", "dec", "frac", "mixed"], FQW = [0.5, 4.5, 3.5, 3.5];
   const MONEY = ["int", "dec"], MW = [0.5, 5.5];
   function scaleOf(fl) {
@@ -96,6 +104,7 @@
       for (let t = 0; t < 60; t++) {
         const s = scaleOf(fl);
         const qs = vals.map(function (v) { return qMul(typeof v === "number" ? Q(v) : v, s); });
+        if (qs.some(function (x) { return x.n === 1 && x.d === 1; })) continue;
         if (fl === "dec" && !qs.every(ok2)) continue;
         if (fl !== "int" && qs[0].d === 1) continue;
         if (fl === "int" && !qs.every(function (x) { return x.d === 1; })) continue;
@@ -209,7 +218,7 @@
       const d = pick([6, 7, 8, 9]), dp = d * 10, orig = 100 * int(2, 12), P0 = orig * dp / 100;
       const v = scMoney([orig, P0]), P = dsh(v.qs[1]);
       const goods = shuffle([P + " ÷ " + dp + "%", P + " ÷ " + K.num(dp / 100), P + " × 100 ÷ " + dp]).slice(0, int(2, 3));
-      const bads = shuffle([P + " × " + dp + "%", P + " ÷ (100% - " + dp + "%)", P + " + " + P + " × (100% - " + dp + "%)"]).slice(0, 2);
+      const bads = shuffle([P + " × " + dp + "%", P + " ÷ (100% 減 " + dp + "%)", P + " + " + P + " × (100% 減 " + dp + "%)"]).slice(0, 2);
       return M("某商品打 " + d + " 折之後,售價是 " + P + " 元。下列哪些算式可以求出原價?選出所有正確的。", goods, bads,
         "打 " + d + " 折 = 原價的 " + dp + "%,售價 " + P + " 元是比較量,原價是基準量。\n原價 = " + P + " ÷ " + dp + "% = " + dsh(v.qs[0]) + " 元。" + goods.join("、") + " 的結果都是 " + dsh(v.qs[0]) + "。",
         "常見錯誤:用 " + P + " × " + dp + "%(乘),或用「100% - " + dp + "%」去除。打折後的價錢是原價的 " + dp + "%,所以要「除以 " + dp + "%」才能還原。");
@@ -446,5 +455,212 @@
     })
   ];
 
+  /* ===== 解法二（規格第 16 節）：與解法一不同的思路，用這一題實際的數字動態產生 ===== */
+  function Qn(a, b) { if (b !== undefined) return Q(a, b); if (Number.isInteger(a)) return Q(a); for (let k = 1; k <= 6; k++) { const m = Math.pow(10, k), y = Math.round(a * m); if (Math.abs(y - a * m) < 1e-6) return Q(y, m); } throw new Error("重抽"); }
+  const NUMRE_SRC = "\\d+ \\d+/\\d+|\\d+/\\d+|\\d+\\.\\d+%?|\\d+%?";
+  function pq(t) {
+    t = String(t).trim(); let m;
+    if ((m = t.match(/^(\d+) (\d+)\/(\d+)$/))) return Qn(Number(m[1]) * Number(m[3]) + Number(m[2]), Number(m[3]));
+    if ((m = t.match(/^(\d+)\/(\d+)$/))) return Qn(Number(m[1]), Number(m[2]));
+    if ((m = t.match(/^(\d+)\.(\d+)(%?)$/))) { const base = Qn(Number(m[1] + m[2]), Math.pow(10, m[2].length)); return m[3] ? qMul(base, Qn(1, 100)) : base; }
+    if ((m = t.match(/^(\d+)(%?)$/))) return m[2] ? Qn(Number(m[1]), 100) : Qn(Number(m[1]));
+    throw new Error("重抽");
+  }
+  function tk(s) { return (String(s).match(new RegExp(NUMRE_SRC, "g")) || []).map(pq); }
+  function qeval(str) {
+    str = String(str).replace(/減/g, "-");
+    const re = new RegExp("\\s*(" + NUMRE_SRC + "|[()+\\-×÷])", "g"), toks = []; let m;
+    while ((m = re.exec(str))) toks.push(m[1]);
+    let i = 0;
+    function expr() { let v = term(); while (toks[i] === "+" || toks[i] === "-") { const op = toks[i++], w = term(); v = op === "+" ? qAdd(v, w) : qSub(v, w); } return v; }
+    function term() { let v = fac(); while (toks[i] === "×" || toks[i] === "÷") { const op = toks[i++], w = fac(); v = op === "×" ? qMul(v, w) : qDiv(v, w); } return v; }
+    function fac() { const t = toks[i++]; if (t === "(") { const v = expr(); i++; return v; } return pq(t); }
+    return expr();
+  }
+  /* 自我核對：解法二算出來的值必須和標準答案一致，否則丟錯（不讓錯的解法二出貨） */
+  function numOf(s) { return pq(String(s).replace(/%$/, "").trim()); }
+  function ck(q, s) { let a; try { a = numOf(s); } catch (e) { return q; } if (qCmp(q, a) !== 0) throw new Error("explain2 與答案不一致:" + String(s)); return q; }
+  function ckTf(r, truth) { if (!!truth !== !!r.answer) throw new Error("explain2 與答案不一致(是非)"); }
+  function ckMulti(r, flags) { const want = flags.map(function (f, i) { return f ? i : -1; }).filter(function (i) { return i >= 0; }).join(","); if (r.answer.join(",") !== want) throw new Error("explain2 與答案不一致(複選)"); }
+  function ckEq(a, b) { if (qCmp(a, b) !== 0) throw new Error("explain2 內部算式不一致"); }
+  function unitOf(r) { return r.units && r.units[0] ? " " + r.units[0] : ""; }
+  function goodsOf(r) { return r.answer.map(function (i) { return r.options[i]; }).join("、"); }
+  function verdict(r) { return "所以敘述" + (r.answer ? "正確" : "錯誤") + "。"; }
+  function dispFor(ctx) { const dec = /\d\.\d/.test(ctx), mixed = /\d \d+\/\d+/.test(ctx); return function (q) { return dec && decOK(q) ? K.qDec(q) : K.qMixed(q); }; }
+  function pn(x) { return K.num(x); }
+  function pctOf(q) { return q.n * 100 / q.d; }
+  function boxEq(r) { return r.stem.match(/「([^」]*[□△][^」]*)」/)[1]; }
+  function normEq(e) { return e.replace(" 的 ", " × ").replace(" 是 ", " = "); }
+  function subst(eq, xs) { return qeval(normEq(eq).split(" = ")[0].replace(/□/g, "(" + xs + ")")); }
+  function eqRight(eq) { return qeval(normEq(eq).split(" = ")[1]); }
+  /* 分數化百分率：c ÷ B 約分後，把分母變成 100 */
+  function pctFrac(c, B, d, fin) {
+    const v = qDiv(c, B), p = qMul(v, Qn(100));
+    ck(p, fin);
+    return "用分數想:" + d(c) + " ÷ " + d(B) + " 寫成分數 " + K.qMixed(v) + "(約分後)。\n把分母變成 100,就是百分之 " + pn(p.n / p.d) + ",所以是 " + fin + "。";
+  }
+  /* 百分率化成最簡分數：先除以分母，再乘分子 */
+  function fracPct(B, pq1, d, fin, label) {
+    const fr = Qn(Math.round(pctOf(pq1) * 1000), 100000), x = fr.n, y = fr.d, one = qDiv(B, Qn(y)), res = qMul(one, Qn(x));
+    ck(res, fin);
+    return "把 " + pn(pctOf(pq1)) + "% 化成最簡分數:百分之 " + pn(pctOf(pq1)) + " = " + x + "/" + y + "。\n" + d(B) + " 的 " + x + "/" + y + ":先除以 " + y + "," + d(B) + " ÷ " + y + " = " + d(one) + ";再乘 " + x + ",得 " + d(one) + " × " + x + " = " + d(res) + "。";
+  }
+  /* 設原來是 100 份：parts 份是 c，原來 100 份 = 答案 */
+  function share100(d, c, partsText, parts, fin, finLabel) {
+    const one = qDiv(c, Qn(parts)), whole = qMul(one, Qn(100));
+    ck(whole, finLabel);
+    return "設原來是 100 份。" + partsText + "\n這 " + pn(parts) + " 份是 " + d(c) + ",1 份 = " + d(c) + " ÷ " + pn(parts) + " = " + d(one) + ",原來 100 份 = " + fin + "。";
+  }
+  function stmtV(s) {
+    let m;
+    if ((m = s.match(/^原價先打 ([\d.]+) 折,再打 ([\d.]+) 折,等於打 ([\d.]+) 折$/))) { const a = Number(m[1]) * 10, b = Number(m[2]) * 10, c = a * b / 100; return [Math.abs(c / 10 - Number(m[3])) < 1e-9, m[1] + " 折是 " + pn(a) + "%," + m[2] + " 折是 " + pn(b) + "%," + pn(a) + "% × " + pn(b) + "% = " + pn(c) + "%,即 " + pn(c / 10) + " 折"]; }
+    if (s === "基準量 = 比較量 ÷ 百分率") return [true, "舉例:20 的 50% 是 10,10 ÷ 50% = 20"];
+    if (s === "基準量 = 比較量 × 百分率") return [false, "舉例:20 的 50% 是 10,10 × 50% = 5,不是 20"];
+    if (s === "比較量有可能比基準量大") return [true, "舉例:20 的 150% 是 30,比 20 大"];
+    if (s === "百分率最大只能是 100%") return [false, "舉例:150% 也可以,例如增加一半"];
+    if ((m = s.match(/^增加 ([\d.]+)% 後,新的量是原來的 ([\d.]+)%$/))) return [Math.abs(100 + Number(m[1]) - Number(m[2])) < 1e-9, "原來 100%,增加 " + m[1] + "% 變成 " + pn(100 + Number(m[1])) + "%"];
+    if ((m = s.match(/^減少 ([\d.]+)% 之後,再增加 \1%,會回到原來的量$/))) { const p = Number(m[1]), back = (100 - p) * (100 + p) / 100; return [Math.abs(back - 100) < 1e-9, "設原來 100:減少後 " + pn(100 - p) + ",再增加 " + m[1] + "% 得 " + pn(back) + ",不是 100"]; }
+    throw new Error("explain2 找不到對應的敘述:" + s);
+  }
+  function priceStmt(s, B, cur) {
+    let m;
+    if ((m = s.match(/^現價是 (.+) 元$/))) return [qCmp(pq(m[1]), cur) === 0, "算出現價 " + K.qDec(cur)];
+    if ((m = s.match(/^現價是原價的 ([\d.]+)%$/))) { const r = qMul(qDiv(cur, B), Qn(100)); return [Math.abs(Number(m[1]) - r.n / r.d) < 1e-9, "現價是原價的 " + pn(r.n / r.d) + "%"]; }
+    if (s === "現價比原價低") return [qCmp(cur, B) < 0, "現價 " + K.qDec(cur) + (qCmp(cur, B) < 0 ? " 比原價低" : " 沒有比原價低")];
+    if (s === "現價比原價高") return [qCmp(cur, B) > 0, "現價 " + K.qDec(cur) + (qCmp(cur, B) > 0 ? " 比原價高" : " 沒有比原價高")];
+    if ((m = s.match(/^現價和原價相差 (.+) 元$/))) { const df = qCmp(cur, B) > 0 ? qSub(cur, B) : qSub(B, cur); return [qCmp(pq(m[1]), df) === 0, "相差 " + K.qDec(df)]; }
+    if (s === "現價和原價相同") return [qCmp(cur, B) === 0, "現價和原價" + (qCmp(cur, B) === 0 ? "相同" : "不同")];
+    throw new Error("explain2 找不到對應的敘述:" + s);
+  }
+  function tfNameStmt(r) { return r.stem.match(/「(.+?)的存款是(.+?)的 ([\d.]+)%」.*基準量是(.+?)的存款/); }
+  /* 折扣：打 z 折 → 折掉的百分率 */
+  function offOf(B, z) { const dp = z.n * 10 / z.d; return { dp: dp, off: qMul(B, Qn(Math.round(100 - dp), 100)), cut: 100 - dp }; }
+  function incEq(eq) { const m = eq.match(/\(1 \+ ([\d.]+)%\)/); return Number(m[1]); }
+
+  /* 帶分數參與運算時一律加括號，例如 (2 1/2) ÷ 5 */
+  /* 複選解法二：逐項檢驗（每個選項含錯項都寫出算式或理由） */
+  function rows(r, flags, whys) { return r.options.map(function (o, i) { return (i + 1) + ". " + o + " → " + (flags[i] ? "對" : "錯") + "," + whys[i]; }).join(";\n"); }
+  function pickIdx(r) { return r.answer.map(function (i) { return i + 1; }).join("、"); }
+  function pm(s) {
+    return String(s)
+      .replace(/(?<![(\d\/])(\d+ \d+\/\d+)(?=\s*[×÷+]|\s+-\s)/g, "($1)")
+      .replace(/(?<=[×÷+]\s|\s-\s)(\d+ \d+\/\d+)(?![\d\/)])/g, "($1)");
+  }
+  /* 解析文字裡「某分數 = 同一個分數」的巧合（結果剛好等於其中一個運算數），改寫成「結果是」，避免看起來像恆等式 */
+  function pi(s) {
+    const fix = function (t) { return t.replace(/(?<![\d.\/])(\d+\/\d+)\s*=\s*(\1)(?![\d.\/])/g, function (m, a, b) { return a + ",結果是 " + b; }); };
+    return String(s).split("\n").map(function (ln) { const k = ln.indexOf(" → "); return /^\d+\. /.test(ln) && k >= 0 ? ln.slice(0, k) + fix(ln.slice(k)) : fix(ln); }).join("\n");
+  }
+  const PRE = {};
+
+  const ALT = {
+    "quantity-single-L1-01": function (r) { const t = tk(r.stem), d = dispFor(r.stem); return pctFrac(t[1], t[0], d, r.options[r.answer]); },
+    "quantity-single-L2-02": function (r) { const t = tk(r.stem), d = dispFor(r.stem), B = t[0], z = t[1], o = offOf(B, z); ck(qSub(B, o.off), r.options[r.answer]); return "先算折掉的錢:打 " + pn(z.n / z.d) + " 折是少 " + pn(o.cut) + "%,折掉 " + d(B) + " × " + pn(o.cut) + "% = " + d(o.off) + " 元。\n售價 = " + d(B) + " - " + d(o.off) + " = " + d(qSub(B, o.off)) + " 元。選 " + r.options[r.answer] + "。"; },
+    "quantity-single-L3-03": function (r) { const t = tk(r.stem), d = dispFor(r.stem), c = t[0], p = pctOf(t[1]), one = qDiv(c, Qn(p)); ck(qMul(one, Qn(100)), r.options[r.answer]); return "用 1% 想:" + pn(p) + "% 是 " + d(c) + ",1% = " + d(c) + " ÷ " + pn(p) + " = " + d(one) + "。\n100% = " + d(one) + " × 100 = " + r.options[r.answer] + "。\n所以答案是 " + r.options[r.answer] + "。"; },
+    "quantity-single-L4-04": function (r) {
+      const t = tk(r.stem), d = dispFor(r.stem), B = t[0], p = pctOf(t[1]), up = 100 + p, down = up * (100 - p) / 100, cur = qMul(B, Qn(Math.round(down * 100), 10000));
+      ck(cur, r.options[r.answer]);
+      return "設原價是 100:漲 " + pn(p) + "% 變成 " + pn(up) + ",再降 " + pn(p) + "% 是 " + pn(up) + " × " + pn(100 - p) + "% = " + pn(down) + "。\n現價是原價的 " + pn(down) + "%:" + d(B) + " × " + pn(down) + "% = " + r.options[r.answer] + "。";
+    },
+    "quantity-single-L5-05": function (r) {
+      const t = tk(r.stem), d = dispFor(r.stem), C = t[0], x = pctOf(t[1]), zr = t[2].n * 10 / t[2].d, price100 = (100 + x) * zr / 100, profit = qMul(C, Qn(Math.round((price100 - 100) * 100), 10000));
+      ck(profit, r.options[r.answer]);
+      return "設進貨價是 100:定價 " + pn(100 + x) + ",打折後 " + pn(100 + x) + " × " + pn(zr) + "% = " + pn(price100) + ",賺 " + pn(price100 - 100) + "(也就是進貨價的 " + pn(price100 - 100) + "%)。\n賺 " + d(C) + " × " + pn(price100 - 100) + "% = " + r.options[r.answer] + "。";
+    },
+    "quantity-single-L3-06": function (r) {
+      const eq = boxEq(r), c = eqRight(eq), d = dispFor(r.stem), p = pctOf(tk(eq)[0]), one = qDiv(c, Qn(p)), X = qMul(one, Qn(100));
+      ck(X, r.options[r.answer]);
+      return "用 1% 想:" + pn(p) + "% 是 " + d(c) + ",1% = " + d(c) + " ÷ " + pn(p) + " = " + d(one) + "。\n□ 是 100%,□ = " + d(one) + " × 100 = " + d(X) + ",所以選 " + r.options[r.answer] + "。";
+    },
+    "quantity-multi-L2-01": function (r) {
+      const t = tk(r.stem), B = t[0], c = t[1], d = dispFor(r.stem), pv = pctOf(qDiv(c, B)), flags = [];
+      const wh = r.options.map(function (o) {
+        let m, ok, why;
+        if ((m = o.match(/^基準量是(全部|吃掉)的米重/))) { ok = m[1] === "全部"; why = "整體才是基準量,整體是 " + d(B) + " 公斤"; }
+        else if ((m = o.match(/^比較量是(吃掉|全部)的米重/))) { ok = m[1] === "吃掉"; why = "部分才是比較量,部分是 " + d(c) + " 公斤"; }
+        else if ((m = o.match(/^吃掉的米占全部的 ([\d.]+)%$/))) { ok = Math.abs(Number(m[1]) - pv) < 1e-9; why = d(c) + " ÷ " + d(B) + " = " + pn(pv) + "%"; }
+        else if ((m = o.match(/^剩下的米占全部的 ([\d.]+)%$/))) { ok = Math.abs(Number(m[1]) - (100 - pv)) < 1e-9; why = "剩下 " + d(qSub(B, c)) + " 公斤,占 " + pn(100 - pv) + "%"; }
+        else throw new Error("explain2 找不到對應的敘述:" + o);
+        flags.push(ok); return why;
+      });
+      ckMulti(r, flags);
+      return "先分清楚整體和部分,再逐句檢查:\n" + rows(r, flags, wh) + "。\n所以正確的是第 " + pickIdx(r) + " 個。";
+    },
+    "quantity-multi-L3-02": function (r) { const t = tk(r.stem), B = t[0], p = t[1], d = dispFor(r.stem), want = qMul(B, p), flags = [], wh = r.options.map(function (o) { const v = qeval(o); flags.push(qCmp(v, want) === 0); return "算出 " + d(v) + (qCmp(v, want) === 0 ? ",等於 " + d(want) : ",不等於 " + d(want)); }); ckMulti(r, flags); return "要求的答案是 " + d(want) + ",逐一算出每個算式:\n" + rows(r, flags, wh) + "。\n所以選第 " + pickIdx(r) + " 個。"; },
+    "quantity-multi-L3-03": function (r) { const flags = [], wh = r.options.map(function (o) { const v = stmtV(o); flags.push(v[0]); return v[1]; }); ckMulti(r, flags); return "舉具體的例子檢查每一句:\n" + rows(r, flags, wh) + "。\n所以正確的是第 " + pickIdx(r) + " 個。"; },
+    "quantity-multi-L4-04": function (r) { const t = tk(r.stem), d = dispFor(r.stem), orig = qDiv(t[1], qMul(t[0], Qn(1, 10))), flags = [], wh = r.options.map(function (o) { const v = qeval(o); flags.push(qCmp(v, orig) === 0); return "算出 " + d(v) + (qCmp(v, orig) === 0 ? ",等於原價" : ",不是原價"); }); ckMulti(r, flags); return "原價應該是 " + d(orig) + " 元(打折後的錢 ÷ 折扣的百分率)。逐一算出:\n" + rows(r, flags, wh) + "。\n所以選第 " + pickIdx(r) + " 個。"; },
+    "quantity-multi-L5-05": function (r) {
+      const t = tk(r.stem), B = t[0], p = t[1], q = t[2], rr = qMul(qAdd(Qn(1), p), qSub(Qn(1), q)), cur = qMul(B, rr), flags = [];
+      const wh = r.options.map(function (o) { const v = priceStmt(o, B, cur); flags.push(v[0]); return v[1]; });
+      ckMulti(r, flags);
+      return "設原價是 100:漲 " + pn(pctOf(p)) + "% 變 " + pn(100 + pctOf(p)) + ",再降 " + pn(pctOf(q)) + "% 變 " + pn(pctOf(rr)) + ",現價是原價的 " + pn(pctOf(rr)) + "%。\n逐句檢查:\n" + rows(r, flags, wh) + "。\n所以正確的是第 " + pickIdx(r) + " 個。";
+    },
+    "quantity-tf-L1-01": function (r) {
+      const t = tk(r.stem), B = t[0], p = t[1], x = t[2], d = dispFor(r.stem), fr = Qn(Math.round(pctOf(p) * 1000), 100000), v = qMul(qDiv(B, Qn(fr.d)), Qn(fr.n));
+      ckTf(r, qCmp(v, x) === 0);
+      return "把 " + pn(pctOf(p)) + "% 化成最簡分數 " + fr.n + "/" + fr.d + ",算 " + d(B) + " 的 " + fr.n + "/" + fr.d + ":" + d(B) + " ÷ " + fr.d + " × " + fr.n + " = " + d(v) + (qCmp(v, x) === 0 ? ",和 " + d(x) + " 一樣。" : ",不是 " + d(x) + "。") + verdict(r);
+    },
+    "quantity-tf-L2-02": function (r) { const m = tfNameStmt(r); ckTf(r, m[4] === m[2]); return "舉例子:設" + m[2] + "的存款是 100 元(當 100%),那" + m[1] + "的存款就是 " + m[3] + " 元。\n可見「" + m[2] + "的存款」才是當 100% 的基準量。敘述說基準量是" + m[4] + "的存款," + (m[4] === m[2] ? "和例子一樣。" : "和例子不一樣。") + verdict(r); },
+    "quantity-tf-L3-03": function (r) { let m; const d = Number(r.stem.match(/打 ([\d.]+) 折/)[1]); if ((m = r.stem.match(/只收原價的 ([\d.]+)%/))) { const ok = Math.abs(Number(m[1]) - d * 10) < 1e-9; ckTf(r, ok); return "舉例:原價 100 元,打 " + pn(d) + " 折就是 100 × " + pn(d * 10) + "% = " + pn(d * 10) + " 元。敘述說只收原價的 " + m[1] + "%," + (ok ? "和例子一樣。" : "和例子不一樣。") + verdict(r); } ckTf(r, false); return "舉例:原價 100 元,打 " + pn(d) + " 折賣 " + pn(d * 10) + " 元,少付 " + pn(100 - d * 10) + " 元,也就是減少 " + pn(100 - d * 10) + "%,不是減少 " + pn(d) + "%。" + verdict(r); },
+    "quantity-tf-L4-04": function (r) { const t = tk(r.stem), d = dispFor(r.stem), B = t[0], z = t[1], x = t[2], o = offOf(B, z), price = qSub(B, o.off); ckTf(r, qCmp(price, x) === 0); return "先算折掉的錢:折掉 " + d(B) + " × " + pn(o.cut) + "% = " + d(o.off) + " 元,售價 = " + d(B) + " - " + d(o.off) + " = " + d(price) + " 元" + (qCmp(price, x) === 0 ? ",和敘述的 " + d(x) + " 一樣。" : ",不是敘述的 " + d(x) + "。") + verdict(r); },
+    "quantity-tf-L5-05": function (r) { const t = tk(r.stem), d = dispFor(r.stem), B = t[0], p = t[1], q = t[2], X = t[3], rr = qMul(qAdd(Qn(1), p), qSub(Qn(1), q)), cur = qMul(B, rr); ckTf(r, qCmp(cur, X) === 0); return "設原價是 100:漲 " + pn(pctOf(p)) + "% 變 " + pn(100 + pctOf(p)) + ",再降 " + pn(pctOf(q)) + "% 變 " + pn(pctOf(rr)) + ",現價是原價的 " + pn(pctOf(rr)) + "%。\n" + d(B) + " × " + pn(pctOf(rr)) + "% = " + d(cur) + (qCmp(cur, X) === 0 ? ",和敘述的 " + d(X) + " 一樣。" : ",不是敘述的 " + d(X) + "。") + verdict(r); },
+    "quantity-tf-L2-06": function (r) { const eq = boxEq(r), c = qeval(eq.split(" 是 ")[1]), B = tk(eq)[0], x = r.stem.match(/所以 □ = (.+)。$/)[1], d = dispFor(r.stem), v = qMul(B, qMul(pq(x), Qn(1, 100))); ckTf(r, qCmp(v, c) === 0); return "代入檢查:□ = " + x + ",那 " + d(B) + " 的 " + x + "% = " + d(v) + (qCmp(v, c) === 0 ? ",正好是 " + d(c) + "。" : ",不是 " + d(c) + "。") + verdict(r); },
+    "quantity-fill-L1-01": function (r) { const t = tk(r.stem), d = dispFor(r.stem); return pctFrac(t[1], t[0], d, r.answer + "%"); },
+    "quantity-fill-L2-02": function (r) { const t = tk(r.stem), d = dispFor(r.stem); return fracPct(t[0], t[1], d, r.answer) + "\n答案是 " + r.answer + "。"; },
+    "quantity-fill-L3-03": function (r) { const t = tk(r.stem), d = dispFor(r.stem), B = t[0], z = t[1], o = offOf(B, z); ck(qSub(B, o.off), r.answer); return "先算折掉的錢:打 " + pn(z.n / z.d) + " 折是少 " + pn(o.cut) + "%,折掉 " + d(B) + " × " + pn(o.cut) + "% = " + d(o.off) + " 元。\n售價 = " + d(B) + " - " + d(o.off) + " = " + r.answer + " 元。"; },
+    "quantity-fill-L4-04": function (r) { const t = tk(r.stem), p = pctOf(t[0]), c = t[1], d = dispFor(r.stem), one = qDiv(c, Qn(p)); ck(qMul(one, Qn(100)), r.answer); return "用 1% 想:" + pn(p) + "% 是 " + d(c) + ",1% = " + d(c) + " ÷ " + pn(p) + " = " + d(one) + "。\n100% = " + d(one) + " × 100 = " + r.answer + "。"; },
+    "quantity-fill-L5-05": function (r) { const t = tk(r.stem), p = pctOf(t[0]), c = t[1], d = dispFor(r.stem); return share100(d, c, "增加 " + pn(p) + "%,就是多了 " + pn(p) + " 份,現在共 " + pn(100 + p) + " 份。", 100 + p, r.answer, r.answer); },
+    "quantity-fill-L2-06": function (r) { const eq = boxEq(r), c = eqRight(eq), d = dispFor(r.stem), v = subst(eq, r.answer), p = pctOf(tk(eq)[0]), one = qDiv(c, Qn(p)); ckEq(v, c); ck(qMul(one, Qn(100)), r.answer); return "用 1% 想:" + pn(p) + "% 是 " + d(c) + ",1% = " + d(one) + ",100% = " + d(one) + " × 100 = " + r.answer + "。\n代入檢查:" + r.answer + " 的 " + pn(p) + "% = " + d(v) + "。"; },
+    "quantity-fill-L4-07": function (r) { const eq = boxEq(r), p = incEq(eq), c = eqRight(eq), d = dispFor(r.stem); return share100(d, c, "增加 " + pn(p) + "%,現在是 " + pn(100 + p) + " 份。", 100 + p, r.answer, r.answer); },
+    "quantity-calc-L1-01": function (r) { const t = tk(r.stem), d = dispFor(r.stem); return pctFrac(t[0], t[1], d, r.answer + "%"); },
+    "quantity-calc-L2-02": function (r) { const t = tk(r.stem), d = dispFor(r.stem); return fracPct(t[0], t[1], d, r.answer) + "\n答案是 " + r.answer + "。"; },
+    "quantity-calc-L3-03": function (r) { const t = tk(r.stem), d = dispFor(r.stem), c = t[0], B = t[1], f = qDiv(c, B), w = Math.floor(f.n / f.d), rest = qSub(c, qMul(B, Qn(w))); ck(qAdd(Qn(w), qDiv(rest, B)), r.answer); return "把倍數拆開:" + d(B) + " 的 " + w + " 倍是 " + d(qMul(B, Qn(w))) + ",還差 " + d(c) + " - " + d(qMul(B, Qn(w))) + " = " + d(rest) + "。\n" + d(rest) + " 是 " + d(B) + " 的 " + d(qDiv(rest, B)) + " 倍,合起來 " + w + " + " + d(qDiv(rest, B)) + " = " + r.answer + " 倍。"; },
+    "quantity-calc-L3-07": function (r) { const t = tk(boxEq(r)), d = dispFor(r.stem), B = t[0], c = t[1], f = qDiv(c, B), w = Math.floor(f.n / f.d), rest = qSub(c, qMul(B, Qn(w))); ck(qAdd(Qn(w), qDiv(rest, B)), r.answer); return "把倍數拆開:" + d(B) + " 的 " + w + " 倍是 " + d(qMul(B, Qn(w))) + ",還差 " + d(rest) + ",而 " + d(rest) + " 是 " + d(B) + " 的 " + d(qDiv(rest, B)) + " 倍。\n合起來 □ = " + w + " + " + d(qDiv(rest, B)) + " = " + r.answer + "。"; },
+    "quantity-calc-L1-06": function (r) { const t = tk(boxEq(r)), d = dispFor(r.stem); return pctFrac(t[1], t[0], d, r.answer + "%").replace("所以是", "所以 □ 是"); },
+    "quantity-calc-L4-04": function (r) { const t = tk(r.stem), p = pctOf(t[1]), ans = 100 * p / (100 + p); ck(Qn(Math.round(ans * 1000), 1000), r.answer); return "用分數想:甲 = 乙 × " + pn((100 + p) / 100) + ",所以乙 = 甲 ÷ " + pn((100 + p) / 100) + ",乙是甲的 " + pn(100 / (100 + p)) + "(即 " + pn(100 * 100 / (100 + p)) + "%)。\n乙比甲輕 1 - " + pn(100 / (100 + p)) + " = " + pn(1 - 100 / (100 + p)) + ",也就是 " + r.answer + "%。"; },
+    "quantity-calc-L5-05": function (r) { const t = tk(r.stem), d = dispFor(r.stem), N = t[0], p = t[1], q = t[2], rr = qMul(qSub(Qn(1), p), qSub(Qn(1), q)); ck(qMul(N, rr), r.answer); return "合併成一次:第一次用掉後剩全部的 " + pn(100 - pctOf(p)) + "%,第二次再剩那些的 " + pn(100 - pctOf(q)) + "%,把兩個百分率相乘,最後剩全部的 " + pn(pctOf(rr)) + "%。\n" + d(N) + " × " + pn(pctOf(rr)) + "% = " + r.answer + " 公升。"; },
+    "quantity-calc-L5-08": function (r) {
+      const eq = boxEq(r), m = eq.match(/\(1 \+ ([\d.]+)%\) × \(1 - ([\d.]+)%\) = (.+)$/), pp = Number(m[1]), qq = Number(m[2]), c = pq(m[3]), d = dispFor(r.stem), parts = (100 + pp) * (100 - qq) / 100;
+      return share100(d, c, "漲 " + pn(pp) + "% 變成 " + pn(100 + pp) + " 份,再降 " + pn(qq) + "% 變成 " + pn(100 + pp) + " × " + pn(100 - qq) + "% = " + pn(parts) + " 份。", parts, r.answer, r.answer);
+    },
+    "quantity-word-L2-01": function (r) { const t = tk(r.stem), d = dispFor(r.stem), B = t[0], c = t[1], one = qDiv(B, Qn(10)); ck(qDiv(c, one), r.answer); return "用每 1 折想:1 折 = 原價的十分之一 = " + d(B) + " ÷ 10 = " + d(one) + " 元。\n" + d(c) + " ÷ " + d(one) + " = " + r.answer + ",所以是 " + r.answer + " 折。"; },
+    "quantity-word-L3-02": function (r) { const t = tk(r.stem), d = dispFor(r.stem); return fracPct(t[0], t[1], d, r.answer) + "\n所以用掉 " + r.answer + unitOf(r) + "。"; },
+    "quantity-word-L4-03": function (r) { const t = tk(r.stem), p = pctOf(t[0]), c = t[1], d = dispFor(r.stem); return share100(d, c, "今年少了 " + pn(p) + " 份,只剩 " + pn(100 - p) + " 份。", 100 - p, r.answer + unitOf(r), r.answer); },
+    "quantity-word-L4-04": function (r) { const t = tk(r.stem), d = dispFor(r.stem), B = t[0], z = t[1], m = t[2], o = offOf(B, z), diff = qCmp(o.off, m) > 0 ? qSub(o.off, m) : qSub(m, o.off); ck(diff, r.answer); return "比較少付的錢:甲店折掉 " + d(B) + " × " + pn(o.cut) + "% = " + d(o.off) + " 元,乙店折掉 " + d(m) + " 元。\n少付的差 = " + d(diff) + " 元,所以兩家店售價相差 " + r.answer + unitOf(r) + "。"; },
+    "quantity-word-L5-05": function (r) {
+      const t = tk(r.stem), p = pctOf(t[0]), dd = t[1], d = dispFor(r.stem), g = gcd(p, 100 - p), m = p / g, n = (100 - p) / g, one = qDiv(dd, Qn(n - m));
+      ck(qMul(one, Qn(m + n)), r.answer);
+      return "大蘋果和小蘋果的重量比是 " + pn(p) + ":" + pn(100 - p) + ",化簡成 " + m + ":" + n + "。\n小蘋果比大蘋果多 " + (n - m) + " 份,是 " + d(dd) + " 公斤,1 份 = " + d(dd) + " ÷ " + (n - m) + " = " + d(one) + " 公斤。\n全部 " + (m + n) + " 份 = " + d(one) + " × " + (m + n) + " = " + r.answer + unitOf(r) + "。";
+    },
+    "quantity-word-L4-06": function (r) { const t = tk(r.stem), c = t[1], p = pctOf(t[2]), d = dispFor(r.stem), one = qDiv(c, Qn(p)); ck(qMul(one, Qn(100)), r.answer); return "用 1% 想:" + pn(p) + "% 是 " + d(c) + " 元,1% = " + d(c) + " ÷ " + pn(p) + " = " + d(one) + " 元。\n100% = " + d(one) + " × 100 = " + r.answer + unitOf(r) + "。"; },
+    "quantity-word-L5-07": function (r) { const t = tk(r.stem), p = pctOf(t[0]), S = t[1], d = dispFor(r.stem), one = qDiv(S, Qn(200 + p)); ck(qMul(one, Qn(100)), r.answer); return "設甲是 100 份,乙多 " + pn(p) + "% 就是 " + pn(100 + p) + " 份,兩人共 " + pn(200 + p) + " 份。\n" + pn(200 + p) + " 份是 " + d(S) + " 公斤,1 份 = " + d(one) + " 公斤,甲(100 份)= " + r.answer + unitOf(r) + "。"; }
+  };
+
+
+  /* PRE（解法一的方法說明） */
+PRE["quantity-single-L2-02"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-multi-L2-01"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-tf-L1-01"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-tf-L3-03"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-tf-L4-04"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-tf-L5-05"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-fill-L2-02"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-fill-L3-03"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-fill-L5-05"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-calc-L1-01"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-calc-L2-02"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-word-L3-02"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-word-L4-04"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-word-L5-05"] = function () { return "方法:比較量 = 基準量 × 百分率;百分率 = 比較量 ÷ 基準量;基準量 = 比較量 ÷ 百分率。\n"; };
+PRE["quantity-tf-L2-06"] = function () { return "方法:先看 □ 站在算式的哪個位置,再用逆運算(加減互逆、乘除互逆)把 □ 單獨留在一邊。\n"; };
+PRE["quantity-fill-L4-07"] = function () { return "方法:先看 □ 站在算式的哪個位置,再用逆運算(加減互逆、乘除互逆)把 □ 單獨留在一邊。\n"; };
+PRE["quantity-single-L3-06"] = function () { return "想法:已知的是「□ 的幾% 是多少」,□ 本身是基準量,要用除法反求。\n"; };
+PRE["quantity-word-L4-06"] = function () { return "想法:打折後的錢是原價的幾%,它就是比較量,原價是基準量。\n"; };
+PRE["quantity-single-L3-03"] = function () { return "想法:已知的是比較量,要求的是基準量。" + String.fromCharCode(10); };
+PRE["quantity-multi-L3-03"] = function () { return "想法:折扣和百分率的說法,都可以用具體例子檢查。" + String.fromCharCode(10); };
+PRE["quantity-calc-L3-03"] = function () { return "想法:倍數 = 比較量 ÷ 基準量。" + String.fromCharCode(10); };
+PRE["quantity-calc-L5-05"] = function () { return "想法:兩次減少都是以剩下的量為基準。" + String.fromCharCode(10); };
+PRE["quantity-word-L2-01"] = function () { return "想法:幾折就是十分之幾,把原價平分成 10 份來看。" + String.fromCharCode(10); };
+PRE["quantity-calc-L5-05"] = function () { return "想法:第二次是拿「剩下的」來算百分率,不是拿原來全部的量來算。" + String.fromCharCode(10); };
   ExamBank.register(T, "quantity-basic", single.concat(multi, tf, fill, calc, word, boxes));
 })();

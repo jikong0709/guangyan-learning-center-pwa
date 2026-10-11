@@ -45,7 +45,7 @@
         try {
           const r = addHint(g(kit), type);
           if (r.accepted) r.accepted = r.accepted.filter(function (x) { return !badAcc(x); });
-          const seen = [r.stem, r.explain, r.trapNote || "", String(r.answer)].concat(r.options || []);
+          const seen = [r.stem, r.explain, r.explain2 || "", r.trapNote || "", String(r.answer)].concat(r.options || []);
           if (seen.some(badStr)) throw new Error("重抽");
           return r;
         } catch (e) { if (!/選項重複|干擾項不足|重抽/.test(e.message)) throw e; last = e; }
@@ -53,10 +53,18 @@
       throw last;
     };
   }
+  /* 解法一與解法二的字面相似度（二連字重疊比例） */
+  function simTxt(a, b) {
+    const sq = function (s) { return String(s).replace(/s+/g, "").replace(/[，。；：、（）()]/g, ""); };
+    const gr = function (s) { const q = sq(s), g = new Set(); for (let i = 0; i < q.length - 1; i++) g.add(q.slice(i, i + 2)); return g; };
+    const A = gr(a), B = gr(b); let n = 0; A.forEach(function (x) { if (B.has(x)) n++; });
+    return n / Math.max(1, Math.min(A.size, B.size));
+  }
   function mk(type, level, tag, gen) {
     cnt[type] = (cnt[type] || 0) + 1;
     const n = cnt[type];
-    return { id: T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n, type: type, level: level, tag: tag, gen: retry(gen, type) };
+    const idv = T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n;
+    return { id: idv, type: type, level: level, tag: tag, gen: retry(function (kit) { const r = gen(kit); const f = ALT[idv]; if (f && !r.explain2) r.explain2 = f(r); const p1 = PRE[idv]; if (p1) r.explain = p1(r) + r.explain; r.explain = pi(pm(r.explain)); r.explain2 = pi(pm(r.explain2)); r.stem = pm(r.stem); if (r.options) r.options = r.options.map(pm); return r; }, type) };
   }
   function S(correct, cands) {
     const w = K.distractors(correct, cands, 3);
@@ -73,8 +81,8 @@
   function coprime(lo, hi) { let m, n; do { m = int(lo, hi); n = int(lo, hi); } while (m === n || gcd(m, n) !== 1); return [m, n]; }
   function decOK(q) { if (!K.qIsTerminating(q)) return false; const s = K.qDec(q); return s !== null && Math.abs(Number(s) - q.n / q.d) < 1e-12; }
   function dsh(q) { return decOK(q) ? K.qDec(q) : K.qMixed(q); }
-  function shT(q, fl) { return fl === "dec" ? dsh(q) : fl === "mixed" ? K.qMixed(q) : qFrac(q); }
-  function qa(q, fl) { const o = K.qAnswer(q, fl); const v = q.n / q.d; o.accepted = o.accepted.filter(function (x) { return !/^\d+\.\d+$/.test(x) || Math.abs(Number(x) - v) < 1e-12; }); return o; }
+  function shT(q, fl) { return fl === "dec" ? dsh(q) : (fl === "mixed" || fl === "frac") ? K.qMixed(q) : qFrac(q); }
+  function qa(q, fl) { const o = K.qAnswer(q, (fl === "int" || fl === "frac") ? "mixed" : fl); const v = q.n / q.d; o.accepted = o.accepted.filter(function (x) { return !/^\d+\.\d+$/.test(x) || Math.abs(Number(x) - v) < 1e-12; }); return o; }
   const FL = ["int", "dec", "frac", "mixed"], FLW = [1.5, 3, 3, 1.5];
   function scaleOf(fl) {
     if (fl === "int") return Q(pick([1, 2, 3, 4, 5, 10, 12, 15]));
@@ -196,7 +204,7 @@
         tr(tA) + " 的比值是 " + valShow(v, fl),
         "比的前項和後項同時乘以(或除以)同一個不是 0 的數,比值不變",
         tr(tA) + " 與 " + tr(tB) + " 是相等的比",
-        "在比例 " + tr(tA) + " = " + tr(tB) + " 中,外項的乘積等於內項的乘積"
+        "若 " + tr(tA) + " 與 " + tr(tB) + " 是相等的比,則外項的乘積等於內項的乘積"
       ];
       const falses = [
         tr(tA) + " 與 " + tA.sb + ":" + tA.sa + " 是相等的比",
@@ -493,5 +501,218 @@
     })
   ];
 
+  /* ===== 解法二（規格第 16 節）：與解法一不同的思路，用這一題實際的數字動態產生 ===== */
+  const NUMRE_SRC = "\\d+ \\d+/\\d+|\\d+/\\d+|\\d+\\.\\d+%?|\\d+%?";
+  function pq(t) {
+    t = String(t).trim(); let m;
+    if ((m = t.match(/^(\d+) (\d+)\/(\d+)$/))) return Q(Number(m[1]) * Number(m[3]) + Number(m[2]), Number(m[3]));
+    if ((m = t.match(/^(\d+)\/(\d+)$/))) return Q(Number(m[1]), Number(m[2]));
+    if ((m = t.match(/^(\d+)\.(\d+)(%?)$/))) { const base = Q(Number(m[1] + m[2]), Math.pow(10, m[2].length)); return m[3] ? qMul(base, Q(1, 100)) : base; }
+    if ((m = t.match(/^(\d+)(%?)$/))) return m[2] ? Q(Number(m[1]), 100) : Q(Number(m[1]));
+    throw new Error("重抽");
+  }
+  function tk(s) { return (String(s).match(new RegExp(NUMRE_SRC, "g")) || []).map(pq); }
+  /* 自我核對：解法二算出來的值必須和標準答案一致，否則丟錯（不讓錯的解法二出貨） */
+  function numOf(s) { return pq(String(s).replace(/%$/, "").trim()); }
+  function ck(q, s) { let a; try { a = numOf(s); } catch (e) { return q; } if (qCmp(q, a) !== 0) throw new Error("explain2 與答案不一致:" + String(s)); return q; }
+  function ckTf(r, truth) { if (!!truth !== !!r.answer) throw new Error("explain2 與答案不一致(是非)"); }
+  function ckMulti(r, flags) { const want = flags.map(function (f, i) { return f ? i : -1; }).filter(function (i) { return i >= 0; }).join(","); if (r.answer.join(",") !== want) throw new Error("explain2 與答案不一致(複選)"); }
+  function ckSingle(r, flags) { if (!flags[r.answer] || flags.filter(Boolean).length !== 1) throw new Error("explain2 與答案不一致(單選)"); }
+  function ckEq(a, b) { if (qCmp(a, b) !== 0) throw new Error("explain2 內部算式不一致"); }
+  function unitOf(r) { return r.units && r.units[0] ? " " + r.units[0] : ""; }
+  function goodsOf(r) { return r.answer.map(function (i) { return r.options[i]; }).join("、"); }
+  function verdict(r) { return "所以敘述" + (r.answer ? "正確" : "錯誤") + "。"; }
+  function dq(q) { return decOK(q) ? K.qDec(q) : K.qMixed(q); }
+  /* 依題幹用的寫法顯示數字：有小數點就用小數，有帶分數就用帶分數，否則用分數 */
+  function dispFor(ctx) { const dec = /\d\.\d/.test(ctx), mixed = /\d \d+\/\d+/.test(ctx); return function (q) { return dec && decOK(q) ? K.qDec(q) : K.qMixed(q); }; }
+  function ratioOf(s) { const p = String(s).split(":"); return [pq(p[0]), pq(p[1])]; }
+  /* 比值法：先算比值 前項 ÷ 後項，寫成最簡分數 m/n，前項 m、後項 n */
+  function valueAlt(a, b, fin, ctx) {
+    const d = dispFor(ctx), v = qDiv(a, b);
+    const k = qDiv(a, Q(v.n));
+    if (String(fin) !== v.n + ":" + v.d) throw new Error("explain2 與答案不一致:" + fin);
+    return "把兩項相除:" + d(a) + " ÷ " + d(b) + " = " + d(v) + (v.d === 1 ? " = " + v.n + "/1" : "") + "。" + "\n" + "分數 " + v.n + "/" + v.d + " 的分子當前項、分母當後項,寫成 " + v.n + ":" + v.d + "。" + "\n" + "倒過來檢查:" + v.n + ":" + v.d + " 的前後項同乘 " + dq(k) + ",就得到 " + d(a) + ":" + d(b) + "。" + "\n" + "答案是 " + fin + "。";
+  }
+  /* 令乙 = 1 的連比算法 */
+  function chain3(t1, t2) {
+    const u = qDiv(t1[0], t1[1]), w = qDiv(t2[1], t2[0]), L = lcm(u.d, w.d);
+    let x = u.n * (L / u.d), y = L, z = w.n * (L / w.d); const g = gcd(gcd(x, y), z); x /= g; y /= g; z /= g;
+    return { u: u, w: w, L: L, x: x, y: y, z: z };
+  }
+  function stmtParts(r) { return r.stem.match(/「[^」]*」/g) || []; }
+  function boxEq(r) { const m = r.stem.match(/「([^」]*□[^」]*)」/); if (m) return m[1]; return r.stem.replace(/^解比例:/, "").replace(/,求 □。$/, ""); }
+  /* 內項乘積 = 外項乘積：A:B = C:D → A × D = B × C */
+  function crossAlt(eq, fin) {
+    const sides = eq.split(" = "), L = sides[0].split(":"), R = sides[1].split(":"), s = [L[0], L[1], R[0], R[1]], h = s.indexOf("□"), d = dispFor(eq);
+    const v = s.map(function (x) { return x === "□" ? null : pq(x); });
+    let known, other, text;
+    if (h === 0) { known = qMul(v[1], v[2]); other = v[3]; text = "□ × " + s[3] + " = " + s[1] + " × " + s[2]; }
+    else if (h === 1) { known = qMul(v[0], v[3]); other = v[2]; text = s[0] + " × " + s[3] + " = □ × " + s[2]; }
+    else if (h === 2) { known = qMul(v[0], v[3]); other = v[1]; text = s[0] + " × " + s[3] + " = " + s[1] + " × □"; }
+    else { known = qMul(v[1], v[2]); other = v[0]; text = s[0] + " × □ = " + s[1] + " × " + s[2]; }
+    ck(qDiv(known, other), fin);
+    return "外項乘積 = 內項乘積:" + text + "。\n已知的那邊 = " + d(known) + ",所以 □ = " + d(known) + " ÷ " + d(other) + " = " + fin + "。";
+  }
+  /* 比值法：先算完整那一組比的比值，含 □ 的那一組比值要一樣 */
+  function valBox(eq, fin) {
+    const sides = eq.split(" = "), Lh = sides[0].split(":"), Rh = sides[1].split(":"), s4 = [Lh[0], Lh[1], Rh[0], Rh[1]], h = s4.indexOf("□"), v = s4.map(function (x) { return x === "□" ? null : pq(x); }), d = dispFor(eq);
+    const comp = h < 2 ? [v[2], v[3]] : [v[0], v[1]], compS = h < 2 ? s4[2] + ":" + s4[3] : s4[0] + ":" + s4[1], val = qDiv(comp[0], comp[1]);
+    let X, tail;
+    if (h % 2 === 0) { const second = h < 2 ? v[1] : v[3]; X = qMul(second, val); tail = "含 □ 的這一組,前項 ÷ 後項 也是 " + d(val) + ",即 □ ÷ " + d(second) + " = " + d(val) + "。\n所以 □ = " + d(second) + " × " + d(val) + " = " + d(X) + "。"; }
+    else { const first = h < 2 ? v[0] : v[2]; X = qDiv(first, val); tail = "含 □ 的這一組,前項 ÷ 後項 也是 " + d(val) + ",即 " + d(first) + " ÷ □ = " + d(val) + "。\n所以 □ = " + d(first) + " ÷ " + d(val) + " = " + d(X) + "。"; }
+    ck(X, fin);
+    return "比例式左右兩邊的比值一定相等,所以可以用比值來求 □。先算完整的那一組 " + compS + " 的比值:" + d(comp[0]) + " ÷ " + d(comp[1]) + " = " + d(val) + "。\n" + tail;
+  }
+  function boxVal(eq) { // 求 □ 的值（Q）
+    const sides = eq.split(" = "), L = sides[0].split(":"), R = sides[1].split(":"), s = [L[0], L[1], R[0], R[1]], h = s.indexOf("□"), v = s.map(function (x) { return x === "□" ? null : pq(x); });
+    if (h === 0) return qDiv(qMul(v[1], v[2]), v[3]); if (h === 1) return qDiv(qMul(v[0], v[3]), v[2]); if (h === 2) return qDiv(qMul(v[0], v[3]), v[1]); return qDiv(qMul(v[1], v[2]), v[0]);
+  }
+  function shareStmt(s, ctx) { return s; }
+
+  /* 帶分數參與運算時一律加括號，例如 (2 1/2) ÷ 5 */
+  /* 複選解法二：逐項檢驗（每個選項含錯項都寫出算式或理由） */
+  function rows(r, flags, whys) { return r.options.map(function (o, i) { return (i + 1) + ". " + o + " → " + (flags[i] ? "對" : "錯") + "," + whys[i]; }).join(";\n"); }
+  function pickIdx(r) { return r.answer.map(function (i) { return i + 1; }).join("、"); }
+  function pm(s) {
+    return String(s)
+      .replace(/(?<![(\d\/])(\d+ \d+\/\d+)(?=\s*[×÷+]|\s+-\s)/g, "($1)")
+      .replace(/(?<=[×÷+]\s|\s-\s)(\d+ \d+\/\d+)(?![\d\/)])/g, "($1)");
+  }
+  /* 解析文字裡「某分數 = 同一個分數」的巧合（結果剛好等於其中一個運算數），改寫成「結果是」，避免看起來像恆等式 */
+  function pi(s) {
+    const fix = function (t) { return t.replace(/(?<![\d.\/])(\d+\/\d+)\s*=\s*(\1)(?![\d.\/])/g, function (m, a, b) { return a + ",結果是 " + b; }); };
+    return String(s).split("\n").map(function (ln) { const k = ln.indexOf(" → "); return /^\d+\. /.test(ln) && k >= 0 ? ln.slice(0, k) + fix(ln.slice(k)) : fix(ln); }).join("\n");
+  }
+  const PRE = {};
+
+  const ALT = {
+    "ratio-single-L1-01": function (r) { const t = tk(r.stem); return valueAlt(t[0], t[1], r.options[r.answer], r.stem); },
+    "ratio-single-L3-03": function (r) { const t = tk(r.stem); return valueAlt(t[0], t[1], r.options[r.answer], r.stem); },
+    "ratio-single-L2-02": function (r) { const t = tk(r.stem), v = qDiv(t[0], t[1]); ck(v, r.options[r.answer]); return "前後項同除以公因數,得 " + v.n + ":" + v.d + "。\n再算 " + v.n + " ÷ " + v.d + " = " + r.options[r.answer] + ",這個商就是比值。選 " + r.options[r.answer] + "。"; },
+    "ratio-single-L4-04": function (r) {
+      const t = tk(r.stem), c = chain3([t[0], t[1]], [t[2], t[3]]), rx = c.u.n * (c.L / c.u.d), rz = c.w.n * (c.L / c.w.d), final = c.x + ":" + c.y + ":" + c.z;
+      if (final !== r.options[r.answer]) throw new Error("explain2 與答案不一致:" + final);
+      return "令乙 = 1:甲 = 甲:乙 的比值 = " + K.qMixed(c.u) + ",丙 = 乙 × (乙:丙 的後項 ÷ 前項) = " + K.qMixed(c.w) + "。\n甲:乙:丙 = " + K.qMixed(c.u) + ":1:" + K.qMixed(c.w) + ",同乘 " + c.L + " 得 " + rx + ":" + c.L + ":" + rz + (rx + ":" + c.L + ":" + rz === final ? "(已最簡)" : ",約成 " + final) + "。\n答案是 " + r.options[r.answer] + "。";
+    },
+    "ratio-single-L5-05": function (r) {
+      const t = tk(r.stem), a = t[0], b = t[1], c = t[2], dd = t[3], d = dispFor(r.stem), all = qAdd(qAdd(a, b), c), share = qDiv(qSub(b, a), all), tot = qDiv(dd, share);
+      ck(tot, r.options[r.answer]);
+      return "乙比甲多的部分占全部的幾分之幾?多 " + d(qSub(b, a)) + " 份、全部 " + d(all) + " 份,所以占 " + K.qMixed(share) + "。\n這個部分是 " + d(dd) + " 元,全部 = " + d(dd) + " ÷ " + K.qMixed(share) + " = " + d(tot) + " 元。\n答案是 " + r.options[r.answer] + "。";
+    },
+    "ratio-single-L1-06": function (r) { return valBox(boxEq(r), r.options[r.answer]) + "\n所以選 " + r.options[r.answer] + "。"; },
+    "ratio-single-L3-07": function (r) { return valBox(boxEq(r), r.options[r.answer]) + "\n所以選 " + r.options[r.answer] + "。"; },
+    "ratio-multi-L2-01": function (r) { const b = ratioOf(r.stem.match(/和 (.+?) 相等/)[1]), v = qDiv(b[0], b[1]), flags = [], wh = r.options.map(function (o) { const p = ratioOf(o), w = qDiv(p[0], p[1]); flags.push(qCmp(w, v) === 0); return "比值 " + dq(w) + (qCmp(w, v) === 0 ? ",和 " + dq(v) + " 相同" : ",和 " + dq(v) + " 不同"); }); ckMulti(r, flags); return "比值相同的比才相等。題目的比值是 " + dq(v) + ":\n" + rows(r, flags, wh) + "。\n所以相等的是第 " + pickIdx(r) + " 個。"; },
+    "ratio-multi-L3-02": function (r) { const P = tk(r.stem)[0], flags = [], wh = r.options.map(function (o) { const p = ratioOf(o), w = qDiv(p[0], p[1]); flags.push(qCmp(w, P) === 0); return "比值 " + dq(w) + (qCmp(w, P) === 0 ? ",等於 " + dq(P) : ",不等於 " + dq(P)); }); ckMulti(r, flags); return "要比值是 " + dq(P) + ",逐一算出每個比的比值:\n" + rows(r, flags, wh) + "。\n所以選第 " + pickIdx(r) + " 個。"; },
+    "ratio-multi-L3-03": function (r) {
+      const flags = [], wh = r.options.map(function (o) {
+        let m, ok, why;
+        if (o === "比的前項和後項同時乘以(或除以)同一個不是 0 的數,比值不變") { ok = true; why = "例:2:3 同乘 4 得 8:12,比值都是 2/3"; }
+        else if (o === "比的前項和後項同時加上同一個數,比值不變") { ok = false; why = "例:2:3 同加 1 得 3:4,2/3 不等於 3/4"; }
+        else if ((m = o.match(/^若 (.+) 與 (.+) 是相等的比,則外項/))) { const x = ratioOf(m[1]), y = ratioOf(m[2]); ok = qCmp(qMul(x[0], y[1]), qMul(x[1], y[0])) === 0; why = "外項積 " + dq(qMul(x[0], y[1])) + ",內項積 " + dq(qMul(x[1], y[0])); }
+        else if ((m = o.match(/^(.+) 與 (.+) 是相等的比$/))) { const x = ratioOf(m[1]), y = ratioOf(m[2]), e = qCmp(qDiv(x[0], x[1]), qDiv(y[0], y[1])) === 0; ok = e; why = "比值 " + dq(qDiv(x[0], x[1])) + (e ? " 和 " : " 與 ") + dq(qDiv(y[0], y[1])) + (e ? " 一樣" : " 不一樣"); }
+        else if ((m = o.match(/^(.+) 的比值是 (.+)$/))) { const x = ratioOf(m[1]), v = qDiv(x[0], x[1]); ok = qCmp(v, pq(m[2])) === 0; why = "實際比值是 " + dq(v); }
+        else if ((m = o.match(/^在比例 (.+) 等於 (.+) 中/))) { const x = ratioOf(m[1]), y = ratioOf(m[2]); ok = qCmp(qMul(x[0], y[1]), qMul(x[1], y[0])) === 0; why = "外項積 " + dq(qMul(x[0], y[1])) + ",內項積 " + dq(qMul(x[1], y[0])); }
+        else throw new Error("explain2 找不到對應的敘述:" + o);
+        flags.push(ok); return why;
+      });
+      ckMulti(r, flags);
+      return "舉例或計算每一句:\n" + rows(r, flags, wh) + "。\n所以正確的是第 " + pickIdx(r) + " 個。";
+    },
+    "ratio-multi-L4-04": function (r) {
+      const t = tk(r.stem), v = qDiv(t[0], t[1]), m = v.n, n = v.d, flags = [];
+      const wh = r.options.map(function (o) {
+        let k, ok, why;
+        if ((k = o.match(/^甲是乙的 (.+) 倍$/))) { ok = qCmp(pq(k[1]), Q(m, n)) === 0; why = "甲 " + m + " 份 ÷ 乙 " + n + " 份 = " + K.qMixed(Q(m, n)); }
+        else if ((k = o.match(/^乙是甲的 (.+) 倍$/))) { ok = qCmp(pq(k[1]), Q(n, m)) === 0; why = "乙 " + n + " 份 ÷ 甲 " + m + " 份 = " + K.qMixed(Q(n, m)); }
+        else if ((k = o.match(/^甲占兩人總和的 (.+)$/))) { ok = qCmp(pq(k[1]), Q(m, m + n)) === 0; why = "甲 " + m + " 份 ÷ 總共 " + (m + n) + " 份 = " + K.qMixed(Q(m, m + n)); }
+        else if ((k = o.match(/^乙占兩人總和的 (.+)$/))) { ok = qCmp(pq(k[1]), Q(n, m + n)) === 0; why = "乙 " + n + " 份 ÷ 總共 " + (m + n) + " 份 = " + K.qMixed(Q(n, m + n)); }
+        else if ((k = o.match(/^乙比甲多的部分,是甲的 (.+) 倍$/))) { ok = qCmp(pq(k[1]), Q(n - m, m)) === 0; why = "多的 " + (n - m) + " 份 ÷ 甲 " + m + " 份 = " + K.qMixed(Q(n - m, m)); }
+        else throw new Error("explain2 找不到對應的敘述:" + o);
+        flags.push(ok); return why;
+      });
+      ckMulti(r, flags);
+      return "先把甲看成 " + m + " 份、乙看成 " + n + " 份,逐句算算看:\n" + rows(r, flags, wh) + "。\n所以正確的是第 " + pickIdx(r) + " 個。";
+    },
+    "ratio-multi-L5-05": function (r) {
+      const t = tk(r.stem), N = t[0], a = t[1], b = t[2], c = t[3], all = qAdd(qAdd(a, b), c), d = dispFor(r.stem), flags = [];
+      const sh = { 甲: qMul(N, qDiv(a, all)), 乙: qMul(N, qDiv(b, all)), 丙: qMul(N, qDiv(c, all)) };
+      const wh = r.options.map(function (o) {
+        let m, ok, why;
+        if ((m = o.match(/^(甲|乙|丙)分得 (.+) 元$/))) { ok = qCmp(sh[m[1]], pq(m[2])) === 0; why = m[1] + "實際分得 " + d(sh[m[1]]) + " 元"; }
+        else if ((m = o.match(/^(甲|乙|丙)比(甲|乙|丙)(多|少)分得 (.+) 元$/))) { const df = m[3] === "多" ? qSub(sh[m[1]], sh[m[2]]) : qSub(sh[m[2]], sh[m[1]]); ok = qCmp(df, pq(m[4])) === 0; why = "實際相差 " + d(df) + " 元"; }
+        else throw new Error("explain2 找不到對應的敘述:" + o);
+        flags.push(ok); return why;
+      });
+      ckMulti(r, flags);
+      return "用分數想:甲占 " + K.qMixed(qDiv(a, all)) + "、乙占 " + K.qMixed(qDiv(b, all)) + "、丙占 " + K.qMixed(qDiv(c, all)) + "。\n甲 = " + d(sh["甲"]) + " 元,乙 = " + d(sh["乙"]) + " 元,丙 = " + d(sh["丙"]) + " 元。\n" + rows(r, flags, wh) + "。\n所以正確的是第 " + pickIdx(r) + " 個。";
+    },
+    "ratio-tf-L1-01": function (r) { const m = r.stem.match(/^(.+) 的比值是 (.+)。$/), p = ratioOf(m[1]), v = qDiv(p[0], p[1]); ckTf(r, qCmp(v, pq(m[2])) === 0); return "前後項同除以公因數,得 " + v.n + ":" + v.d + ",再算 " + v.n + " ÷ " + v.d + " = " + dq(v) + ",這個商才是比值" + (qCmp(v, pq(m[2])) === 0 ? ",和 " + m[2] + " 一樣。" : ",不是 " + m[2] + "。") + verdict(r); },
+    "ratio-tf-L2-02": function (r) { const m = r.stem.match(/^(.+) 與 (.+) 是相等的比。$/), x = ratioOf(m[1]), y = ratioOf(m[2]), d = dispFor(r.stem), p1 = qMul(x[0], y[1]), p2 = qMul(x[1], y[0]); ckTf(r, qCmp(p1, p2) === 0); return "交叉相乘檢查(每個比的前項乘對方的後項),兩個乘積一樣大,這兩個比才相等:" + m[1].split(":")[0] + " × " + m[2].split(":")[1] + " = " + d(p1) + ",\n" + m[1].split(":")[1] + " × " + m[2].split(":")[0] + " = " + d(p2) + (qCmp(p1, p2) === 0 ? ",兩個乘積相等。" : ",兩個乘積不相等。") + verdict(r); },
+    "ratio-tf-L3-03": function (r) { const t = tk(r.stem), a = t[0], b = t[1], x = t[2], y = t[3], p1 = qMul(b, y), p2 = qMul(a, x); ckTf(r, qCmp(p1, p2) === 0); return "題目要的是 乙:甲 = " + dq(b) + ":" + dq(a) + "。代入敘述的 " + dq(x) + ":" + dq(y) + ",交叉相乘檢查:" + dq(b) + " × " + dq(y) + " = " + dq(p1) + ",\n" + dq(a) + " × " + dq(x) + " = " + dq(p2) + (qCmp(p1, p2) === 0 ? ",相等。" : ",不相等。") + verdict(r); },
+    "ratio-tf-L4-04": function (r) { const t = tk(r.stem), N = t[0], a = t[1], b = t[2], x = t[3], my = qMul(N, qDiv(a, qAdd(a, b))); ckTf(r, qCmp(my, x) === 0); return "用分數想:甲占全部的 " + K.qMixed(qDiv(a, qAdd(a, b))) + ",甲分得 " + dq(N) + " × " + K.qMixed(qDiv(a, qAdd(a, b))) + " = " + dq(my) + " 元" + (qCmp(my, x) === 0 ? ",和敘述的 " + dq(x) + " 一樣。" : ",不是 " + dq(x) + "。") + verdict(r); },
+    "ratio-tf-L5-05": function (r) { const t = tk(r.stem), c = chain3([t[0], t[1]], [t[2], t[3]]), claim = r.stem.match(/= ([^,。]+)。$/)[1], mine = c.x + ":" + c.y + ":" + c.z; ckTf(r, claim === mine); return "令乙 = 1:甲 = " + K.qMixed(c.u) + ",丙 = " + K.qMixed(c.w) + ",同乘 " + c.L + " 得 甲:乙:丙 = " + mine + "。\n敘述寫的是 " + claim + (claim === mine ? ",和算出來的一樣。" : ",和算出來的不一樣。") + verdict(r); },
+    "ratio-tf-L2-06": function (r) {
+      const eq = boxEq(r), s = eq.split(" = ").join(":").split(":"), x = r.stem.match(/所以 □ = (.+)。$/)[1], v = s.map(function (z) { return z === "□" ? pq(x) : pq(z); }), p1 = qMul(v[0], v[3]), p2 = qMul(v[1], v[2]), d = dispFor(eq);
+      ckTf(r, qCmp(p1, p2) === 0);
+      return "代入檢查:把 □ 換成 " + x + ",外項乘積 " + d(p1) + ",內項乘積 " + d(p2) + (qCmp(p1, p2) === 0 ? ",兩個相等,比例成立。" : ",兩個不相等,比例不成立。") + verdict(r);
+    },
+    "ratio-fill-L1-01": function (r) { const t = tk(r.stem), v = qDiv(t[0], t[1]); ck(v, r.answer); return "前後項同除以公因數,得 " + v.n + ":" + v.d + "。\n再算 " + v.n + " ÷ " + v.d + " = " + r.answer + ",這個商就是比值。"; },
+    "ratio-fill-L2-02": function (r) { const t = tk(r.stem); return valueAlt(t[0], t[1], r.answer, r.stem); },
+    "ratio-fill-L3-03": function (r) { const t = tk(r.stem), A = t[0], B = t[1], C = t[2], k = qDiv(C, A), d = dispFor(r.stem); ck(qMul(B, k), r.answer); return "看前項變成幾倍:" + d(C) + " ÷ " + d(A) + " = " + d(k) + " 倍。\n後項也要變成 " + d(k) + " 倍:" + d(B) + " × " + d(k) + " = " + d(qMul(B, k)) + "。答案是 " + r.answer + "。"; },
+    "ratio-fill-L4-04": function (r) { const t = tk(r.stem); return valueAlt(t[0], t[1], r.answer, r.stem); },
+    "ratio-fill-L5-05": function (r) {
+      const t = tk(r.stem), c = chain3([t[0], t[1]], [t[2], t[3]]), Z = t[4], d = dispFor(r.stem), u1 = qDiv(t[0], t[1]), w1 = qDiv(t[2], t[3]), rx = c.u.n * (c.L / c.u.d), rz = c.w.n * (c.L / c.w.d);
+      ck(qMul(Z, Q(c.x, c.z)), r.answer);
+      return "先把兩個比各自化簡:甲:乙 = " + u1.n + ":" + u1.d + ",乙:丙 = " + w1.n + ":" + w1.d + "。\n令乙 = 1:甲 = " + K.qMixed(c.u) + ",丙 = " + K.qMixed(c.w) + ",同乘 " + c.L + " 得 甲:乙:丙 = " + rx + ":" + c.L + ":" + rz + (rx + ":" + c.L + ":" + rz === c.x + ":" + c.y + ":" + c.z ? "(已最簡)" : ",約成 " + c.x + ":" + c.y + ":" + c.z) + "。\n所以甲是丙的 " + c.x + "/" + c.z + ",甲 = " + d(Z) + " × " + c.x + "/" + c.z + " = " + r.answer + "。";
+    },
+    "ratio-fill-L3-06": function (r) { return valBox(boxEq(r), r.answer); },
+    "ratio-fill-L4-07": function (r) { return valBox(boxEq(r), r.answer); },
+    "ratio-calc-L1-01": function (r) { const t = tk(r.stem), v = qDiv(t[0], t[1]); ck(v, r.answer); return "前後項同除以公因數,得 " + v.n + ":" + v.d + "。\n再算 " + v.n + " ÷ " + v.d + " = " + r.answer + ",這個商就是比值。"; },
+    "ratio-calc-L2-02": function (r) { const t = tk(r.stem); return valueAlt(t[0], t[1], r.answer, r.stem); },
+    "ratio-calc-L3-03": function (r) { return valBox(boxEq(r), r.answer); },
+    "ratio-calc-L4-04": function (r) { const t = tk(r.stem), N = t[0], a = t[1], b = t[2], all = qAdd(a, b), d = dispFor(r.stem), my = qMul(N, qDiv(a, all)), you = qMul(N, qDiv(b, all)); ck(qSub(you, my), r.answer); return "用分數想:甲占 " + K.qMixed(qDiv(a, all)) + ",乙占 " + K.qMixed(qDiv(b, all)) + "。\n甲 = " + d(my) + " 元,乙 = " + d(you) + " 元,乙比甲多 " + d(you) + " - " + d(my) + " = " + r.answer + " 元。"; },
+    "ratio-calc-L5-05": function (r) { const t = tk(r.stem), a = t[0], b = t[1], c = t[2], S = t[3], d = dispFor(r.stem); ck(qDiv(qMul(S, c), qAdd(a, b)), r.answer); return "丙和(甲 + 乙)的比是 " + d(c) + ":" + d(qAdd(a, b)) + "。\n丙 ÷ " + d(S) + " = " + d(c) + " ÷ " + d(qAdd(a, b)) + ",所以丙 = " + d(S) + " × " + d(c) + " ÷ " + d(qAdd(a, b)) + " = " + r.answer + "。"; },
+    "ratio-calc-L2-06": function (r) { return valBox(boxEq(r), r.answer); },
+    "ratio-calc-L5-07": function (r) {
+      const t = tk(r.stem), A0 = t[0], C0 = t[1], x = pq(r.answer), q = qDiv(C0, A0), kn = Math.round(Math.sqrt(q.n)), kd = Math.round(Math.sqrt(q.d)), d = dispFor(r.stem);
+      if (kn * kn !== q.n || kd * kd !== q.d) throw new Error("explain2 與答案不一致");
+      const m = Q(kn, kd); ckEq(qMul(A0, m), x);
+      return "兩個比相等,表示每一步都乘同一個倍數(先叫它 ○):" + d(A0) + " 乘 ○ 得 □,□ 再乘 ○ 得 " + d(C0) + "。\n所以 " + d(C0) + " 是 " + d(A0) + " 的「○ × ○」倍:" + d(C0) + " ÷ " + d(A0) + " = " + d(q) + "。\n" + (kd === 1 ? d(q) + " = " + kn + " × " + kn + ",所以 ○ = " + kn : d(q) + " = (" + kn + " × " + kn + ") ÷ (" + kd + " × " + kd + "),所以 ○ = " + kn + "/" + kd) + "。\n□ = " + d(A0) + " × " + d(m) + " = " + r.answer + "。";
+    },
+    "ratio-word-L2-01": function (r) { const t = tk(r.stem); return valueAlt(t[0], t[1], r.answer, r.stem); },
+    "ratio-word-L3-02": function (r) { const t = tk(r.stem), N = t[0], a = t[1], b = t[2], d = dispFor(r.stem); ck(qMul(N, qDiv(b, qAdd(a, b))), r.answer); return "用分數想:妹妹占全部的 " + b.n + "/" + (a.n + b.n) + "。\n" + d(N) + " × " + b.n + "/" + (a.n + b.n) + " = " + r.answer + unitOf(r) + "。"; },
+    "ratio-word-L4-03": function (r) { const t = tk(r.stem), a = t[0], b = t[1], M = t[2], d = dispFor(r.stem); ck(qDiv(qMul(M, qAdd(a, b)), a), r.answer); return "紅色占全長的 " + a.n + "/" + (a.n + b.n) + "。\n全長 = " + d(M) + " ÷ " + a.n + "/" + (a.n + b.n) + " = " + d(M) + " × " + (a.n + b.n) + "/" + a.n + " = " + r.answer + unitOf(r) + "。"; },
+    "ratio-word-L4-04": function (r) {
+      const t = tk(r.stem), a = t[0], b = t[1], X = t[2], Y = t[3], tot = qAdd(a, b), d = dispFor(r.stem), fromX = qMul(X, qDiv(tot, a)), fromY = qMul(Y, qDiv(tot, b));
+      ck(qCmp(fromX, fromY) < 0 ? fromX : fromY, r.answer);
+      return "分別看兩種材料最多能調多少:\n紅茶 " + d(X) + " 毫升占飲料的 " + a.n + "/" + tot.n + ",最多 " + d(fromX) + " 毫升;\n牛奶 " + d(Y) + " 毫升占飲料的 " + b.n + "/" + tot.n + ",最多 " + d(fromY) + " 毫升。\n兩個都要夠,取小的:" + r.answer + unitOf(r) + "。";
+    },
+    "ratio-word-L5-05": function (r) {
+      const t = tk(r.stem), a = t[0], b = t[1], k = t[2], c = t[3], dd = t[4], d = dispFor(r.stem);
+      const same = qCmp(b, a) > 0 ? qSub(b, a) : qSub(a, b), newShare = qCmp(dd, c) > 0 ? qSub(dd, c) : qSub(c, dd), perNew = qDiv(same, newShare), jiaLeft = qMul(c, perNew), kShare = qSub(a, jiaLeft), one = qDiv(k, kShare);
+      ck(qMul(a, one), r.answer);
+      return "兩人花掉一樣多的錢,差不變。原來差 " + d(same) + " 份,後來差 " + d(newShare) + " 份,所以後來 1 份 = 原來的 " + d(perNew) + " 份。\n甲後來有 " + d(c) + " × " + d(perNew) + " = " + d(jiaLeft) + " 份,花掉 " + d(k) + " 元就是 " + d(a) + " - " + d(jiaLeft) + " = " + d(kShare) + " 份,1 份 = " + d(one) + " 元。\n甲原來 " + d(a) + " × " + d(one) + " = " + r.answer + unitOf(r) + "。";
+    },
+    "ratio-word-L3-06": function (r) { return valBox(boxEq(r), r.answer) + "\n所以藍色要配 " + r.answer + unitOf(r) + "。"; },
+    "ratio-word-L5-07": function (r) { const S = tk(r.stem)[0], m = r.stem.match(/□:△ = (\d+):(\d+)/), a = Number(m[1]), b = Number(m[2]), d = dispFor(r.stem); ck(qMul(S, Q(a, a + b)), r.answer); return "用分數想:□ 占全部的 " + a + "/" + (a + b) + "。\n□ = " + d(S) + " × " + a + "/" + (a + b) + " = " + r.answer + unitOf(r) + "。"; }
+  };
+
+
+  /* PRE（解法一的方法說明） */
+PRE["ratio-single-L5-05"] = function () { return "方法:前項、後項同乘或同除一個不是 0 的數,比不會改變。\n"; };
+PRE["ratio-tf-L1-01"] = function () { return "方法:前項、後項同乘或同除一個不是 0 的數,比不會改變。\n"; };
+PRE["ratio-fill-L1-01"] = function () { return "方法:前項、後項同乘或同除一個不是 0 的數,比不會改變。\n"; };
+PRE["ratio-single-L1-06"] = function () { return "方法:比例式的左右兩邊比值相同,先找出已知的那一組比,再看含 □ 的那一組是它的幾倍。\n"; };
+PRE["ratio-fill-L3-06"] = function () { return "方法:比例式的左右兩邊比值相同,先找出已知的那一組比,再看含 □ 的那一組是它的幾倍。\n"; };
+PRE["ratio-word-L3-06"] = function () { return "方法:比例式的左右兩邊比值相同,先找出已知的那一組比,再看含 □ 的那一組是它的幾倍。\n"; };
+PRE["ratio-calc-L1-01"] = function () { return "想法:比的前項除以後項,得到的數就是比值。\n"; };
+PRE["ratio-calc-L3-03"] = function () { return "想法:比例式左右兩邊的比值相同,先找出已知的那一組比。\n"; };
+PRE["ratio-multi-L4-04"] = function () { return "想法:把甲、乙各看成幾份,倍數和占總和的幾分之幾都從份數來。\n"; };
+PRE["ratio-single-L2-02"] = function () { return "想法:比值就是前項除以後項。" + String.fromCharCode(10); };
+PRE["ratio-multi-L3-03"] = function () { return "想法:比的前後項要「同乘、同除」才不變。" + String.fromCharCode(10); };
+PRE["ratio-fill-L5-05"] = function () { return "想法:先把甲、乙、丙連成一個比,再看甲和丙的關係。" + String.fromCharCode(10); };
+PRE["ratio-tf-L2-02"] = function () { return "想法:兩個比相不相等,要看前後項是不是同乘(或同除)同一個數,不能用同加或同減。" + String.fromCharCode(10); };
+PRE["ratio-fill-L5-05"] = function () { return "想法:甲和丙都跟乙有關,先把乙的份數統一,再比較甲和丙。" + String.fromCharCode(10); };
+PRE["ratio-word-L3-06"] = function () { return "想法:顏料的紅色和藍色要照同樣的比調,比例式的左右兩邊比值一樣。" + String.fromCharCode(10) + "先把題目裡寫好的那一組比,看成幾份對幾份。" + String.fromCharCode(10); };
   ExamBank.register(T, "ratio-basic", single.concat(multi, tf, fill, calc, word, boxes));
 })();

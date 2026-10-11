@@ -33,6 +33,7 @@ function makeSpec(topic, type, i) {
     gen(kit) {
       const n = kit.int(2, 9);
       const base = { stem: id + " 題幹 n=" + n, explain: "解析：" + n + "×2=" + (n * 2), trapNote: tag === "trap" ? "易錯：忘記乘 2" : undefined };
+      if (i % 4 !== 3) base.explain2 = "解法二：換個角度 " + n + "+" + n + "=" + (n * 2); /* i%4==3 的 spec 刻意缺 explain2 */
       if (type === "single") {
         const ch = kit.choices(String(n * 2), [String(n * 2 + 1), String(n * 2 + 2), String(n * 2 + 3)]);
         return Object.assign(base, ch);
@@ -75,7 +76,7 @@ for (let r = 0; r < 60; r++) {
   ex.sections.forEach(s => { const e = secExpect[s.type]; if (s.count !== e[0] || s.each !== secEach[s.type] || s.items.some(i => i.points !== secEach[s.type]) || s.points !== e[1] || s.items.reduce((a, i) => a + i.points, 0) !== e[1]) okSec = false; });
   ex.sections.forEach(s => { for (let i = 1; i < s.items.length; i++) if (s.items[i].level < s.items[i - 1].level) okAsc = false; });
   if (ex.sections.map(s => s.type).join() !== "tf,single,multi,fill,calc,word") okWord = false;
-  if (new Set(ex.items.map(i => i.specId)).size !== ex.items.length) okUniq = false;
+  { const tpp = engine.topicsOfUnits(units).topics; ex.sections.forEach(sc => { const pool = engine.buildPools(tpp, [sc.type], 1, 5)[sc.type].length; const ids = sc.items.map(i => i.specId); if (sc.count <= pool && new Set(ids).size !== ids.length) okUniq = false; }); }
   const trap = ex.items.filter(i => i.tag === "trap").length, ext = ex.items.filter(i => i.tag === "extend").length;
   if (trap < 2 || ext < 2 || trap > 10 || ext > 10) { okTE = false; detail = "trap=" + trap + " ext=" + ext; }
   const tp = engine.topicsOfUnits(units).topics, cnt = {}; tp.forEach(t => { cnt[t] = 0; }); ex.items.forEach(i => { cnt[i.topic]++; });
@@ -205,6 +206,39 @@ check("洗牌後單選答案索引仍指向正解文字", okAnsw);
   check("二十題模式不受影響: 20 題×5 分、單一大題無名稱", m.items.length === 20 && m.items.every(i => i.points === 5) && m.sections.length === 1 && m.sections[0].type === null);
   const sm = engine.summarize(ex2, {});
   check("結果統計含各大題得分 bySection (名稱/得分/滿分)", sm.bySection.length === 2 && sm.bySection.reduce((a, x) => a + x.max, 0) === 100);
+}
+
+/* 第 16 節：explain2 傳遞與答案卷正解顯示 */
+{
+  let okPass = true, okMissing = 0, okShow = true, d = "", cnt = { single: 0, multi: 0, tf: 0, text: 0 };
+  for (let r = 0; r < 30; r++) {
+    const ex = engine.buildExam({ mode: r % 2 ? "score" : "practice", units: pickUnits("hanlin", 3), types: ALL });
+    ex.items.forEach(it => {
+      const n = Number(it.stem.match(/n=([0-9]+)/)[1]);
+      const idx = Number(it.specId.split("-").pop());
+      if (idx % 4 === 3) { if (it.explain2 !== undefined) { okPass = false; d = "缺 explain2 的題不應有欄位"; } else okMissing++; }
+      else if (it.explain2 !== "解法二：換個角度 " + n + "+" + n + "=" + (n * 2)) { okPass = false; d = it.specId + " explain2 不一致: " + it.explain2; }
+      const a = engine.describeAnswer(it);
+      if (it.type === "single") { cnt.single++; if (a !== "ABCD"[it.answer] + ". " + n * 2 || it.options[it.answer] !== String(n * 2)) { okShow = false; d = "單選正解顯示 " + a; } }
+      else if (it.type === "multi") { cnt.multi++; const want = ["甲" + n, "丙" + n], bad = ["乙" + n, "丁" + n, "戊" + n]; if (!want.every(w => a.includes(w)) || bad.some(w => a.includes(w)) || it.answer.length !== 2) { okShow = false; d = "複選正解顯示 " + a; } }
+      else if (it.type === "tf") { cnt.tf++; if (a !== (n % 2 === 0 ? cfg.labels.yes : cfg.labels.no) || !/[○✕]/.test(a)) { okShow = false; d = "是非正解顯示 " + a; } }
+      else { cnt.text++; if (a !== String(n * 2)) { okShow = false; d = "填空正解顯示 " + a; } }
+    });
+  }
+  check("explain2 原樣傳遞到考卷題目 (有 explain2 的題相同、缺的題不帶欄位且不報錯, 缺 " + okMissing + " 題)", okPass && okMissing > 0, d);
+  check("洗牌後答案卷正解顯示正確 (單選 " + cnt.single + "/複選 " + cnt.multi + "/是非 " + cnt.tf + "/文字 " + cnt.text + " 題)", okShow && cnt.single && cnt.multi && cnt.tf && cnt.text, d);
+}
+
+/* 列印考卷不得洩漏答案：靜態檢查 UI 原始碼與列印 CSS 的切換邏輯 */
+{
+  const ui = fs.readFileSync(path.join(root, "exam-engine", "ui.js"), "utf8");
+  const css = fs.readFileSync(path.join(root, "exam-engine", "exam.css"), "utf8");
+  const pr = css.slice(css.lastIndexOf("@media print"));
+  check("列印考卷: UI 不再輸出「解答與解析」區塊 (無 printKey / ex-printkey)", !/printKey\(|ex-printkey|解答與解析/.test(ui) && !/ex-printkey/.test(css));
+  check("列印考卷: 列印 CSS 預設隱藏答案卷 (.ex-key none)，只有 body.ex-print-key 才顯示", /\n\s*\.ex-key \{ display: none !important; \}/.test(pr) && /body\.ex-print-key \.ex-key \{ display: grid !important/.test(pr));
+  check("列印考卷: 「列印考卷」鈕直接 window.print()（不加 ex-print-key）；只有「列印答案卷」會加", /id: "ex-print-exam", onclick: \(\) => window\.print\(\)/.test(ui) && (ui.match(/classList\.add\("ex-print-key"\)/g) || []).length === 1);
+  check("列印答案卷: ex-print-key 時隱藏考卷／結果頁其他區塊", /body\.ex-print-key \.ex-examview > \*:not\(\.ex-key\)/.test(pr));
+  check("列印考卷: 作答頁題目卡不含解析欄位 (feedback 在列印隱藏)", /\.ex-feedback \{ display: none !important; \}/.test(pr));
 }
 
 /* 難度範圍 */

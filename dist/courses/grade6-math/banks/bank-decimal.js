@@ -44,7 +44,7 @@
         try {
           const r = addHint(g(kit), type);
           if (r.accepted) r.accepted = r.accepted.filter(function (x) { return !badAcc(x); });
-          const seen = [r.stem, r.explain, r.trapNote || "", String(r.answer)].concat(r.options || []);
+          const seen = [r.stem, r.explain, r.explain2 || "", r.trapNote || "", String(r.answer)].concat(r.options || []);
           if (seen.some(badStr)) throw new Error("重抽");
           return r;
         } catch (e) { if (!/選項重複|干擾項不足|重抽/.test(e.message)) throw e; last = e; }
@@ -52,10 +52,18 @@
       throw last;
     };
   }
+  /* 解法一與解法二的字面相似度（二連字重疊比例） */
+  function simTxt(a, b) {
+    const sq = function (s) { return String(s).replace(/s+/g, "").replace(/[，。；：、（）()]/g, ""); };
+    const gr = function (s) { const q = sq(s), g = new Set(); for (let i = 0; i < q.length - 1; i++) g.add(q.slice(i, i + 2)); return g; };
+    const A = gr(a), B = gr(b); let n = 0; A.forEach(function (x) { if (B.has(x)) n++; });
+    return n / Math.max(1, Math.min(A.size, B.size));
+  }
   function mk(type, level, tag, gen) {
     cnt[type] = (cnt[type] || 0) + 1;
     const n = cnt[type];
-    return { id: T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n, type: type, level: level, tag: tag, gen: retry(gen, type) };
+    const idv = T + "-" + type + "-L" + level + "-" + (n < 10 ? "0" : "") + n;
+    return { id: idv, type: type, level: level, tag: tag, gen: retry(function (kit) { const r = gen(kit); const f = ALT[idv]; if (f && !r.explain2) r.explain2 = f(r); const p1 = PRE[idv]; if (p1) r.explain = p1(r) + r.explain; r.explain = pi(pm(r.explain)); r.explain2 = pi(pm(r.explain2)); r.stem = pm(r.stem); if (r.options) r.options = r.options.map(pm); return r; }, type) };
   }
   function S(correct, cands) {
     const w = K.distractors(correct, cands, 3);
@@ -419,9 +427,9 @@
   ];
 
   /* ===== 教材式 □ 未知數題（規格第 14 節）===== */
-  function dv(lo, hi, FLs, places) { const fl = K.flavor(FLs || ["dec", "dec", "int"]); const q = gen1(fl, { min: lo, max: hi, places: places }); return { q: q, f: fl }; }
+  function dv(lo, hi, FLs, places) { for (let t = 0; t < 50; t++) { const fl = K.flavor(FLs || ["dec", "dec", "int"]); const q = gen1(fl, { min: lo, max: hi, places: places }); if (qCmp(q, Q(1)) !== 0) return { q: q, f: fl }; } throw new Error("重抽"); }
   function shv(o) { return sho(o.q, o.f); }
-  function need(q) { if (!decOK(q) || q.n > 200000) throw new Error("重抽"); return q; }
+  function need(q) { if (!decOK(q) || q.n > 200000 || qCmp(q, Q(1)) === 0) throw new Error("重抽"); return q; }
 
   const boxes = [
     mk("calc", 1, "basic", function () {
@@ -451,6 +459,7 @@
     mk("fill", 4, "trap", function () {
       const b = dv(0.5, 9, ["dec", "int"]), c = dv(2, 9, ["int", "dec"]), d = dv(1, 9, ["dec", "int"]);
       const X = need(qAdd(qMul(d.q, c.q), b.q)), a = qa(X);
+      if (!decOK(qDiv(b.q, c.q))) throw new Error("重抽");
       return { stem: "「(□ - " + shv(b) + ") ÷ " + shv(c) + " = " + shv(d) + "」,□ = ____", answer: a.answer, accepted: a.accepted,
         explain: "括號裡的 □ - " + shv(b) + " 是被除數 = 商 × 除數 = " + shv(d) + " × " + shv(c) + " = " + dsh(qMul(d.q, c.q)) + "。\n□ = " + dsh(qMul(d.q, c.q)) + " + " + shv(b) + " = " + dsh(X) + "。\n驗算:(" + dsh(X) + " - " + shv(b) + ") ÷ " + shv(c) + " = " + shv(d) + "。",
         trapNote: "常見錯誤:還原時順序弄反,先加再乘,或把減 " + shv(b) + " 變成再減一次,得到 " + dsh(qSub(qMul(d.q, c.q), b.q).n > 0 ? qSub(qMul(d.q, c.q), b.q) : Q(1)) + "。要由後往前還原:先乘回除數,再加回減掉的數。" };
@@ -476,6 +485,7 @@
     mk("fill", 5, "extend", function () {
       const X = dv(1, 12, ["dec", "int"]), b = dv(0.2, 9, ["dec", "int"]), d = dv(1, 9, ["int", "dec"]);
       const c = need(qDiv(qMul(X.q, b.q), d.q)), a = qa(X.q);
+      if (!decOK(qDiv(b.q, d.q))) throw new Error("重抽");
       return { stem: "「□ × " + shv(b) + " ÷ " + shv(d) + " = " + dsh(c) + "」,□ = ____", answer: a.answer, accepted: a.accepted,
         explain: "由後往前還原:先 × " + shv(d) + ":" + dsh(c) + " × " + shv(d) + " = " + dsh(qMul(c, d.q)) + ";再 ÷ " + shv(b) + ":□ = " + dsh(qMul(c, d.q)) + " ÷ " + shv(b) + " = " + dsh(X.q) + "。" };
     }),
@@ -486,5 +496,197 @@
     })
   ];
 
+  /* ===== 解法二（規格第 16 節）：與解法一不同的思路，用這一題實際的數字動態產生 ===== */
+  const NUMRE_SRC = "\\d+ \\d+/\\d+|\\d+/\\d+|\\d+\\.\\d+%?|\\d+%?";
+  function pq(t) {
+    t = String(t).trim(); let m;
+    if ((m = t.match(/^(\d+) (\d+)\/(\d+)$/))) return Q(Number(m[1]) * Number(m[3]) + Number(m[2]), Number(m[3]));
+    if ((m = t.match(/^(\d+)\/(\d+)$/))) return Q(Number(m[1]), Number(m[2]));
+    if ((m = t.match(/^(\d+)\.(\d+)(%?)$/))) { const base = Q(Number(m[1] + m[2]), Math.pow(10, m[2].length)); return m[3] ? qMul(base, Q(1, 100)) : base; }
+    if ((m = t.match(/^(\d+)(%?)$/))) return m[2] ? Q(Number(m[1]), 100) : Q(Number(m[1]));
+    throw new Error("重抽");
+  }
+  function tk(s) { return (String(s).match(new RegExp(NUMRE_SRC, "g")) || []).map(pq); }
+  function qeval(str) {
+    const re = new RegExp("\\s*(" + NUMRE_SRC + "|[()+\\-×÷])", "g"), toks = []; let m;
+    while ((m = re.exec(str))) toks.push(m[1]);
+    let i = 0;
+    function expr() { let v = term(); while (toks[i] === "+" || toks[i] === "-") { const op = toks[i++], w = term(); v = op === "+" ? qAdd(v, w) : qSub(v, w); } return v; }
+    function term() { let v = fac(); while (toks[i] === "×" || toks[i] === "÷") { const op = toks[i++], w = fac(); v = op === "×" ? qMul(v, w) : qDiv(v, w); } return v; }
+    function fac() { const t = toks[i++]; if (t === "(") { const v = expr(); i++; return v; } return pq(t); }
+    return expr();
+  }
+  /* 自我核對：解法二算出來的值必須和標準答案一致，否則丟錯（不讓錯的解法二出貨） */
+  function numOf(s) { return pq(String(s).replace(/%$/, "").trim()); }
+  function ck(q, s) { let a; try { a = numOf(s); } catch (e) { return q; } if (qCmp(q, a) !== 0) throw new Error("explain2 與答案不一致:" + String(s)); return q; }
+  function ckTf(r, truth) { if (!!truth !== !!r.answer) throw new Error("explain2 與答案不一致(是非)"); }
+  function ckMulti(r, flags) { const want = flags.map(function (f, i) { return f ? i : -1; }).filter(function (i) { return i >= 0; }).join(","); if (r.answer.join(",") !== want) throw new Error("explain2 與答案不一致(複選)"); }
+  function ckSingle(r, flags) { if (!flags[r.answer] || flags.filter(Boolean).length !== 1) throw new Error("explain2 與答案不一致(單選)"); }
+  function ckEq(a, b) { if (qCmp(a, b) !== 0) throw new Error("explain2 內部算式不一致"); }
+  function unitOf(r) { return r.units && r.units[0] ? " " + r.units[0] : ""; }
+  function goodsOf(r) { return r.answer.map(function (i) { return r.options[i]; }).join("、"); }
+  function verdict(r) { return "所以敘述" + (r.answer ? "正確" : "錯誤") + "。"; }
+  function sig1(x) { return Number(Number(x).toPrecision(1)); }
+  function placesOf(q) { const t = dsh(q), i = t.indexOf("."); return i < 0 ? 0 : t.length - i - 1; }
+  /* 計數單位法：兩個數都換成「幾個 0.1（0.01…）」，單位一樣，就直接比個數 */
+  function estAlt(aS, bS, fin) {
+    const a = pq(aS), b = pq(bS), k = Math.max(placesOf(a), placesOf(b));
+    ck(qDiv(a, b), fin);
+    if (k === 0) {
+      const aa = a.n, bb = b.n, w = Math.floor(aa / bb), rem = aa - w * bb;
+      if (rem === 0) return aa + " ÷ " + bb + " 剛好整除,得 " + w + "。\n答案是 " + fin + "。";
+      return "先用整數除:" + aa + " ÷ " + bb + " = " + w + " 餘 " + rem + "。\n餘下的 " + rem + " 再除以 " + bb + ":" + rem + " ÷ " + bb + " = " + dsh(Q(rem, bb)) + "。\n合起來:" + w + " + " + dsh(Q(rem, bb)) + " = " + fin + "。\n答案是 " + fin + "。";
+    }
+    const u = Q(1, Math.pow(10, k)), A = qMul(a, Q(Math.pow(10, k))), B = qMul(b, Q(Math.pow(10, k)));
+    return "用計數單位想:每個計數單位是 " + dsh(u) + "。" + aS + " 是 " + A.n + " 個 " + dsh(u) + ",\n" + bS + " 是 " + B.n + " 個 " + dsh(u) + "。\n單位一樣大,所以相除就是比個數:" + A.n + " ÷ " + B.n + " = " + fin + "。\n答案是 " + fin + "。";
+  }
+  function exprParts(r) { return r.stem.replace(/^計算:/, "").replace(/ = \?.*$/, "").replace(/ = ____.*$/, "").split(" ÷ "); }
+  function lhs(eq, x) { return eq.split(" = ")[0].replace(/□/g, x); }
+  function leftTok(eq) { return tk(eq.split(" = ")[0].replace(/□/g, "")); }
+  function mulBoxText(eq, ansStr) {
+    const b = leftTok(eq)[0], c = eqRight(eq), X = qDiv(c, b); ck(X, ansStr);
+    if (b.d === 1) return "□ 的 " + b.n + " 倍是 " + dsh(c) + ",把 " + dsh(c) + " 平分成 " + b.n + " 份,每份就是 □:" + dsh(c) + " ÷ " + b.n + " = " + dsh(X) + "。";
+    const k = Math.max(placesOf(b), placesOf(c)), m = Math.pow(10, k), B2 = qMul(b, Q(m)), C2 = qMul(c, Q(m));
+    return "等式兩邊同時乘 " + m + ",把小數變成整數:□ × " + dsh(B2) + " = " + dsh(C2) + "。\n□ = " + dsh(C2) + " ÷ " + dsh(B2) + " = " + dsh(X) + "。";
+  }
+  function boxEq(r) { return r.stem.match(/「([^」]*□[^」]*)」/)[1]; }
+  function subst(eq, xs) { return qeval(eq.split(" = ")[0].replace(/□/g, "(" + xs + ")")); }
+  function eqRight(eq) { return qeval(eq.split(" = ")[1]); }
+  function lineV(line) { const p = line.split(" = "), q = qeval(p[0]), c = qeval(p[1]); return [qCmp(q, c) === 0, q]; }
+  function placeOfStem(s) { return /第一位/.test(s) ? 1 : 2; }
+  /* 夾擠法：商落在哪兩個 p 位小數之間，離哪一個比較近 */
+  function squeeze(q, p) {
+    const m = rnd(q, p), den = Math.pow(10, p), lo = Q(m.trunc, den), hi = Q(m.trunc + 1, den), mid = Q(2 * m.trunc + 1, 2 * den), up = qCmp(q, mid) > 0;
+    return { text: "商在 " + dsh(lo) + " 和 " + dsh(hi) + " 之間,中點是 " + dsh(mid) + "。商 " + (up ? "大於" : "小於") + " 中點,所以比較靠近 " + (up ? dsh(hi) : dsh(lo)) + "。", val: up ? hi : lo };
+  }
+  function stmtV(s) {
+    let m;
+    if (s === "被除數和除數同時乘 10,商不變") return [true, "舉例:6 ÷ 2 = 3,60 ÷ 20 = 3"];
+    if (s === "被除數和除數同時乘 10,商也跟著乘 10") return [false, "舉例:6 ÷ 2 = 3,60 ÷ 20 還是 3"];
+    if (s === "除法的商一定比被除數小") return [false, "舉反例:6 ÷ 0.5 = 12,比 6 大"];
+    if ((m = s.match(/^(.+) ÷ 0\.5 的結果,和 (.+) × 2 相同$/))) { const q1 = qeval(m[1] + " ÷ 0.5"), q2 = qeval(m[2] + " × 2"); return [qCmp(q1, q2) === 0, m[1] + " ÷ 0.5 = " + dsh(q1) + "," + m[2] + " × 2 = " + dsh(q2)]; }
+    if ((m = s.match(/^(.+) ÷ 0\.1 的結果,和 (.+) ÷ 10 相同$/))) { const q1 = qeval(m[1] + " ÷ 0.1"), q2 = qeval(m[2] + " ÷ 10"); return [qCmp(q1, q2) === 0, m[1] + " ÷ 0.1 = " + dsh(q1) + "," + m[2] + " ÷ 10 = " + dsh(q2)]; }
+    if ((m = s.match(/^(.+) ÷ ([\d.]+) 的商比 (.+) (大|小)$/))) { const q = qeval(m[1] + " ÷ " + m[2]), N = qeval(m[3]), big = qCmp(q, N) > 0; return [(m[4] === "大") === big, m[1] + " ÷ " + m[2] + " = " + dsh(q) + ",比 " + m[3] + (big ? " 大" : " 小")]; }
+    if ((m = s.match(/^(\d+\/\d+) 化成小數是 (.+)$/))) { const q = qeval(m[1]); return [qCmp(q, pq(m[2])) === 0, m[1] + " = 分子 ÷ 分母 = " + dsh(q)]; }
+    return [null, "?"];
+  }
+
+  /* 帶分數參與運算時一律加括號，例如 (2 1/2) ÷ 5 */
+  /* 複選解法二：逐項檢驗（每個選項含錯項都寫出算式或理由） */
+  function rows(r, flags, whys) { return r.options.map(function (o, i) { return (i + 1) + ". " + o + " → " + (flags[i] ? "對" : "錯") + "," + whys[i]; }).join(";\n"); }
+  function pickIdx(r) { return r.answer.map(function (i) { return i + 1; }).join("、"); }
+  function pm(s) {
+    return String(s)
+      .replace(/(?<![(\d\/])(\d+ \d+\/\d+)(?=\s*[×÷+]|\s+-\s)/g, "($1)")
+      .replace(/(?<=[×÷+]\s|\s-\s)(\d+ \d+\/\d+)(?![\d\/)])/g, "($1)");
+  }
+  /* 解析文字裡「某分數 = 同一個分數」的巧合（結果剛好等於其中一個運算數），改寫成「結果是」，避免看起來像恆等式 */
+  function pi(s) {
+    const fix = function (t) { return t.replace(/(?<![\d.\/])(\d+\/\d+)\s*=\s*(\1)(?![\d.\/])/g, function (m, a, b) { return a + ",結果是 " + b; }); };
+    return String(s).split("\n").map(function (ln) { const k = ln.indexOf(" → "); return /^\d+\. /.test(ln) && k >= 0 ? ln.slice(0, k) + fix(ln.slice(k)) : fix(ln); }).join("\n");
+  }
+  const PRE = {};
+
+  const ALT = {
+    "decimal-single-L1-01": function (r) { const p = exprParts(r); return estAlt(p[0], p[1], r.options[r.answer]); },
+    "decimal-single-L2-02": function (r) { const p = exprParts(r); return estAlt(p[0], p[1], r.options[r.answer]); },
+    "decimal-single-L3-03": function (r) { const p = exprParts(r); return estAlt(p[0], p[1], r.options[r.answer]); },
+    "decimal-single-L4-04": function (r) {
+      const N = tk(r.stem)[0];
+      ckSingle(r, r.options.map(function (o) { return qCmp(qeval(o), N) > 0; }));
+      const ls = r.options.map(function (o, i) { const q = qeval(o); return "第 " + (i + 1) + " 個,結果是 " + dsh(q) + (qCmp(q, N) > 0 ? ",大於 " : ",小於 ") + dsh(N); });
+      return "算出每個選項的結果再比大小。" + ls.join(";") + "。比 " + dsh(N) + " 大的是 " + r.options[r.answer] + "。";
+    },
+    "decimal-single-L5-05": function (r) {
+      const t = tk(r.stem), d = t[0], q = t[1], d2 = t[2], k = qDiv(d2, d), q2 = qDiv(q, k);
+      ck(q2, r.options[r.answer]);
+      return "看除數的變化:除數從 " + dsh(d) + " 變成 " + dsh(d2) + ",變成原來的 " + dsh(k) + " 倍。\n除數變成 " + dsh(k) + " 倍,商就要反過來,除以 " + dsh(k) + ":" + dsh(q) + " ÷ " + dsh(k) + " = " + dsh(q2) + "。\n所以商是 " + r.options[r.answer] + "。";
+    },
+    "decimal-single-L3-06": function (r) {
+      const eq = boxEq(r), b = leftTok(eq)[0], c = eqRight(eq), X = qMul(c, b);
+      ckSingle(r, r.options.map(function (o) { return qCmp(subst(eq, o), c) === 0; }));
+      return "「□ ÷ " + dsh(b) + " = " + dsh(c) + "」表示:把 □ 每 " + dsh(b) + " 分成一份,剛好分成 " + dsh(c) + " 份。\n所以 □ 就是 " + dsh(c) + " 個 " + dsh(b) + " 合起來:□ = " + dsh(c) + " × " + dsh(b) + " = " + dsh(X) + ",選 " + r.options[r.answer] + "。";
+    },
+    "decimal-single-L5-07": function (r) {
+      const eqs = (r.stem.match(/「[^」]*」/g) || []).map(function (x) { return x.slice(1, -1); });
+      const S0 = pq(eqs[0].split(" = ")[1]), D0 = pq(eqs[1].split(" = ")[1]), t = qSub(S0, D0), y = qDiv(t, Q(2)), X = qAdd(y, D0);
+      ckSingle(r, r.options.map(function (o) { return qCmp(pq(o), X) === 0; }));
+      return "由「□ - △ = " + dsh(D0) + "」知道 □ 比 △ 大 " + dsh(D0) + ",也就是 □ = △ + " + dsh(D0) + "。\n把它放進「□ + △ = " + dsh(S0) + "」:△ + " + dsh(D0) + " + △ = " + dsh(S0) + ",所以 2 個 △ = " + dsh(S0) + " - " + dsh(D0) + " = " + dsh(t) + ",△ = " + dsh(y) + "。\n□ = " + dsh(y) + " + " + dsh(D0) + " = " + dsh(X) + ",所以 □ = " + r.options[r.answer] + "。";
+    },
+    "decimal-multi-L2-01": function (r) { const flags = [], wh = r.options.map(function (o) { const p = o.split(" = "), prod = qMul(pq(p[1]), tk(p[0].split(" ÷ ")[1])[0]), ok = qCmp(prod, tk(p[0].split(" ÷ ")[0])[0]) === 0; flags.push(ok); return p[1] + " × " + p[0].split(" ÷ ")[1] + " = " + dsh(prod) + (ok ? ",等於被除數" : ",不等於被除數"); }); ckMulti(r, flags); return "用「商 × 除數」驗算每一題:\n" + rows(r, flags, wh) + "。\n所以正確的是第 " + pickIdx(r) + " 個。"; },
+    "decimal-multi-L3-02": function (r) { const R0 = tk(r.stem)[0], flags = [], wh = r.options.map(function (o) { const q = qeval(o); flags.push(qCmp(q, R0) === 0); return "商是 " + dsh(q) + (qCmp(q, R0) === 0 ? ",等於 " + dsh(R0) : ",不等於 " + dsh(R0)); }); ckMulti(r, flags); return "目標是商等於 " + dsh(R0) + ",逐一算算看:\n" + rows(r, flags, wh) + "。\n所以選第 " + pickIdx(r) + " 個。"; },
+    "decimal-multi-L3-03": function (r) { const flags = [], wh = r.options.map(function (o) { const v = stmtV(o); if (v[0] === null) throw new Error("explain2 找不到對應的敘述:" + o); flags.push(v[0]); return v[1]; }); ckMulti(r, flags); return "舉例或算算看每一句:\n" + rows(r, flags, wh) + "。\n所以正確的是第 " + pickIdx(r) + " 個。"; },
+    "decimal-multi-L4-04": function (r) { const N = tk(r.stem)[0], flags = [], wh = r.options.map(function (o) { const q = qeval(o); flags.push(qCmp(q, N) > 0); return "商是 " + dsh(q) + (qCmp(q, N) > 0 ? ",比 " + dsh(N) + " 大" : ",比 " + dsh(N) + " 小"); }); ckMulti(r, flags); return "算出每個商,再和 " + dsh(N) + " 比大小:\n" + rows(r, flags, wh) + "。\n所以商比較大的是第 " + pickIdx(r) + " 個。"; },
+    "decimal-multi-L5-05": function (r) { const m = r.stem.match(/和 (.+?) ÷ (.+?) 的商相同/), base = qeval(m[1] + " ÷ " + m[2]), flags = [], wh = r.options.map(function (o) { const q = qeval(o); flags.push(qCmp(q, base) === 0); return "商是 " + dsh(q) + (qCmp(q, base) === 0 ? ",和 " + dsh(base) + " 一樣" : ",和 " + dsh(base) + " 不一樣"); }); ckMulti(r, flags); return "先算出題目的商 " + dsh(base) + ",再把每個選項算出來:\n" + rows(r, flags, wh) + "。\n所以選第 " + pickIdx(r) + " 個。"; },
+    "decimal-tf-L1-01": function (r) { const p = r.stem.replace(/。$/, "").split(" = "), parts = p[0].split(" ÷ "), prod = qMul(pq(p[1]), pq(parts[1])); ckTf(r, qCmp(prod, pq(parts[0])) === 0); return "用乘法驗算:商 × 除數 = " + p[1] + " × " + parts[1] + " = " + dsh(prod) + (qCmp(prod, pq(parts[0])) === 0 ? ",正好是被除數 " + parts[0] + "。" : ",不是被除數 " + parts[0] + "。") + verdict(r); },
+    "decimal-tf-L2-02": function (r) { const m = r.stem.match(/^(.+) ÷ (.+) 的商,一定比 (.+) 小。$/), q = qeval(m[1] + " ÷ " + m[2]); ckTf(r, qCmp(q, qeval(m[3])) < 0); return "舉例算算看:" + m[1] + " ÷ " + m[2] + " = " + dsh(q) + ",比 " + m[3] + (qCmp(q, qeval(m[3])) > 0 ? " 大" : " 小") + "。" + verdict(r); },
+    "decimal-tf-L3-03": function (r) { const p = r.stem.replace(/。$/, "").split(" = "), q1 = qeval(p[0]), q2 = qeval(p[1]); ckTf(r, qCmp(q1, q2) === 0); return "兩邊各自算出來:左邊 " + p[0] + " = " + dsh(q1) + ",右邊 " + p[1] + " = " + dsh(q2) + (qCmp(q1, q2) === 0 ? ",兩邊相等。" : ",兩邊不相等。") + verdict(r); },
+    "decimal-tf-L4-04": function (r) { const m = r.stem.match(/^(.+?) ÷ (.+?) 的商/), q = qeval(m[1] + " ÷ " + m[2]), p = placeOfStem(r.stem), sq = squeeze(q, p), claim = pq(r.stem.match(/約是 ([\d.]+)。$/)[1]); ckTf(r, qCmp(sq.val, claim) === 0); return "夾擠法:" + sq.text + "\n四捨五入到" + place(p) + "是 " + dsh(sq.val) + (qCmp(sq.val, claim) === 0 ? ",和敘述的 " + dsh(claim) + " 一樣。" : ",不是敘述的 " + dsh(claim) + "。") + verdict(r); },
+    "decimal-tf-L5-05": function (r) { const t = tk(r.stem), d = t[0], q = t[1], X = t[2], v = qDiv(X, d); ckTf(r, qCmp(v, q) === 0); return "代入檢查:如果某數是 " + dsh(X) + ",除以 " + dsh(d) + " 得 " + dsh(v) + (qCmp(v, q) === 0 ? ",正好是 " + dsh(q) + "。" : ",不是 " + dsh(q) + "。") + verdict(r); },
+    "decimal-tf-L2-06": function (r) {
+      const eq = boxEq(r), a = leftTok(eq)[0], c = eqRight(eq), x = r.stem.match(/所以 □ = (.+)。$/)[1], X = qDiv(a, c);
+      ckTf(r, qCmp(X, pq(x)) === 0);
+      return "「" + dsh(a) + " ÷ □ = " + dsh(c) + "」表示:" + dsh(a) + " 平分成 " + dsh(c) + " 份,每份是 □,所以 □ = " + dsh(a) + " ÷ " + dsh(c) + " = " + dsh(X) + "。\n敘述寫的是 " + x + (qCmp(X, pq(x)) === 0 ? ",和算出來的一樣。" : ",和算出來的不一樣。") + verdict(r);
+    },
+    "decimal-fill-L1-01": function (r) { const p = exprParts(r); return estAlt(p[0], p[1], r.answer); },
+    "decimal-fill-L2-02": function (r) { const p = exprParts(r); return estAlt(p[0], p[1], r.answer); },
+    "decimal-fill-L3-03": function (r) { const p = exprParts(r); return estAlt(p[0], p[1], r.answer); },
+    "decimal-fill-L4-04": function (r) { const m = r.stem.match(/^(.+?) ÷ (.+?) 的商/), q = qeval(m[1] + " ÷ " + m[2]), p = placeOfStem(r.stem), sq = squeeze(q, p); ck(sq.val, r.answer); return "夾擠法:" + sq.text + "\n四捨五入到" + place(p) + "是 " + r.answer + "。"; },
+    "decimal-fill-L5-05": function (r) { const m = r.stem.match(/則 (.+) = ____/); const e = m[1], val = qeval(e); ck(val, r.answer); const mm = e.match(/^\((.+?) × (\d+)\) ÷ \((.+?) ÷ (\d+)\)$/); return "直接算:先算括號,被除數 " + mm[1] + " × " + mm[2] + " = " + dsh(qMul(pq(mm[1]), pq(mm[2]))) + ",除數 " + mm[3] + " ÷ " + mm[4] + " = " + dsh(qDiv(pq(mm[3]), pq(mm[4]))) + "。\n再相除:" + dsh(qMul(pq(mm[1]), pq(mm[2]))) + " ÷ " + dsh(qDiv(pq(mm[3]), pq(mm[4]))) + " = " + dsh(val) + "。答案是 " + r.answer + "。"; },
+    "decimal-fill-L2-06": function (r) {
+      const eq = boxEq(r), b = leftTok(eq)[0], c = eqRight(eq), X = qMul(c, b); ck(X, r.answer);
+      return "「□ ÷ " + dsh(b) + " = " + dsh(c) + "」表示:把 □ 每 " + dsh(b) + " 分成一份,剛好分成 " + dsh(c) + " 份。\n所以 □ 就是 " + dsh(c) + " 個 " + dsh(b) + " 合起來:□ = " + dsh(c) + " × " + dsh(b) + " = " + r.answer + "。";
+    },
+    "decimal-fill-L4-07": function (r) {
+      const eq = boxEq(r), lt = leftTok(eq), b = lt[0], c = lt[1], d = eqRight(eq), bc = qDiv(b, c), u = qAdd(d, bc), X = qMul(u, c); ck(X, r.answer);
+      return "用分配律拆開:(□ 減 " + dsh(b) + ") ÷ " + dsh(c) + " = □ ÷ " + dsh(c) + " 減 " + dsh(b) + " ÷ " + dsh(c) + "。\n" + dsh(b) + " ÷ " + dsh(c) + " = " + dsh(bc) + ",所以「□ ÷ " + dsh(c) + " 減 " + dsh(bc) + "」是 " + dsh(d) + ",□ ÷ " + dsh(c) + " 就是 " + dsh(d) + " 加 " + dsh(bc) + " = " + dsh(u) + "。\n□ = " + dsh(u) + " × " + dsh(c) + " = " + r.answer + "。";
+    },
+    "decimal-fill-L5-08": function (r) {
+      const eq = boxEq(r), lt = leftTok(eq), b = lt[0], d = lt[1], c = eqRight(eq), k = qDiv(b, d), X = qDiv(c, k); ck(X, r.answer);
+      return "先乘又除,可以合在一起:□ × " + dsh(b) + " ÷ " + dsh(d) + " = □ × (" + dsh(b) + " ÷ " + dsh(d) + ")。\n" + dsh(b) + " ÷ " + dsh(d) + " = " + dsh(k) + ",所以 □ × " + dsh(k) + " = " + dsh(c) + "。\n□ = " + dsh(c) + " ÷ " + dsh(k) + " = " + r.answer + "。";
+    },
+    "decimal-calc-L1-01": function (r) { const p = exprParts(r); return estAlt(p[0], p[1], r.answer); },
+    "decimal-calc-L2-02": function (r) { const p = exprParts(r); return estAlt(p[0], p[1], r.answer); },
+    "decimal-calc-L3-03": function (r) { const p = exprParts(r); return estAlt(p[0], p[1], r.answer); },
+    "decimal-calc-L4-04": function (r) { const p = exprParts(r); return estAlt(p[0], p[1], r.answer); },
+    "decimal-calc-L5-05": function (r) {
+      const e = r.stem.replace(/^計算:/, ""), m = e.match(/^(.+?) ÷ (.+?) \+ (.+?) ÷ (.+)$/), q1 = qDiv(pq(m[1]), pq(m[2])), q2 = qDiv(pq(m[3]), pq(m[4]));
+      ck(qAdd(q1, q2), r.answer);
+      return "找一個數乘 " + m[2] + " 得 " + m[1] + ":○ = " + dsh(q1) + "(" + dsh(q1) + " × " + m[2] + " = " + m[1] + ")。\n找一個數乘 " + m[4] + " 得 " + m[3] + ":△ = " + dsh(q2) + "(" + dsh(q2) + " × " + m[4] + " = " + m[3] + ")。\n○ + △ = " + dsh(q1) + " + " + dsh(q2) + " = " + r.answer + "。";
+    },
+    "decimal-calc-L1-06": function (r) { return mulBoxText(boxEq(r), r.answer) + "\n所以 □ = " + r.answer + "。"; },
+    "decimal-calc-L3-07": function (r) {
+      const eq = boxEq(r), a = leftTok(eq)[0], c = eqRight(eq), X = qDiv(a, c); ck(X, r.answer);
+      return "「" + dsh(a) + " ÷ □ = " + dsh(c) + "」表示:" + dsh(a) + " 平分成 " + dsh(c) + " 份,每一份就是 □。\n□ = " + dsh(a) + " ÷ " + dsh(c) + " = " + r.answer + "。";
+    },
+    "decimal-word-L2-01": function (r) { const t = r.stem.match(/一共付了 (.+?) 元/)[1], k = r.stem.match(/買了 (\d+) 枝/)[1]; return estAlt(t, k, r.answer).replace("答案是 " + r.answer + "。", "每枝 " + r.answer + unitOf(r) + "。"); },
+    "decimal-word-L3-02": function (r) { const t = tk(r.stem), N = t[0], d = t[1], c = Number(r.answer), prod = qMul(Q(c), d); ckEq(prod, N); return "用乘法想:每個蝴蝶結 " + dsh(d) + " 公尺,做 " + c + " 個要 " + c + " × " + dsh(d) + " = " + dsh(prod) + " 公尺,正好是全長 " + dsh(N) + " 公尺。\n所以可以做 " + r.answer + unitOf(r) + "。"; },
+    "decimal-word-L4-03": function (r) { const t = tk(r.stem), A = t[0], D = t[1], v = Number(r.answer); if (!(qCmp(qMul(D, Q(v - 1)), A) < 0 && qCmp(qMul(D, Q(v)), A) >= 0)) throw new Error("explain2 與答案不一致"); return "列出整數倍:" + dsh(D) + " × " + (v - 1) + " = " + dsh(qMul(D, Q(v - 1))) + "(還沒裝完 " + dsh(A) + "),\n" + dsh(D) + " × " + v + " = " + dsh(qMul(D, Q(v))) + "(夠裝了)。\n所以至少需要 " + r.answer + unitOf(r) + "。"; },
+    "decimal-word-L4-04": function (r) { const t = tk(r.stem), tm = t[0], A = t[1], q = qDiv(A, tm), sq = squeeze(q, 1); ck(sq.val, r.answer); return "夾擠法:平均每小時 " + dsh(A) + " ÷ " + dsh(tm) + " 公里。" + sq.text + "\n四捨五入到小數第一位是 " + r.answer + unitOf(r) + "。"; },
+    "decimal-word-L5-05": function (r) { const t = tk(r.stem), N = t[0], c = t[1], d = t[2], f = qDiv(c, d); ck(qMul(N, f), r.answer); return "看杯子大小的變化:每杯從 " + dsh(c) + " 公升變成 " + dsh(d) + " 公升,是原來的 " + dsh(qDiv(d, c)) + " 倍,同樣的果汁需要的杯子數是原來的 " + dsh(f) + " 倍。\n" + dsh(N) + " × " + dsh(f) + " = " + r.answer + unitOf(r) + "。"; },
+    "decimal-word-L4-06": function (r) {
+      const t = tk(r.stem), price = t[0], total = t[1], w = Math.floor(total.n / total.d / (price.n / price.d)), X0 = qMul(price, Q(w)), rest = qSub(total, X0), part = qDiv(rest, price), ans = qAdd(Q(w), part);
+      ck(ans, r.answer);
+      return "把總價拆開:先買 " + w + " 公斤,要 " + dsh(price) + " × " + w + " = " + dsh(X0) + " 元。\n" + dsh(total) + " - " + dsh(X0) + " = " + dsh(rest) + " 元" + (rest.n === 0 ? ",正好買完。" : ",還能買 " + dsh(rest) + " ÷ " + dsh(price) + " = " + dsh(part) + " 公斤。") + "\n" + (rest.n === 0 ? "所以買了 " : "合起來 " + w + " + " + dsh(part) + " = ") + r.answer + unitOf(r) + "。";
+    }
+  };
+
+
+  /* PRE（解法一的方法說明） */
+PRE["decimal-calc-L5-05"] = function () { return "方法:除數化成整數,被除數的小數點同步右移相同的位數,再用整數除法。\n"; };
+PRE["decimal-calc-L1-06"] = function () { return "方法:先看 □ 站在算式的哪個位置,再用逆運算(加減互逆、乘除互逆)把 □ 單獨留在一邊。\n"; };
+PRE["decimal-fill-L2-06"] = function () { return "方法:先看 □ 站在算式的哪個位置,再用逆運算(加減互逆、乘除互逆)把 □ 單獨留在一邊。\n"; };
+PRE["decimal-calc-L3-07"] = function () { return "方法:先看 □ 站在算式的哪個位置,再用逆運算(加減互逆、乘除互逆)把 □ 單獨留在一邊。\n"; };
+PRE["decimal-single-L5-07"] = function () { return "方法:先看 □ 站在算式的哪個位置,再用逆運算(加減互逆、乘除互逆)把 □ 單獨留在一邊。\n"; };
+PRE["decimal-single-L5-05"] = function () { return "想法:被除數沒有變,只有除數變了,所以要先把被除數求出來。\n"; };
+PRE["decimal-word-L2-01"] = function () { return "想法:總價平分給每一枝,用除法就能求出單價。\n"; };
+PRE["decimal-single-L3-06"] = function () { return "想法:□ 在被除數的位置,被除數 = 商 × 除數。\n"; };
+PRE["decimal-tf-L2-06"] = function () { return "想法:□ 在除數的位置,除數 = 被除數 ÷ 商。\n"; };
+PRE["decimal-word-L4-06"] = function () { return "想法:單價 × 重量 = 總價,所以重量 = 總價 ÷ 單價。\n"; };
+PRE["decimal-tf-L2-02"] = function () { return "想法:先算出商,再和被除數比大小。" + String.fromCharCode(10); };
+PRE["decimal-tf-L5-05"] = function () { return "想法:除法的逆運算是乘法,乘回去就能還原被除數。" + String.fromCharCode(10); };
+PRE["decimal-multi-L3-03"] = function () { return "想法:每一句都用算式或例子檢查看看。" + String.fromCharCode(10); };
+PRE["decimal-multi-L2-01"] = function () { return "想法:除法算得對不對,用商乘回除數就能知道。" + String.fromCharCode(10); };
+PRE["decimal-fill-L5-08"] = function () { return "想法:先乘再除的算式,可以倒著一步一步還原,最後得到 □。" + String.fromCharCode(10); };
   ExamBank.register(T, "decimal-basic", single.concat(multi, tf, fill, calc, word, boxes));
 })();
