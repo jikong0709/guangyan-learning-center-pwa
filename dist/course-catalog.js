@@ -36,9 +36,9 @@
       grade: "六年級",
       beta: true,
       versions: [
-        { id: "hanlin", name: "翰林版", status: "ready", note: "六年級互動考卷（測試版）", href: "./courses/grade6-chinese/index.html?version=hanlin" },
-        { id: "kanghsuan", name: "康軒版", status: "ready", note: "六年級互動考卷（測試版）", href: "./courses/grade6-chinese/index.html?version=kanghsuan" },
-        { id: "nani", name: "南一版", status: "ready", note: "六年級互動考卷（測試版）", href: "./courses/grade6-chinese/index.html?version=nani" }
+        { id: "hanlin", name: "翰林版", status: "ready", note: "六上＋六下，各 10 個主題", href: "./courses/grade6-chinese/index.html?version=hanlin" },
+        { id: "kanghsuan", name: "康軒版", status: "ready", note: "六上＋六下，各 10 個主題", href: "./courses/grade6-chinese/index.html?version=kanghsuan" },
+        { id: "nani", name: "南一版", status: "ready", note: "六上＋六下，各 10 個主題", href: "./courses/grade6-chinese/index.html?version=nani" }
       ]
     },
     social: {
@@ -47,9 +47,9 @@
       grade: "六年級",
       beta: true,
       versions: [
-        { id: "hanlin", name: "翰林版", status: "ready", note: "六年級互動考卷（測試版）", href: "./courses/grade6-social/index.html?version=hanlin" },
-        { id: "kanghsuan", name: "康軒版", status: "ready", note: "六年級互動考卷（測試版）", href: "./courses/grade6-social/index.html?version=kanghsuan" },
-        { id: "nani", name: "南一版", status: "ready", note: "六年級互動考卷（測試版）", href: "./courses/grade6-social/index.html?version=nani" }
+        { id: "hanlin", name: "翰林版", status: "ready", note: "六上＋六下，各 10 個主題", href: "./courses/grade6-social/index.html?version=hanlin" },
+        { id: "kanghsuan", name: "康軒版", status: "ready", note: "六上＋六下，各 10 個主題", href: "./courses/grade6-social/index.html?version=kanghsuan" },
+        { id: "nani", name: "南一版", status: "ready", note: "六上＋六下，各 10 個主題", href: "./courses/grade6-social/index.html?version=nani" }
       ]
     },
     science: {
@@ -58,9 +58,9 @@
       grade: "六年級",
       beta: true,
       versions: [
-        { id: "hanlin", name: "翰林版", status: "ready", note: "六年級互動考卷（測試版）", href: "./courses/grade6-science/index.html?version=hanlin" },
-        { id: "kanghsuan", name: "康軒版", status: "ready", note: "六年級互動考卷（測試版）", href: "./courses/grade6-science/index.html?version=kanghsuan" },
-        { id: "nani", name: "南一版", status: "ready", note: "六年級互動考卷（測試版）", href: "./courses/grade6-science/index.html?version=nani" }
+        { id: "hanlin", name: "翰林版", status: "ready", note: "六上＋六下，各 10 個主題", href: "./courses/grade6-science/index.html?version=hanlin" },
+        { id: "kanghsuan", name: "康軒版", status: "ready", note: "六上＋六下，各 10 個主題", href: "./courses/grade6-science/index.html?version=kanghsuan" },
+        { id: "nani", name: "南一版", status: "ready", note: "六上＋六下，各 10 個主題", href: "./courses/grade6-science/index.html?version=nani" }
       ]
     }
   };
