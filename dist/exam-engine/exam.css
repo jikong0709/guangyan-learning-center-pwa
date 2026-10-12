@@ -162,7 +162,9 @@ body.ex-body {
 .ex-rub-row { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 6px 0; cursor: pointer; overflow-wrap: anywhere; }
 .ex-rub-row input { width: 22px; height: 22px; flex: 0 0 22px; accent-color: var(--ex-brand-dark); margin: 2px 0 0; }
 .ex-rub-box { display: none; }
-.ex-kwcheck { background: var(--ex-amber-soft); border-radius: 10px; padding: 6px 10px; }
+.ex-rules { list-style: none; margin: 6px 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: grid; gap: 4px; }
+.ex-rule.is-ok { color: var(--ex-sage); font-weight: 700; }
+.ex-rule.is-no { color: var(--ex-rose); font-weight: 700; }
 @media (max-width: 520px) { .ex-passage { padding: 12px; } .ex-selfwrite { font-size: 1rem; } }
 @media print {
   .ex-selfwrite, .ex-sample { display: none !important; }

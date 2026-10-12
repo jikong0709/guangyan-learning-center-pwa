@@ -48,7 +48,19 @@
     add("wrongchar_mc", i, kit => ({ stem: LAB + "句中有一個錯字，選出應該改成的正確字：" + r.s, options: [r.ok, r.bad].concat(kit.shuffle(POOL).slice(0, 2)), answer: 0, explain: "錯字是「" + r.bad + "」，應改成「" + r.ok + "」。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "錯字常是讀音相同或字形相近的字。" : undefined }));
   });
 
-  /* 造句（自評；不計入 100 分）：指定語詞＋參考練習句（原創） */
+  /* 照樣寫短語：題幹放例句示範結構；accepted 列常見寫法，其餘符合 mustInclude 結構詞且夠長、非照抄例句也算對 */
+  const PT = [
+    { ex: "又高又大", ask: "又＿＿又＿＿", ans: "又圓又胖", acc: ["又圓又胖", "又小又軟", "又香又甜"], must: ["又"], min: 4 },
+    { ex: "一邊吃飯，一邊看電視", ask: "一邊＿＿，一邊＿＿", ans: "一邊寫字，一邊聽音樂", acc: ["一邊寫字，一邊聽音樂", "一邊走路，一邊聊天"], must: ["一邊"], min: 6 },
+    { ex: "越跑越快", ask: "越＿越＿", ans: "越讀越懂", acc: ["越讀越懂", "越長越高", "越吃越多"], must: ["越"], min: 3 },
+    { ex: "不但聰明，而且努力", ask: "不但＿＿，而且＿＿", ans: "不但勤勞，而且善良", acc: ["不但勤勞，而且善良", "不但好看，而且好吃"], must: ["不但", "而且"], min: 7 }
+  ];
+  PT.forEach((r, i) => add("pattern", i, () => ({
+    stem: LAB + "照樣寫短語。\n例：" + r.ex + "\n請照樣寫出完整的短語：" + r.ask, answer: r.ans, accepted: r.acc.slice(), mustInclude: r.must.slice(), minLen: r.min, example: r.ex,
+    explain: "先看例句的結構（「" + r.must.join("」「") + "」），再換成自己的詞語；參考答案：" + r.ans + "。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "不能只抄例句，要換成不同的詞語。" : undefined
+  })));
+
+  /* 造句（依規則批改：必含指定語詞、句末標點、字數下限；交卷後顯示參考例句）：原創 */
   const SC = [
     { k: ["專心"], s: "上課的時候，小華專心聽老師講解，所以很快就學會了新的算法。" },
     { k: ["努力"], s: "姊姊每天努力練習游泳，終於能夠游完一百公尺。" },

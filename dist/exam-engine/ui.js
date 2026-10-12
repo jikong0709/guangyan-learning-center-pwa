@@ -33,16 +33,12 @@
     }, cfg.texts || {});
     /* 只有一種解析時標籤為「解析」，有 explain2 才用「解法一／解法二」 */
     const exp1Label = it => (it.explain2 ? "解法一：" : "解析：");
-    const state = { view: "setup", sel: null, exam: null, resp: {}, work: {}, checked: {}, self: {}, submitted: false, warned: false };
+    const state = { view: "setup", sel: null, exam: null, resp: {}, work: {}, checked: {}, submitted: false, warned: false };
     const kindOf = it => it.kind || it.type;
     const isSelf = it => kindOf(it) === "selfcheck";
-    const SELF_NAME = "自評";
-    /* 大題編號：計分大題用 一二三…，不計分的附加練習大題用「附加：」 */
-    function secLabels(ex) { const nums = "一二三四五六七八九十"; let n = 0; return ex.sections.map(s => (s.counted === false ? "附加：" : nums[n++] + "、")); }
-    function secTitle(s, label) {
-      if (s.counted === false) return label + s.name + "（每題 " + s.each + " 分，練習用，不計入 " + "總分）";
-      return label + s.name + "（每題 " + s.each + " 分，共 " + s.points + " 分" + (s.self ? "；自評題" : "") + "）";
-    }
+    /* 大題編號 */
+    function secLabels(ex) { const nums = "一二三四五六七八九"; return ex.sections.map((s, i) => (i < 9 ? nums[i] : i === 9 ? "十" : "十" + nums[i - 10]) + "、"); }
+    function secTitle(s, label) { return label + s.name + "（每題 " + s.each + " 分，共 " + s.points + " 分）"; }
 
     /* ----- 儲存（失敗不可壞掉） ----- */
     function loadSel() {
@@ -215,7 +211,7 @@
         const m = document.querySelector(".ex-msg"); if (m) m.textContent = "出題失敗：" + (e && e.message ? e.message : e);
         return;
       }
-      state.resp = {}; state.work = {}; state.checked = {}; state.self = {}; state.submitted = false; state.warned = false;
+      state.resp = {}; state.work = {}; state.checked = {}; state.submitted = false; state.warned = false;
       renderExam();
     }
     function redo() {
@@ -226,21 +222,20 @@
       launch(false);
     }
 
-    function gradableItems() { return state.exam.items.filter(it => !isSelf(it)); }
-    function answeredCount() { return gradableItems().filter(it => engine.isAnswered(it, state.resp[it.no])).length; }
+    function answeredCount() { return state.exam.items.filter(it => engine.isAnswered(it, state.resp[it.no])).length; }
 
     function renderExam() {
       state.view = "exam";
       const ex = state.exam, practice = ex.mode === "practice";
       const progress = h("span", { class: "ex-progress", "aria-live": "polite" });
-      function upd() { progress.textContent = "已作答 " + answeredCount() + " / " + gradableItems().length + " 題"; }
+      function upd() { progress.textContent = "已作答 " + answeredCount() + " / " + ex.items.length + " 題"; }
       const warn = h("p", { class: "ex-msg", role: "alert", "aria-live": "polite" });
       const submitBtn = h("button", { type: "button", class: "ex-btn ex-btn-primary ex-btn-xl", id: "ex-submit", text: practice ? "完成，看統計" : "交卷批改" });
       submitBtn.addEventListener("click", () => {
-        const left = gradableItems().length - answeredCount();
+        const left = ex.items.length - answeredCount();
         if (left > 0 && !state.warned) {
           state.warned = true;
-          warn.textContent = "還有 " + left + " 題沒作答（沒作答算錯）。" + (ex.items.some(isSelf) ? "造句為自評題，不影響交卷。" : "") + "要交卷請再按一次「" + submitBtn.textContent + "」。";
+          warn.textContent = "還有 " + left + " 題沒作答（沒作答算錯）。要交卷請再按一次「" + submitBtn.textContent + "」。";
           submitBtn.textContent = "仍要" + (practice ? "完成" : "交卷");
           return;
         }
@@ -315,8 +310,9 @@
 
       function changed(v) { state.resp[it.no] = v; onChange(); }
 
-      if (it.type === "single" || it.type === "multi") {
-        const multi = it.type === "multi";
+      const kind = kindOf(it);
+      if (kind === "single" || kind === "multi") {
+        const multi = kind === "multi";
         const fs = h("fieldset", { class: "ex-opts" }, [h("legend", { class: "ex-sr", text: "第 " + it.no + " 題選項" + (multi ? "（可複選）" : "") })]);
         it.options.forEach((opt, i) => {
           const input = h("input", { type: multi ? "checkbox" : "radio", name: id, value: String(i), "aria-describedby": id + "-stem" });
@@ -333,7 +329,7 @@
           fs.appendChild(h("label", { class: "ex-opt" }, [input, h("span", { class: "ex-opt-text" }, [h("b", { text: LETTERS[i] + "." }), " " + opt])]));
         });
         area.appendChild(fs);
-      } else if (it.type === "tf") {
+      } else if (kind === "tf") {
         const grp = h("div", { class: "ex-tfs", role: "radiogroup", "aria-labelledby": id + "-stem" });
         const btns = [[true, "○ 對"], [false, "✕ 錯"]].map(pair => {
           const b = h("button", { type: "button", class: "ex-tf", role: "radio", "aria-checked": "false", text: pair[1] });
@@ -349,13 +345,14 @@
         area.appendChild(grp);
       } else if (isSelf(it)) {
         if (it.keywords.length) area.appendChild(h("p", { class: "ex-kws" }, [h("span", { class: "ex-kws-label", text: "指定語詞：" })].concat(it.keywords.map(w => h("span", { class: "ex-kw", text: w })))));
-        const ta = h("textarea", { class: "ex-selfwrite", id: id + "-self", rows: "3", placeholder: "在這裡寫下你的句子（自評題，不自動批改）", autocomplete: "off", spellcheck: "false", "aria-label": "第 " + it.no + " 題你的句子" });
+        const ta = h("textarea", { class: "ex-selfwrite", id: id + "-self", rows: "3", placeholder: "在這裡寫下你的句子（交卷後依規則批改）", autocomplete: "off", spellcheck: "false", "aria-label": "第 " + it.no + " 題你的句子" });
         ta.addEventListener("input", () => changed(ta.value));
+        locks.push(ta);
         area.appendChild(ta);
         area.appendChild(h("span", { class: "ex-printlines", "aria-hidden": "true" }));
-        const peek = h("div", { class: "ex-sample is-collapsed", id: id + "-sample" }, [h("p", { text: "參考練習句：" + it.sample })]);
-        const peekBtn = h("button", { type: "button", class: "ex-btn ex-btn-small no-print", "aria-expanded": "false", "aria-controls": id + "-sample", text: "看參考練習句（寫完再看）" });
-        peekBtn.addEventListener("click", () => { const open = peek.classList.toggle("is-collapsed") === false; peekBtn.setAttribute("aria-expanded", open ? "true" : "false"); peekBtn.textContent = open ? "收起參考練習句" : "看參考練習句（寫完再看）"; });
+        const peek = h("div", { class: "ex-sample is-collapsed", id: id + "-sample" }, [h("p", { text: "參考例句：" + it.sample })]);
+        const peekBtn = h("button", { type: "button", class: "ex-btn ex-btn-small no-print", "aria-expanded": "false", "aria-controls": id + "-sample", text: "看參考例句（寫完再看）" });
+        peekBtn.addEventListener("click", () => { const open = peek.classList.toggle("is-collapsed") === false; peekBtn.setAttribute("aria-expanded", open ? "true" : "false"); peekBtn.textContent = open ? "收起參考例句" : "看參考例句（寫完再看）"; });
         area.appendChild(peekBtn); area.appendChild(peek);
       } else {
         const input = h("input", { type: "text", class: "ex-input", id: id + "-in", autocomplete: "off", autocapitalize: "off", spellcheck: "false", placeholder: it.type === "word" ? "請寫出答案和單位" : "請輸入答案" });
@@ -401,8 +398,9 @@
     function showFeedback(box, it, resp, g) {
       while (box.firstChild) box.removeChild(box.firstChild);
       box.className = "ex-feedback is-show " + (g.correct ? "is-right" : "is-wrong");
-      const kids = [h("p", { class: "ex-verdict", text: g.correct ? "✔ 答對了！" : (g.answered ? "✘ 答錯了" : "✘ 還沒作答") })];
-      if (!g.correct) kids.push(h("p", {}, [h("b", { text: "正確答案：" }), engine.describeAnswer(it)]));
+      const kids = [h("p", { class: "ex-verdict", text: g.correct ? "✔ 答對了！" : (g.parts && g.answered ? "△ 部分符合規則（得 " + g.earned + " 分）" : (g.answered ? "✘ 答錯了" : "✘ 還沒作答")) })];
+      if (g.parts) kids.push(h("ul", { class: "ex-rules" }, g.parts.map(p => h("li", { class: "ex-rule " + (p.ok ? "is-ok" : "is-no") }, [(p.ok ? "✔ " : "✘ ") + p.label + "（" + (p.ok ? p.pts : 0) + "／" + p.pts + " 分）"]))));
+      if (!g.correct || g.parts) kids.push(h("p", {}, [h("b", { text: g.parts ? "參考例句：" : "正確答案：" }), engine.describeAnswer(it)]));
       kids.push(h("p", { class: "ex-explain", text: exp1Label(it) + it.explain }));
       if (it.explain2) kids.push(h("p", { class: "ex-explain", text: "解法二：" + it.explain2 }));
       if (it.tag === "trap" && it.trapNote) kids.push(h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }));
@@ -418,9 +416,10 @@
           h("span", { class: "ex-chip", text: typeName }),
           h("span", { class: "ex-qpts", text: it.points + " 分" })
         ]),
-        h("p", { class: "ex-keyans" }, [h("b", { text: isSelf(it) ? "參考練習句：" : "正解：" }), h("span", { class: "ex-keyans-text", text: engine.describeAnswer(it) })]),
+        h("p", { class: "ex-keyans" }, [h("b", { text: isSelf(it) ? "參考例句：" : "正解：" }), h("span", { class: "ex-keyans-text", text: engine.describeAnswer(it) })]),
         h("p", { class: "ex-keystem", text: it.stem }),
-        isSelf(it) ? h("div", { class: "ex-rubric" }, [h("p", { class: "ex-rubric-title", text: "評分標準（自評對照；" + (it.noCount ? "練習用，不計入總分" : "計入總分") + "）" })].concat(it.rubric.map((r, i) => h("p", { class: "ex-rubric-row", text: "☐ " + r + "（" + it.rubricPts[i] + " 分）" })))) : null,
+        isSelf(it) ? h("div", { class: "ex-rubric" }, [h("p", { class: "ex-rubric-title", text: "批改規則（程式自動批改）" })].concat(it.rules.map((r, k) => h("p", { class: "ex-rubric-row", text: "・" + r.label + "（" + it.rulePts[k] + " 分）" })), it.rubric.length ? [h("p", { class: "ex-rubric-title", text: "自評對照（不影響得分）" })].concat(it.rubric.map(r => h("p", { class: "ex-rubric-row", text: "☐ " + r }))) : [])) : null,
+        it.mustInclude ? h("p", { class: "ex-keyexp", text: "批改規則：與正解相同，或含「" + it.mustInclude.join("」「") + "」" + (it.minLen ? "且至少 " + it.minLen + " 個字" : "") + "（不可照抄例句）也算對。" }) : null,
         isSelf(it) && it.sampleNote ? h("p", { class: "ex-keyexp", text: "範例說明：" + it.sampleNote }) : null,
         h("p", { class: "ex-keyexp" }, [h("b", { text: exp1Label(it) }), it.explain]),
         it.explain2 ? h("p", { class: "ex-keyexp ex-keyexp2" }, [h("b", { text: "解法二：" }), it.explain2]) : null,
@@ -458,7 +457,7 @@
     function renderResult() {
       state.view = "result";
       const ex = state.exam;
-      const sum = engine.summarize(ex, state.resp, state.self);
+      const sum = engine.summarize(ex, state.resp);
       const practice = ex.mode === "practice";
 
       function statRow(label, o) {
@@ -479,85 +478,58 @@
           it.passage ? h("details", { class: "ex-review-passage" }, [h("summary", { text: "看這題的閱讀短文" }), h("p", { class: "ex-passage-text", text: it.passage })]) : null,
           h("p", { class: "ex-stem", text: it.stem }),
           h("p", {}, [h("b", { text: "你的答案：" }), engine.describeResponse(it, resp)]),
-          h("p", {}, [h("b", { text: "正確答案：" }), engine.describeAnswer(it)]),
+          h("p", {}, [h("b", { text: isSelf(it) ? "參考例句：" : "正確答案：" }), engine.describeAnswer(it)]),
+          it.mustInclude ? h("p", { class: "ex-sub", text: "（符合規則的其他寫法也算對：含「" + it.mustInclude.join("」「") + "」）" }) : null,
           state.work[it.no] && state.work[it.no].trim() ? h("p", { class: "ex-yourwork", text: TXT.yourWork + state.work[it.no].trim() }) : null,
           h("p", { class: "ex-explain", text: exp1Label(it) + it.explain }),
           it.explain2 ? h("p", { class: "ex-explain", text: "解法二：" + it.explain2 }) : null,
           it.tag === "trap" && it.trapNote ? h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }) : null
         ]);
       });
-      /* 得分相關區塊可在自評勾選時重畫 */
       const labs = secLabels(ex);
-      function secRowsOf(sm) {
-        return (sm.bySection || []).map((sc, i) => h("li", { class: "ex-stat ex-secscore" }, [
-          h("span", { class: "ex-stat-label", text: labs[i] + sc.name + (sc.counted === false ? "（不計入總分）" : "") }),
-          h("span", { class: "ex-stat-bar", "aria-hidden": "true" }, [h("i", { style: "width:" + (sc.max ? Math.round(sc.earned * 100 / sc.max) : 0) + "%" })]),
-          h("span", { class: "ex-stat-num", text: sc.earned + "／" + sc.max + (sc.self ? "（自評）" : "（答對 " + sc.right + "／" + sc.total + " 題）") })
-        ]));
-      }
-      const secList = h("ul", { class: "ex-stats" }, secRowsOf(sum));
-      const secTitleEl = h("h2", { text: "各大題得分（總分 " + sum.score + "／" + sum.total + "）" });
-      const scoreEl = h("strong", { id: "ex-score", text: String(sum.score) });
-      const totalEl = h("span", { id: "ex-total", text: " / " + sum.total + " 分" });
-      const splitEl = h("p", { class: "ex-sub", id: "ex-score-split" });
-      function paintScores(sm) {
-        scoreEl.textContent = String(sm.score);
-        totalEl.textContent = " / " + sm.total + " 分";
-        secTitleEl.textContent = "各大題得分（總分 " + sm.score + "／" + sm.total + "）";
-        while (secList.firstChild) secList.removeChild(secList.firstChild);
-        secRowsOf(sm).forEach(r => secList.appendChild(r));
-        if (!sm.hasSelf) { splitEl.textContent = ""; return; }
-        const parts = ["自動批改 " + sm.autoScore + "／" + sm.autoTotal + " 分"];
-        if (sm.selfTotal) parts.push("自評 " + sm.selfScore + "／" + sm.selfTotal + " 分（由你對照標準勾選）");
-        if (sm.extraTotal) parts.push("附加造句自評練習 " + sm.extraScore + "／" + sm.extraTotal + " 分（不計入總分）");
-        splitEl.textContent = parts.join("　｜　");
-      }
-      paintScores(sum);
+      const secRows = (sum.bySection || []).map((sc, i) => h("li", { class: "ex-stat ex-secscore" }, [
+        h("span", { class: "ex-stat-label", text: labs[i] + sc.name }),
+        h("span", { class: "ex-stat-bar", "aria-hidden": "true" }, [h("i", { style: "width:" + (sc.max ? Math.round(sc.earned * 100 / sc.max) : 0) + "%" })]),
+        h("span", { class: "ex-stat-num", text: sc.earned + "／" + sc.max + "（答對 " + sc.right + "／" + sc.total + " 題）" })
+      ]));
 
-      /* 造句自評區：交卷後才顯示句子檢查、參考句與評分標準 */
+      /* 造句批改明細：規則逐條 ✔/✘ 與得分；參考例句；自評勾選只是對照，不影響得分 */
       const selfItems = ex.items.filter(isSelf);
+      const noneLabel = (cfg.labels && cfg.labels.none) || "（未作答）";
       function selfCard(it) {
         const resp = state.resp[it.no];
         const written = engine.isAnswered(it, resp);
-        const marks = state.self[it.no] || (state.self[it.no] = it.rubric.map(() => false));
-        const kwRes = engine.checkKeywords(it, resp);
-        const boxes = [];
+        const g = engine.gradeItem(it, resp);
+        const ruleRows = g.parts.map(p => h("li", { class: "ex-rule " + (p.ok ? "is-ok" : "is-no") }, [(p.ok ? "✔ " : "✘ ") + p.label + "（" + (p.ok ? p.pts : 0) + "／" + p.pts + " 分）"]));
         const rows = it.rubric.map((r, i) => {
-          const input = h("input", { type: "checkbox", disabled: !written, checked: !!marks[i], "aria-label": "第 " + it.no + " 題自評：" + r });
-          const mark = h("span", { class: "ex-rub-box", "aria-hidden": "true", text: marks[i] ? "☑" : "☐" });
-          input.addEventListener("change", () => {
-            marks[i] = input.checked; mark.textContent = input.checked ? "☑" : "☐";
-            paintScores(engine.summarize(ex, state.resp, state.self));
-            const hint = document.getElementById("ex-self-hint"); if (hint) hint.style.display = Object.keys(state.self).some(k => state.self[k].some(Boolean)) ? "none" : "";
-          });
-          boxes.push(input);
-          return h("label", { class: "ex-rub-row" }, [input, mark, h("span", { text: r + "（" + it.rubricPts[i] + " 分）" })]);
+          const input = h("input", { type: "checkbox", disabled: !written, "aria-label": "第 " + it.no + " 題自評：" + r });
+          const mark = h("span", { class: "ex-rub-box", "aria-hidden": "true", text: "☐" });
+          input.addEventListener("change", () => { mark.textContent = input.checked ? "☑" : "☐"; });
+          return h("label", { class: "ex-rub-row" }, [input, mark, h("span", { text: r })]);
         });
         return h("article", { class: "ex-review ex-selfcard" }, [
-          h("div", { class: "ex-qhead" }, [h("span", { class: "ex-qno", text: "第 " + it.no + " 題" }), h("span", { class: "ex-chip", text: typeByKey[it.type].short }), h("span", { class: "ex-qpts", text: it.noCount ? "練習用 " + it.points + " 分（不計入總分）" : "自評 " + it.points + " 分" })]),
+          h("div", { class: "ex-qhead" }, [h("span", { class: "ex-qno", text: "第 " + it.no + " 題" }), h("span", { class: "ex-chip", text: typeByKey[it.type].short }), h("span", { class: "ex-qpts", text: g.earned + " / " + it.points + " 分" })]),
           h("p", { class: "ex-stem", text: it.stem }),
-          it.keywords.length ? h("p", { class: "ex-kws" }, [h("span", { class: "ex-kws-label", text: "指定語詞：" })].concat(it.keywords.map(w => h("span", { class: "ex-kw", text: w })))) : null,
-          h("p", {}, [h("b", { text: "你寫的句子：" }), written ? String(resp).trim() : labels0.none]),
-          it.keywords.length ? h("p", { class: "ex-kwcheck" }, [h("b", { text: "語詞檢查（只是提示，不計分）：" }), kwRes.map(k => (k.found ? "✔ 有用到「" : "✘ 沒找到「") + k.word + "」").join("　")]) : null,
-          h("p", {}, [h("b", { text: "參考練習句：" }), it.sample]),
-          it.sampleNote ? h("p", { class: "ex-sub", text: "範例說明：" + it.sampleNote }) : null,
-          h("div", { class: "ex-rubric" }, [h("p", { class: "ex-rubric-title", text: written ? "評分標準：誠實對照你的句子，符合的打勾（即時更新得分）" : "評分標準（沒寫句子，無法自評）" })].concat(rows)),
+          h("p", { class: "ex-kws" }, [h("span", { class: "ex-kws-label", text: "指定語詞：" })].concat(it.keywords.map(w => h("span", { class: "ex-kw", text: w })))),
+          h("p", {}, [h("b", { text: "你寫的句子：" }), written ? String(resp).trim() : noneLabel]),
+          h("ul", { class: "ex-rules", "aria-label": "批改規則" }, ruleRows),
+          h("p", {}, [h("b", { text: "參考例句：" }), it.sample]),
+          it.sampleNote ? h("p", { class: "ex-sub", text: "例句說明：" + it.sampleNote }) : null,
+          rows.length ? h("div", { class: "ex-rubric" }, [h("p", { class: "ex-rubric-title", text: written ? "自評對照（只是幫你檢查，不影響得分）：符合的打勾" : "自評對照（沒寫句子，無法自評）" })].concat(rows)) : null,
           h("p", { class: "ex-explain", text: "寫作提醒：" + it.explain }),
           it.tag === "trap" && it.trapNote ? h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }) : null
         ]);
       }
-      const labels0 = Object.assign({ none: "（未作答）" }, cfg.labels || {});
       const selfSection = selfItems.length ? h("section", { class: "ex-card", id: "ex-selfsec" }, [
-        h("h2", { text: "✍️ 造句自評" + (selfItems.every(i => i.noCount) ? "（附加練習，不計入總分）" : "") }),
-        selfItems.some(i => !i.noCount) ? h("p", { class: "ex-sub", id: "ex-self-hint", text: "造句尚未自評，目前合計不含造句。" }) : null
+        h("h2", { text: "✍️ 造句批改與參考例句" }),
+        h("p", { class: "ex-sub", text: "造句由程式依規則批改（指定語詞、句末標點、字數），不判斷文意；請再對照參考例句自我檢查。" })
       ].concat(selfItems.map(selfCard))) : null;
 
       const rKey = answerSheet(ex);
       const node = h("div", { class: "ex-view ex-resultview" }, [
         h("section", { class: "ex-card ex-scorecard" }, [
           h("h1", { "data-focus": true, text: practice ? "練習統計" : "批改結果" }),
-          h("p", { class: "ex-bigscore", "aria-label": "得分" }, [scoreEl, totalEl]),
-          splitEl,
+          h("p", { class: "ex-bigscore", "aria-label": "得分" }, [h("strong", { id: "ex-score", text: String(sum.score) }), " / " + sum.total + " 分"]),
           h("p", { class: "ex-sub", id: "ex-correct", text: "答對 " + sum.correctCount + " / " + sum.count + " 題" }),
           h("div", { class: "ex-headbar no-print" }, [
             sum.wrong.length ? h("button", { type: "button", class: "ex-btn ex-btn-primary", id: "ex-redo-wrong", onclick: () => launch(true), text: "只重做錯題" }) : null,
@@ -568,7 +540,7 @@
           ])
         ]),
         rKey,
-        (sum.bySection || []).length ? h("section", { class: "ex-card", id: "ex-secscores" }, [secTitleEl, secList]) : null,
+        secRows.length ? h("section", { class: "ex-card", id: "ex-secscores" }, [h("h2", { text: "各大題得分（總分 " + sum.score + "／" + sum.total + "）" }), h("ul", { class: "ex-stats" }, secRows)]) : null,
         selfSection,
         h("section", { class: "ex-card" }, [h("h2", { text: "依標籤統計" }), h("ul", { class: "ex-stats" }, tagRows)]),
         h("section", { class: "ex-card" }, [h("h2", { text: "依單元統計" }), h("ul", { class: "ex-stats" }, unitRows)]),

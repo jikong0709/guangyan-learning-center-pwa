@@ -117,7 +117,6 @@
     function kindOfType(key) { const d = typeByKey[key]; const k = d && d.kind; return SPECIAL_KINDS[k] ? k : key; }
     function kindOf(it) { return it.kind || it.type; }
     function isSetType(key) { const d = typeByKey[key]; return !!(d && d.passageSet); }
-    function isNoneType(key) { const d = typeByKey[key]; return !!(d && d.scoring === "none"); }
 
     /* ----- 單題實體化（gen → 洗牌 → 重算答案） ----- */
     function validateRaw(spec, r) {
@@ -134,10 +133,10 @@
       } else if (kind === "tf") {
         if (typeof r.answer !== "boolean") throw new Error("tf answer 必須是布林");
       } else if (kind === "selfcheck") {
-        if (!Array.isArray(r.keywords) || r.keywords.length > 2 || !r.keywords.every(w => typeof w === "string" && w.trim())) throw new Error("selfcheck keywords 必須是 0~2 個非空字串的陣列");
+        if (!Array.isArray(r.keywords) || r.keywords.length < 1 || r.keywords.length > 2 || !r.keywords.every(w => typeof w === "string" && w.trim())) throw new Error("selfcheck keywords 必須是 1~2 個非空字串的陣列");
         if (typeof r.sample !== "string" || !r.sample.trim()) throw new Error("selfcheck sample 空白");
         const rub = selfRubric(spec, r);
-        if (rub.length < 3 || rub.length > 5 || !rub.every(w => typeof w === "string" && w.trim())) throw new Error("selfcheck rubric 必須是 3~5 條非空字串");
+        if (!(rub.length === 0 || (rub.length >= 3 && rub.length <= 5)) || !rub.every(w => typeof w === "string" && w.trim())) throw new Error("selfcheck rubric（自評對照用，選填）必須是 0 條或 3~5 條非空字串");
       } else {
         if (r.answer == null || !String(r.answer).trim()) throw new Error("answer 空白");
       }
@@ -161,12 +160,21 @@
         item.keywords = r.keywords.map(String);
         item.sample = String(r.sample);
         if (typeof r.sampleNote === "string" && r.sampleNote.trim()) item.sampleNote = r.sampleNote;
-        item.rubric = selfRubric(spec, r).map(String);
+        item.rubric = selfRubric(spec, r).map(String); /* 自評對照用，不影響得分 */
         item.answer = item.sample;
+        /* 自動批改規則（config.types[].rules 為預設，gen 可用 r.rules 覆寫）：必含指定語詞、句末標點、字數下限 */
+        const rc = Object.assign({ minLen: 8, endPunct: true }, (typeByKey[spec.type] || {}).rules, r.rules);
+        item.rules = item.keywords.map(w => ({ id: "kw", word: w, label: "用到指定語詞「" + w + "」" }));
+        if (rc.endPunct !== false) item.rules.push({ id: "punct", label: "句末有標點符號（。！？）" });
+        if (rc.minLen > 0) item.rules.push({ id: "len", min: rc.minLen, label: "句子至少 " + rc.minLen + " 個字" });
       } else {
         item.answer = String(r.answer);
         item.accepted = (r.accepted || []).map(String);
         item.units = (r.units || []).map(String);
+        /* 選填：照樣寫短語等開放填空的規則批改（accepted 沒命中時，含全部 mustInclude 且夠長、且不是照抄例句也算對） */
+        if (Array.isArray(r.mustInclude) && r.mustInclude.length) item.mustInclude = r.mustInclude.map(String);
+        if (Number.isInteger(r.minLen) && r.minLen > 0) item.minLen = r.minLen;
+        if (typeof r.example === "string" && r.example.trim()) item.example = r.example;
       }
     }
     function realize(spec) {
@@ -387,38 +395,29 @@
         flat.forEach(it => { it.points = practiceCfg.pointEach; });
         sections.push({ type: null, name: "", items: flat, count: flat.length, points: flat.length * practiceCfg.pointEach });
       } else {
-        /* scoring:"none" 的題型（附加練習）不分攤 100 分；其餘與原本相同 */
-        const cKeys = keys.filter(k => !isNoneType(k));
-        const weights = cKeys.map(k => typeByKey[k].weight || (typeByKey[k].stdCount * typeByKey[k].stdPts) || 1);
+        const weights = keys.map(k => typeByKey[k].weight || (typeByKey[k].stdCount * typeByKey[k].stdPts) || 1);
         const typePts = apportion(scoreCfg.total, weights);
-        keys.forEach((k) => {
+        keys.forEach((k, ki) => {
           const raw = realizeAll(selection[k], pools, ctx);
           const items = isSetType(k) ? orderSets(raw) : stableSortByLevel(raw);
           const n = items.length; if (!n) return;
-          const none = isNoneType(k);
           let secPts;
-          if (none) {
-            const each = typeByKey[k].stdPts || 1;
-            items.forEach(it => { it.points = each; it.noCount = true; });
-            secPts = each * n;
-          } else if (plan && plan[k]) { items.forEach(it => { it.points = plan[k].p; }); secPts = plan[k].p * n; }
+          if (plan && plan[k]) { items.forEach(it => { it.points = plan[k].p; }); secPts = plan[k].p * n; }
           else {
-            const ki = cKeys.indexOf(k);
             const base = Math.floor(typePts[ki] / n); let rem = typePts[ki] - base * n;
             items.forEach(it => { it.points = base + (rem > 0 ? 1 : 0); if (rem > 0) rem--; });
             secPts = typePts[ki];
           }
           const sec = { type: k, name: typeByKey[k].name, intro: typeByKey[k].hint || "", items, count: n, points: secPts, each: items[0].points };
-          if (kindOf(items[0]) === "selfcheck") { sec.self = true; sec.counted = !none; }
-          else if (none) sec.counted = false;
           if (isSetType(k)) sec.sets = Math.round(n / (typeByKey[k].setSize || n));
           sections.push(sec);
           flat = flat.concat(items);
         });
       }
       flat.forEach((it, i) => { it.no = i + 1; });
-      flat.forEach(it => { if (kindOf(it) === "selfcheck") it.rubricPts = apportion(it.points, it.rubric.map(() => 1)); });
-      return { mode, sections, items: flat, total: flat.filter(it => !it.noCount).reduce((a, it) => a + it.points, 0), ctx };
+      /* 造句依規則批改：題分依規則條數均分（前面的規則多拿餘數），部分規則達成給部分分 */
+      flat.forEach(it => { if (kindOf(it) === "selfcheck") it.rulePts = apportion(it.points, it.rules.map(() => 1)); });
+      return { mode, sections, items: flat, total: flat.reduce((a, it) => a + it.points, 0), ctx };
     }
 
     /* ----- 對外：出題 ----- */
@@ -428,25 +427,20 @@
       const lvMin = mode === "practice" ? 1 : (opts.levelMin || 1), lvMax = mode === "practice" ? 5 : (opts.levelMax || 5);
       const { topics, topicUnits } = topicsOfUnits(opts.units || []);
       const wantTypes = types.map(t => t.key).filter(k => (opts.types || []).indexOf(k) >= 0);
-      /* 逐題練習不含自評題與題組（沒有逐題對錯／需整組作答） */
-      const poolTypes = mode === "practice" ? wantTypes.filter(k => kindOfType(k) !== "selfcheck" && !isSetType(k)) : wantTypes;
+      /* 逐題練習不含題組（需整組作答） */
+      const poolTypes = mode === "practice" ? wantTypes.filter(k => !isSetType(k)) : wantTypes;
       const pools = buildPools(topics, poolTypes, lvMin, lvMax);
       const avail = poolTypes.filter(k => pools[k].length > 0);
       if (!avail.length) throw new Error("所選條件沒有可用題目（題庫可能尚未準備）");
       if (avail.length < wantTypes.length) console.warn("ExamEngine: 這些題型沒有可用題目，已略過：" + wantTypes.filter(k => avail.indexOf(k) < 0).join(","));
-      const planKeys = avail.filter(k => !isNoneType(k));
-      if (mode === "score" && !planKeys.length) throw new Error("附加練習題（不計分）需搭配至少一種計分題型");
       const counts = {}; let scorePlan = null;
       if (mode === "practice") {
         const base = Math.floor(practiceCfg.count / avail.length); let rem = practiceCfg.count - base * avail.length;
         avail.forEach(k => { counts[k] = base + (rem > 0 ? 1 : 0); if (rem > 0) rem--; });
       } else {
-        scorePlan = planScore(planKeys, null);
+        scorePlan = planScore(avail, null);
         if (!scorePlan) throw new Error("無法規劃計分卷版型");
-        avail.forEach(k => {
-          if (isNoneType(k)) counts[k] = Math.max(1, typeByKey[k].stdCount || 1);
-          else counts[k] = isSetType(k) ? scorePlan[k].n / (typeByKey[k].setSize || 1) : scorePlan[k].n;
-        });
+        avail.forEach(k => { counts[k] = isSetType(k) ? scorePlan[k].n / (typeByKey[k].setSize || 1) : scorePlan[k].n; });
       }
       const selection = selectSpecs(pools, counts, mode === "score" ? opts.mix : null, mode === "practice");
       const exam = assemble(selection, mode, { topicUnits }, pools, scorePlan);
@@ -465,9 +459,9 @@
       });
       let plan = null;
       if (exam.mode === "score") {
-        const keys = types.map(t => t.key).filter(k => selection[k] && selection[k].length && !isNoneType(k));
+        const keys = types.map(t => t.key).filter(k => selection[k] && selection[k].length);
         const fixed = {}; keys.forEach(k => { fixed[k] = selection[k].length * (isSetType(k) ? (typeByKey[k].setSize || 1) : 1); });
-        if (keys.length) plan = planScore(keys, fixed);
+        plan = planScore(keys, fixed);
       }
       const out = assemble(selection, exam.mode, exam.ctx, null, plan);
       out.opts = exam.opts;
@@ -485,28 +479,43 @@
     function isCorrect(item, resp) {
       if (!isAnswered(item, resp)) return false;
       const k = kindOf(item);
-      if (k === "selfcheck") return false; /* 自評題沒有自動對錯 */
+      if (k === "selfcheck") return checkRules(item, resp).every(p => p.ok);
       if (k === "single") return resp === item.answer;
       if (k === "multi") {
         const a = Array.from(new Set(resp)).sort((x, y) => x - y);
         return a.length === item.answer.length && a.every((v, i) => v === item.answer[i]);
       }
       if (k === "tf") return resp === item.answer;
-      return sameAnswer(resp, item);
+      if (sameAnswer(resp, item)) return true;
+      return !!(item.mustInclude && phraseRule(item, resp));
     }
-    /* 自評題：孩子在結果頁勾選評分標準，marks 為與 item.rubric 等長的布林陣列；沒寫句子不給分 */
-    function selfEarned(item, resp, marks) {
-      if (!isAnswered(item, resp) || !Array.isArray(marks)) return 0;
-      return (item.rubricPts || []).reduce((a, p, i) => a + (marks[i] === true ? p : 0), 0);
+    function plain(x) { return String(x == null ? "" : x).normalize("NFKC").replace(/[s　]+/g, ""); }
+    /* 造句規則批改：逐條回傳 {label, pts, ok}；沒寫句子全部 ok=false */
+    function checkRules(item, resp) {
+      const t = plain(resp), has = t !== "";
+      return item.rules.map((r, i) => {
+        let ok = false;
+        if (has) {
+          if (r.id === "kw") ok = t.indexOf(plain(r.word)) >= 0;
+          else if (r.id === "punct") ok = /[。！？!?.…]$/.test(t.replace(/[」』”’）)]+$/, ""));
+          else if (r.id === "len") ok = Array.from(t).length >= r.min;
+        }
+        return { label: r.label, pts: (item.rulePts || [])[i] || 0, ok };
+      });
     }
-    /* 檢查句子是否含指定語詞（僅輔助提示，不計分）：NFKC 後去空白再比對 */
-    function checkKeywords(item, resp) {
-      const norm = x => String(x == null ? "" : x).normalize("NFKC").replace(/[\s　]+/g, "");
-      const text = norm(resp);
-      return (item.keywords || []).map(w => ({ word: w, found: !!text && text.indexOf(norm(w)) >= 0 }));
+    /* 照樣寫短語等：accepted 以外的規則判定（含全部指定結構詞、夠長、不是照抄例句） */
+    function phraseRule(item, resp) {
+      const t = plain(resp);
+      if (!t) return false;
+      if (item.example && t === plain(item.example)) return false;
+      if (item.minLen && Array.from(t).length < item.minLen) return false;
+      return item.mustInclude.every(w => t.indexOf(plain(w)) >= 0);
     }
-    function gradeItem(item, resp, marks) {
-      if (kindOf(item) === "selfcheck") return { answered: isAnswered(item, resp), correct: false, earned: selfEarned(item, resp, marks), self: true };
+    function gradeItem(item, resp) {
+      if (kindOf(item) === "selfcheck") {
+        const parts = checkRules(item, resp), earned = parts.reduce((a, p) => a + (p.ok ? p.pts : 0), 0);
+        return { answered: isAnswered(item, resp), correct: earned === item.points, earned, parts };
+      }
       const answered = isAnswered(item, resp), correct = isCorrect(item, resp);
       return { answered, correct, earned: correct ? item.points : 0 };
     }
@@ -526,22 +535,12 @@
       if (k === "tf") return resp ? labels.yes : labels.no;
       return String(resp).trim();
     }
-    /* selfMarks（選填）：{ [題號]: [bool,...] }。考卷不含自評題時，輸出與舊版逐值相同；含自評題時另加
-       hasSelf/autoScore/autoTotal/selfScore/selfTotal（計入 total 的自評）與 extraScore/extraTotal（scoring:"none" 的附加練習，不併入 score）。 */
-    function summarize(exam, responses, selfMarks) {
-      selfMarks = selfMarks || {};
-      const hasSelf = exam.items.some(it => kindOf(it) === "selfcheck");
-      const gradable = hasSelf ? exam.items.filter(it => kindOf(it) !== "selfcheck") : exam.items;
-      const res = { score: 0, total: exam.total, count: gradable.length, correctCount: 0, byTag: {}, byUnit: {}, byType: {}, wrong: [], details: [] };
+    function summarize(exam, responses) {
+      const res = { score: 0, total: exam.total, count: exam.items.length, correctCount: 0, byTag: {}, byUnit: {}, byType: {}, wrong: [], details: [] };
       ["basic", "trap", "extend"].forEach(t => { res.byTag[t] = { right: 0, total: 0 }; });
-      let selfScore = 0, selfTotal = 0, extraScore = 0, extraTotal = 0;
       exam.items.forEach(it => {
-        const g = gradeItem(it, responses[it.no], selfMarks[it.no]);
+        const g = gradeItem(it, responses[it.no]);
         res.details.push({ item: it, grade: g });
-        if (g.self) {
-          if (it.noCount) { extraScore += g.earned; extraTotal += it.points; } else { selfScore += g.earned; selfTotal += it.points; }
-          return;
-        }
         res.score += g.earned;
         if (g.correct) res.correctCount++; else res.wrong.push(it);
         const tg = res.byTag[it.tag] || (res.byTag[it.tag] = { right: 0, total: 0 });
@@ -555,25 +554,15 @@
       });
       res.bySection = exam.sections.filter(sc => sc.type).map(sc => {
         const set = new Set(sc.items); let earned = 0, right = 0;
-        res.details.forEach(d => { if (set.has(d.item)) { earned += d.grade.earned; if (d.grade.correct || (d.grade.self && d.grade.earned >= d.item.points)) right++; } });
-        const row = { type: sc.type, name: sc.name, earned, max: sc.points, right, total: sc.items.length };
-        if (sc.self) { row.self = true; row.counted = sc.counted !== false; }
-        else if (sc.counted === false) row.counted = false;
-        return row;
+        res.details.forEach(d => { if (set.has(d.item)) { earned += d.grade.earned; if (d.grade.correct) right++; } });
+        return { type: sc.type, name: sc.name, earned, max: sc.points, right, total: sc.items.length };
       });
-      if (hasSelf) {
-        res.hasSelf = true;
-        res.autoScore = res.score; res.autoTotal = exam.total - selfTotal;
-        res.selfScore = selfScore; res.selfTotal = selfTotal;
-        res.extraScore = extraScore; res.extraTotal = extraTotal;
-        res.score += selfScore; /* 只有 scoring:"self" 的自評分併入合計；"none" 的附加練習不併入 */
-      }
       return res;
     }
 
     return {
       config, bank, buildExam, rebuildFromItems, planScore, gradeItem, isAnswered, isCorrect, sameAnswer,
-      describeAnswer, describeResponse, summarize, topicsOfUnits, buildPools, realize, realizeSet, apportion, kindOf, checkKeywords,
+      describeAnswer, describeResponse, summarize, topicsOfUnits, buildPools, realize, realizeSet, apportion, kindOf, checkRules,
       availableTypes(units) { const tp = topicsOfUnits(units); return types.map(t => t.key).filter(k => tp.topics.some(tt => bank.specsOf(tt).some(s => s.type === k))); }
     };
   }
