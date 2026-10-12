@@ -141,27 +141,6 @@ body.ex-body {
   .ex-headbar .ex-btn { flex: 1 1 40%; }
 }
 
-@media print {
-  body.ex-body { background: #fff; display: block; }
-  .ex-topbar, .ex-footer, .ex-aff, .no-print, .ex-quick, .ex-btn, [data-affiliate-carousel] { display: none !important; }
-  .ex-card, .ex-q, .ex-review { box-shadow: none; border-color: #999; background: #fff; break-inside: avoid; }
-  .ex-main { max-width: none; padding: 0; }
-  .ex-opt, .ex-tf { border-color: #999; }
-  .ex-opt input, .ex-tf { -webkit-print-color-adjust: exact; }
-  .ex-input { display: none; }
-  .ex-label, .ex-work { display: none; }
-  .ex-printlines { display: block; height: 90px; border-bottom: 1px solid #333; background: repeating-linear-gradient(transparent 0, transparent 29px, #999 29px, #999 30px); margin-top: 6px; }
-  .ex-bigsec { break-before: auto; border-top: 3px double #333; }
-  .ex-sec-title, .ex-sec-hint { break-after: avoid; }
-  .ex-printline { display: block; border-bottom: 1px solid #333; height: 28px; margin-top: 6px; }
-  .ex-feedback { display: none !important; }
-  .ex-key { display: none !important; }
-  body.ex-print-key .ex-key { display: grid !important; border: 0; background: #fff; }
-  body.ex-print-key .ex-key.is-collapsed { display: grid !important; }
-  body.ex-print-key .ex-examview > *:not(.ex-key), body.ex-print-key .ex-resultview > *:not(.ex-key) { display: none !important; }
-  body.ex-print-key .ex-keycard { break-inside: avoid; border-color: #999; }
-}
-
 /* ===== 題組短文、自評題（2026-10-12 追加；不影響既有題型） ===== */
 .ex-passage { margin: 14px 0 4px; padding: 14px 16px; border: 1px solid var(--line); border-left: 6px solid var(--ex-brand); border-radius: 14px; background: #fffdfb; break-inside: avoid; break-after: avoid; }
 .ex-passage-lead { margin: 0 0 6px; font-weight: 800; color: var(--ex-brand-dark); font-size: .9rem; }
@@ -193,3 +172,26 @@ body.ex-body {
   .ex-kw { border-color: #333; background: #fff; color: #000; }
   .ex-selfcard { break-inside: avoid; }
 }
+
+
+@media print {
+  body.ex-body { background: #fff; display: block; }
+  .ex-topbar, .ex-footer, .ex-aff, .no-print, .ex-quick, .ex-btn, [data-affiliate-carousel] { display: none !important; }
+  .ex-card, .ex-q, .ex-review { box-shadow: none; border-color: #999; background: #fff; break-inside: avoid; }
+  .ex-main { max-width: none; padding: 0; }
+  .ex-opt, .ex-tf { border-color: #999; }
+  .ex-opt input, .ex-tf { -webkit-print-color-adjust: exact; }
+  .ex-input { display: none; }
+  .ex-label, .ex-work { display: none; }
+  .ex-printlines { display: block; height: 90px; border-bottom: 1px solid #333; background: repeating-linear-gradient(transparent 0, transparent 29px, #999 29px, #999 30px); margin-top: 6px; }
+  .ex-bigsec { break-before: auto; border-top: 3px double #333; }
+  .ex-sec-title, .ex-sec-hint { break-after: avoid; }
+  .ex-printline { display: block; border-bottom: 1px solid #333; height: 28px; margin-top: 6px; }
+  .ex-feedback { display: none !important; }
+  .ex-key { display: none !important; }
+  body.ex-print-key .ex-key { display: grid !important; border: 0; background: #fff; }
+  body.ex-print-key .ex-key.is-collapsed { display: grid !important; }
+  body.ex-print-key .ex-examview > *:not(.ex-key), body.ex-print-key .ex-resultview > *:not(.ex-key) { display: none !important; }
+  body.ex-print-key .ex-keycard { break-inside: avoid; border-color: #999; }
+}
+

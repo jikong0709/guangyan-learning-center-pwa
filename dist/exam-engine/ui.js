@@ -486,7 +486,7 @@
           it.tag === "trap" && it.trapNote ? h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }) : null
         ]);
       });
-      /* 分數相關區塊可在自評勾選時重畫 */
+      /* 得分相關區塊可在自評勾選時重畫 */
       const labs = secLabels(ex);
       function secRowsOf(sm) {
         return (sm.bySection || []).map((sc, i) => h("li", { class: "ex-stat ex-secscore" }, [
@@ -541,7 +541,7 @@
           it.keywords.length ? h("p", { class: "ex-kwcheck" }, [h("b", { text: "語詞檢查（只是提示，不計分）：" }), kwRes.map(k => (k.found ? "✔ 有用到「" : "✘ 沒找到「") + k.word + "」").join("　")]) : null,
           h("p", {}, [h("b", { text: "參考練習句：" }), it.sample]),
           it.sampleNote ? h("p", { class: "ex-sub", text: "範例說明：" + it.sampleNote }) : null,
-          h("div", { class: "ex-rubric" }, [h("p", { class: "ex-rubric-title", text: written ? "評分標準：誠實對照你的句子，符合的打勾（即時更新分數）" : "評分標準（沒寫句子，無法自評）" })].concat(rows)),
+          h("div", { class: "ex-rubric" }, [h("p", { class: "ex-rubric-title", text: written ? "評分標準：誠實對照你的句子，符合的打勾（即時更新得分）" : "評分標準（沒寫句子，無法自評）" })].concat(rows)),
           h("p", { class: "ex-explain", text: "寫作提醒：" + it.explain }),
           it.tag === "trap" && it.trapNote ? h("p", { class: "ex-trapnote", text: "⚠️ 易錯點：" + it.trapNote }) : null
         ]);
