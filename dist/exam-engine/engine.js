@@ -112,21 +112,61 @@
       return false;
     }
 
+    /* ----- 題型 kind：config.types[].kind 為 single/multi/tf/selfcheck 時，題目以該 kind 行為；其餘（含舊科目 text 類）維持以 key 判斷 ----- */
+    const SPECIAL_KINDS = { single: 1, multi: 1, tf: 1, selfcheck: 1 };
+    function kindOfType(key) { const d = typeByKey[key]; const k = d && d.kind; return SPECIAL_KINDS[k] ? k : key; }
+    function kindOf(it) { return it.kind || it.type; }
+    function isSetType(key) { const d = typeByKey[key]; return !!(d && d.passageSet); }
+    function isNoneType(key) { const d = typeByKey[key]; return !!(d && d.scoring === "none"); }
+
     /* ----- 單題實體化（gen → 洗牌 → 重算答案） ----- */
     function validateRaw(spec, r) {
       if (!r || typeof r !== "object") throw new Error("gen 沒有回傳物件");
       if (typeof r.stem !== "string" || !r.stem.trim()) throw new Error("stem 空白");
       if (typeof r.explain !== "string" || !r.explain.trim()) throw new Error("explain 空白");
-      if (spec.type === "single" || spec.type === "multi") {
+      const kind = kindOfType(spec.type);
+      if (kind === "single" || kind === "multi") {
         if (!Array.isArray(r.options) || r.options.length < 2) throw new Error("options 不足");
         const strs = r.options.map(String);
         if (new Set(strs).size !== strs.length) throw new Error("options 重複");
-        if (spec.type === "single" && !(Number.isInteger(r.answer) && r.answer >= 0 && r.answer < strs.length)) throw new Error("single answer 不合法");
-        if (spec.type === "multi" && !(Array.isArray(r.answer) && r.answer.length >= 1 && r.answer.every(i => Number.isInteger(i) && i >= 0 && i < strs.length))) throw new Error("multi answer 不合法");
-      } else if (spec.type === "tf") {
+        if (kind === "single" && !(Number.isInteger(r.answer) && r.answer >= 0 && r.answer < strs.length)) throw new Error("single answer 不合法");
+        if (kind === "multi" && !(Array.isArray(r.answer) && r.answer.length >= 1 && r.answer.every(i => Number.isInteger(i) && i >= 0 && i < strs.length))) throw new Error("multi answer 不合法");
+      } else if (kind === "tf") {
         if (typeof r.answer !== "boolean") throw new Error("tf answer 必須是布林");
+      } else if (kind === "selfcheck") {
+        if (!Array.isArray(r.keywords) || r.keywords.length > 2 || !r.keywords.every(w => typeof w === "string" && w.trim())) throw new Error("selfcheck keywords 必須是 0~2 個非空字串的陣列");
+        if (typeof r.sample !== "string" || !r.sample.trim()) throw new Error("selfcheck sample 空白");
+        const rub = selfRubric(spec, r);
+        if (rub.length < 3 || rub.length > 5 || !rub.every(w => typeof w === "string" && w.trim())) throw new Error("selfcheck rubric 必須是 3~5 條非空字串");
       } else {
         if (r.answer == null || !String(r.answer).trim()) throw new Error("answer 空白");
+      }
+    }
+    function selfRubric(spec, r) {
+      if (Array.isArray(r.rubric) && r.rubric.length) return r.rubric;
+      const d = typeByKey[spec.type];
+      return (d && Array.isArray(d.rubricDefault)) ? d.rubricDefault : [];
+    }
+    /* 依 kind 把 gen 回傳的答案相關欄位寫進 item（realize 與題組展開共用；亂數呼叫順序與原本一致） */
+    function applyAnswer(item, kind, r, spec) {
+      if (kind === "single" || kind === "multi") {
+        const opts = r.options.map(String);
+        const perm = shuffle(opts.map((_, i) => i));
+        item.options = perm.map(i => opts[i]);
+        if (kind === "single") item.answer = perm.indexOf(r.answer);
+        else item.answer = Array.from(new Set(r.answer.map(i => perm.indexOf(i)))).sort((a, b) => a - b);
+      } else if (kind === "tf") {
+        item.answer = r.answer;
+      } else if (kind === "selfcheck") {
+        item.keywords = r.keywords.map(String);
+        item.sample = String(r.sample);
+        if (typeof r.sampleNote === "string" && r.sampleNote.trim()) item.sampleNote = r.sampleNote;
+        item.rubric = selfRubric(spec, r).map(String);
+        item.answer = item.sample;
+      } else {
+        item.answer = String(r.answer);
+        item.accepted = (r.accepted || []).map(String);
+        item.units = (r.units || []).map(String);
       }
     }
     function realize(spec) {
@@ -141,23 +181,44 @@
           };
           /* 解法二可缺（向下相容）；缺就不放欄位，UI 不顯示 */
           if (typeof r.explain2 === "string" && r.explain2.trim()) item.explain2 = r.explain2;
-          if (spec.type === "single" || spec.type === "multi") {
-            const opts = r.options.map(String);
-            const perm = shuffle(opts.map((_, i) => i));
-            item.options = perm.map(i => opts[i]);
-            if (spec.type === "single") item.answer = perm.indexOf(r.answer);
-            else item.answer = Array.from(new Set(r.answer.map(i => perm.indexOf(i)))).sort((a, b) => a - b);
-          } else if (spec.type === "tf") {
-            item.answer = r.answer;
-          } else {
-            item.answer = String(r.answer);
-            item.accepted = (r.accepted || []).map(String);
-            item.units = (r.units || []).map(String);
-          }
+          const kind = kindOfType(spec.type);
+          if (kind !== spec.type && SPECIAL_KINDS[kind]) item.kind = kind;
+          applyAnswer(item, kind, r, spec);
           return item;
         } catch (e) { lastErr = e; }
       }
       throw lastErr || new Error("realize 失敗");
+    }
+    /* 題組（一篇短文多題）：gen 回傳 {passage, passageTitle?, questions:[{stem,options,answer,explain,...}×setSize]}，展開成 setSize 個 item，帶 setId/setIndex/passage */
+    function realizeSet(spec) {
+      let lastErr = null;
+      const def = typeByKey[spec.type];
+      const size = def && def.setSize;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        try {
+          if (!Number.isInteger(size) || size < 2) throw new Error("passageSet 題型必須設定 setSize（整數 >= 2）");
+          const kind = kindOfType(spec.type);
+          if (kind === "selfcheck") throw new Error("題組子題不支援 selfcheck");
+          const r = spec.gen(kit);
+          if (!r || typeof r !== "object") throw new Error("gen 沒有回傳物件");
+          if (typeof r.passage !== "string" || !r.passage.trim()) throw new Error("passage 空白");
+          if (!Array.isArray(r.questions) || r.questions.length !== size) throw new Error("questions 必須剛好 " + size + " 題");
+          r.questions.forEach(q => validateRaw(spec, q));
+          return r.questions.map((q, i) => {
+            const item = {
+              specId: spec.id, topic: spec.topic, type: spec.type, level: spec.level, tag: spec.tag,
+              stem: q.stem, explain: q.explain, trapNote: q.trapNote || "",
+              setId: spec.id, setIndex: i, setSize: size, passage: r.passage
+            };
+            if (typeof r.passageTitle === "string" && r.passageTitle.trim()) item.passageTitle = r.passageTitle;
+            if (typeof q.explain2 === "string" && q.explain2.trim()) item.explain2 = q.explain2;
+            if (kind !== spec.type && SPECIAL_KINDS[kind]) item.kind = kind;
+            applyAnswer(item, kind, q, spec);
+            return item;
+          });
+        } catch (e) { lastErr = e; }
+      }
+      throw lastErr || new Error("realizeSet 失敗");
     }
 
     /* ----- 候選池 ----- */
@@ -256,16 +317,25 @@
     function stableSortByLevel(items) {
       return shuffle(items).map((it, i) => ({ it, i })).sort((a, b) => (a.it.level - b.it.level) || (a.i - b.i)).map(x => x.it);
     }
+    /* 題組排序：整組一起移動，組內題序不動；組與組之間先洗牌再依 level 排序 */
+    function orderSets(items) {
+      const groups = [], idx = {};
+      items.forEach(it => { if (idx[it.setId] == null) { idx[it.setId] = groups.length; groups.push([]); } groups[idx[it.setId]].push(it); });
+      groups.forEach(g => g.sort((a, b) => a.setIndex - b.setIndex));
+      const sorted = shuffle(groups).map((g, i) => ({ g, i })).sort((a, b) => (a.g[0].level - b.g[0].level) || (a.i - b.i)).map(x => x.g);
+      return sorted.reduce((a, g) => a.concat(g), []);
+    }
     function realizeAll(specs, pools, ctx) {
       const items = [];
       specs.forEach(spec => {
         let s = spec, item = null, tries = 0;
+        const isSet = isSetType(spec.type);
         const alt = (pools && pools[spec.type]) ? shuffle(pools[spec.type]) : [];
         while (!item && tries < 12) {
-          try { item = realize(s); } catch (e) { console.warn("ExamEngine: gen 失敗，改抽他題", s.id, e && e.message); s = alt[tries] || s; }
+          try { item = isSet ? realizeSet(s) : realize(s); } catch (e) { console.warn("ExamEngine: gen 失敗，改抽他題", s.id, e && e.message); s = alt[tries] || s; }
           tries++;
         }
-        if (item) { item.unitIds = (ctx.topicUnits[item.topic] || []).slice(); items.push(item); }
+        if (item) (isSet ? item : [item]).forEach(it => { it.unitIds = (ctx.topicUnits[it.topic] || []).slice(); items.push(it); });
       });
       return items;
     }
@@ -284,10 +354,13 @@
         keys.forEach((k, i) => {
           const t = typeByKey[k];
           const T = total * (stds[i].count * stds[i].pts) / wsum;
-          const cmin = fixed ? fixed[k] : (t.minCount || scoreCfg.minPerType), cmax = fixed ? fixed[k] : (t.maxCount || 25) * (1 + relax);
+          let cmin = fixed ? fixed[k] : (t.minCount || scoreCfg.minPerType); const cmax = fixed ? fixed[k] : (t.maxCount || 25) * (1 + relax);
+          /* 題組型：題數只能是 setSize 的倍數（整篇一起算） */
+          const step = t.passageSet ? Math.max(1, t.setSize || 1) : 1;
+          if (step > 1) cmin = Math.max(1, Math.ceil(cmin / step)) * step;
           const pmin = t.minPts || 1, pmax = (t.maxPts || 12) * (1 + relax);
           const nd = new Array(total + 1).fill(INF); const bk = new Array(total + 1).fill(null);
-          for (let n = cmin; n <= cmax; n++) for (let p = pmin; p <= pmax; p++) {
+          for (let n = cmin; n <= cmax; n += step) for (let p = pmin; p <= pmax; p++) {
             const pts = n * p; if (pts > total) continue;
             const cost = (pts - T) * (pts - T) + 25 * (p - stds[i].pts) * (p - stds[i].pts) + (n - stds[i].count) * (n - stds[i].count) * 0.01;
             for (let s = 0; s + pts <= total; s++) if (dp[s] < INF && dp[s] + cost < nd[s + pts]) { nd[s + pts] = dp[s] + cost; bk[s + pts] = { n, p, from: s }; }
@@ -314,24 +387,38 @@
         flat.forEach(it => { it.points = practiceCfg.pointEach; });
         sections.push({ type: null, name: "", items: flat, count: flat.length, points: flat.length * practiceCfg.pointEach });
       } else {
-        const weights = keys.map(k => typeByKey[k].weight || (typeByKey[k].stdCount * typeByKey[k].stdPts) || 1);
+        /* scoring:"none" 的題型（附加練習）不分攤 100 分；其餘與原本相同 */
+        const cKeys = keys.filter(k => !isNoneType(k));
+        const weights = cKeys.map(k => typeByKey[k].weight || (typeByKey[k].stdCount * typeByKey[k].stdPts) || 1);
         const typePts = apportion(scoreCfg.total, weights);
-        keys.forEach((k, ki) => {
-          const items = stableSortByLevel(realizeAll(selection[k], pools, ctx));
+        keys.forEach((k) => {
+          const raw = realizeAll(selection[k], pools, ctx);
+          const items = isSetType(k) ? orderSets(raw) : stableSortByLevel(raw);
           const n = items.length; if (!n) return;
+          const none = isNoneType(k);
           let secPts;
-          if (plan && plan[k]) { items.forEach(it => { it.points = plan[k].p; }); secPts = plan[k].p * n; }
+          if (none) {
+            const each = typeByKey[k].stdPts || 1;
+            items.forEach(it => { it.points = each; it.noCount = true; });
+            secPts = each * n;
+          } else if (plan && plan[k]) { items.forEach(it => { it.points = plan[k].p; }); secPts = plan[k].p * n; }
           else {
+            const ki = cKeys.indexOf(k);
             const base = Math.floor(typePts[ki] / n); let rem = typePts[ki] - base * n;
             items.forEach(it => { it.points = base + (rem > 0 ? 1 : 0); if (rem > 0) rem--; });
             secPts = typePts[ki];
           }
-          sections.push({ type: k, name: typeByKey[k].name, intro: typeByKey[k].hint || "", items, count: n, points: secPts, each: items[0].points });
+          const sec = { type: k, name: typeByKey[k].name, intro: typeByKey[k].hint || "", items, count: n, points: secPts, each: items[0].points };
+          if (kindOf(items[0]) === "selfcheck") { sec.self = true; sec.counted = !none; }
+          else if (none) sec.counted = false;
+          if (isSetType(k)) sec.sets = Math.round(n / (typeByKey[k].setSize || n));
+          sections.push(sec);
           flat = flat.concat(items);
         });
       }
       flat.forEach((it, i) => { it.no = i + 1; });
-      return { mode, sections, items: flat, total: flat.reduce((a, it) => a + it.points, 0), ctx };
+      flat.forEach(it => { if (kindOf(it) === "selfcheck") it.rubricPts = apportion(it.points, it.rubric.map(() => 1)); });
+      return { mode, sections, items: flat, total: flat.filter(it => !it.noCount).reduce((a, it) => a + it.points, 0), ctx };
     }
 
     /* ----- 對外：出題 ----- */
@@ -341,18 +428,25 @@
       const lvMin = mode === "practice" ? 1 : (opts.levelMin || 1), lvMax = mode === "practice" ? 5 : (opts.levelMax || 5);
       const { topics, topicUnits } = topicsOfUnits(opts.units || []);
       const wantTypes = types.map(t => t.key).filter(k => (opts.types || []).indexOf(k) >= 0);
-      const pools = buildPools(topics, wantTypes, lvMin, lvMax);
-      const avail = wantTypes.filter(k => pools[k].length > 0);
+      /* 逐題練習不含自評題與題組（沒有逐題對錯／需整組作答） */
+      const poolTypes = mode === "practice" ? wantTypes.filter(k => kindOfType(k) !== "selfcheck" && !isSetType(k)) : wantTypes;
+      const pools = buildPools(topics, poolTypes, lvMin, lvMax);
+      const avail = poolTypes.filter(k => pools[k].length > 0);
       if (!avail.length) throw new Error("所選條件沒有可用題目（題庫可能尚未準備）");
       if (avail.length < wantTypes.length) console.warn("ExamEngine: 這些題型沒有可用題目，已略過：" + wantTypes.filter(k => avail.indexOf(k) < 0).join(","));
+      const planKeys = avail.filter(k => !isNoneType(k));
+      if (mode === "score" && !planKeys.length) throw new Error("附加練習題（不計分）需搭配至少一種計分題型");
       const counts = {}; let scorePlan = null;
       if (mode === "practice") {
         const base = Math.floor(practiceCfg.count / avail.length); let rem = practiceCfg.count - base * avail.length;
         avail.forEach(k => { counts[k] = base + (rem > 0 ? 1 : 0); if (rem > 0) rem--; });
       } else {
-        scorePlan = planScore(avail, null);
+        scorePlan = planScore(planKeys, null);
         if (!scorePlan) throw new Error("無法規劃計分卷版型");
-        avail.forEach(k => { counts[k] = scorePlan[k].n; });
+        avail.forEach(k => {
+          if (isNoneType(k)) counts[k] = Math.max(1, typeByKey[k].stdCount || 1);
+          else counts[k] = isSetType(k) ? scorePlan[k].n / (typeByKey[k].setSize || 1) : scorePlan[k].n;
+        });
       }
       const selection = selectSpecs(pools, counts, mode === "score" ? opts.mix : null, mode === "practice");
       const exam = assemble(selection, mode, { topicUnits }, pools, scorePlan);
@@ -363,9 +457,18 @@
     /* 只重做錯題：依 specId 重新 gen（變數會變） */
     function rebuildFromItems(exam, items) {
       const selection = {};
-      items.forEach(it => { const s = bank.byId(it.specId); if (!s) return; (selection[s.type] = selection[s.type] || []).push(s); });
+      items.forEach(it => {
+        const s = bank.byId(it.specId); if (!s) return;
+        const arr = selection[s.type] || (selection[s.type] = []);
+        if (isSetType(s.type) && arr.indexOf(s) >= 0) return; /* 題組：同一篇有多題答錯也只放一次，整篇重做 */
+        arr.push(s);
+      });
       let plan = null;
-      if (exam.mode === "score") { const keys = types.map(t => t.key).filter(k => selection[k] && selection[k].length); const fixed = {}; keys.forEach(k => { fixed[k] = selection[k].length; }); plan = planScore(keys, fixed); }
+      if (exam.mode === "score") {
+        const keys = types.map(t => t.key).filter(k => selection[k] && selection[k].length && !isNoneType(k));
+        const fixed = {}; keys.forEach(k => { fixed[k] = selection[k].length * (isSetType(k) ? (typeByKey[k].setSize || 1) : 1); });
+        if (keys.length) plan = planScore(keys, fixed);
+      }
       const out = assemble(selection, exam.mode, exam.ctx, null, plan);
       out.opts = exam.opts;
       return out;
@@ -373,45 +476,72 @@
 
     /* ----- 批改 ----- */
     function isAnswered(item, resp) {
-      if (item.type === "single") return Number.isInteger(resp);
-      if (item.type === "multi") return Array.isArray(resp) && resp.length > 0;
-      if (item.type === "tf") return typeof resp === "boolean";
+      const k = kindOf(item);
+      if (k === "single") return Number.isInteger(resp);
+      if (k === "multi") return Array.isArray(resp) && resp.length > 0;
+      if (k === "tf") return typeof resp === "boolean";
       return typeof resp === "string" && resp.trim() !== "";
     }
     function isCorrect(item, resp) {
       if (!isAnswered(item, resp)) return false;
-      if (item.type === "single") return resp === item.answer;
-      if (item.type === "multi") {
+      const k = kindOf(item);
+      if (k === "selfcheck") return false; /* 自評題沒有自動對錯 */
+      if (k === "single") return resp === item.answer;
+      if (k === "multi") {
         const a = Array.from(new Set(resp)).sort((x, y) => x - y);
         return a.length === item.answer.length && a.every((v, i) => v === item.answer[i]);
       }
-      if (item.type === "tf") return resp === item.answer;
+      if (k === "tf") return resp === item.answer;
       return sameAnswer(resp, item);
     }
-    function gradeItem(item, resp) {
+    /* 自評題：孩子在結果頁勾選評分標準，marks 為與 item.rubric 等長的布林陣列；沒寫句子不給分 */
+    function selfEarned(item, resp, marks) {
+      if (!isAnswered(item, resp) || !Array.isArray(marks)) return 0;
+      return (item.rubricPts || []).reduce((a, p, i) => a + (marks[i] === true ? p : 0), 0);
+    }
+    /* 檢查句子是否含指定語詞（僅輔助提示，不計分）：NFKC 後去空白再比對 */
+    function checkKeywords(item, resp) {
+      const norm = x => String(x == null ? "" : x).normalize("NFKC").replace(/[\s　]+/g, "");
+      const text = norm(resp);
+      return (item.keywords || []).map(w => ({ word: w, found: !!text && text.indexOf(norm(w)) >= 0 }));
+    }
+    function gradeItem(item, resp, marks) {
+      if (kindOf(item) === "selfcheck") return { answered: isAnswered(item, resp), correct: false, earned: selfEarned(item, resp, marks), self: true };
       const answered = isAnswered(item, resp), correct = isCorrect(item, resp);
       return { answered, correct, earned: correct ? item.points : 0 };
     }
     function optText(item, i) { return LETTERS[i] + ". " + item.options[i]; }
     function describeAnswer(item) {
-      if (item.type === "single") return optText(item, item.answer);
-      if (item.type === "multi") return item.answer.map(i => optText(item, i)).join("；");
-      if (item.type === "tf") return item.answer ? labels.yes : labels.no;
+      const k = kindOf(item);
+      if (k === "single") return optText(item, item.answer);
+      if (k === "multi") return item.answer.map(i => optText(item, i)).join("；");
+      if (k === "tf") return item.answer ? labels.yes : labels.no;
       return item.answer;
     }
     function describeResponse(item, resp) {
       if (!isAnswered(item, resp)) return labels.none;
-      if (item.type === "single") return optText(item, resp);
-      if (item.type === "multi") return Array.from(new Set(resp)).sort((a, b) => a - b).map(i => optText(item, i)).join("；");
-      if (item.type === "tf") return resp ? labels.yes : labels.no;
+      const k = kindOf(item);
+      if (k === "single") return optText(item, resp);
+      if (k === "multi") return Array.from(new Set(resp)).sort((a, b) => a - b).map(i => optText(item, i)).join("；");
+      if (k === "tf") return resp ? labels.yes : labels.no;
       return String(resp).trim();
     }
-    function summarize(exam, responses) {
-      const res = { score: 0, total: exam.total, count: exam.items.length, correctCount: 0, byTag: {}, byUnit: {}, byType: {}, wrong: [], details: [] };
+    /* selfMarks（選填）：{ [題號]: [bool,...] }。考卷不含自評題時，輸出與舊版逐值相同；含自評題時另加
+       hasSelf/autoScore/autoTotal/selfScore/selfTotal（計入 total 的自評）與 extraScore/extraTotal（scoring:"none" 的附加練習，不併入 score）。 */
+    function summarize(exam, responses, selfMarks) {
+      selfMarks = selfMarks || {};
+      const hasSelf = exam.items.some(it => kindOf(it) === "selfcheck");
+      const gradable = hasSelf ? exam.items.filter(it => kindOf(it) !== "selfcheck") : exam.items;
+      const res = { score: 0, total: exam.total, count: gradable.length, correctCount: 0, byTag: {}, byUnit: {}, byType: {}, wrong: [], details: [] };
       ["basic", "trap", "extend"].forEach(t => { res.byTag[t] = { right: 0, total: 0 }; });
+      let selfScore = 0, selfTotal = 0, extraScore = 0, extraTotal = 0;
       exam.items.forEach(it => {
-        const g = gradeItem(it, responses[it.no]);
+        const g = gradeItem(it, responses[it.no], selfMarks[it.no]);
         res.details.push({ item: it, grade: g });
+        if (g.self) {
+          if (it.noCount) { extraScore += g.earned; extraTotal += it.points; } else { selfScore += g.earned; selfTotal += it.points; }
+          return;
+        }
         res.score += g.earned;
         if (g.correct) res.correctCount++; else res.wrong.push(it);
         const tg = res.byTag[it.tag] || (res.byTag[it.tag] = { right: 0, total: 0 });
@@ -425,15 +555,25 @@
       });
       res.bySection = exam.sections.filter(sc => sc.type).map(sc => {
         const set = new Set(sc.items); let earned = 0, right = 0;
-        res.details.forEach(d => { if (set.has(d.item)) { earned += d.grade.earned; if (d.grade.correct) right++; } });
-        return { type: sc.type, name: sc.name, earned, max: sc.points, right, total: sc.items.length };
+        res.details.forEach(d => { if (set.has(d.item)) { earned += d.grade.earned; if (d.grade.correct || (d.grade.self && d.grade.earned >= d.item.points)) right++; } });
+        const row = { type: sc.type, name: sc.name, earned, max: sc.points, right, total: sc.items.length };
+        if (sc.self) { row.self = true; row.counted = sc.counted !== false; }
+        else if (sc.counted === false) row.counted = false;
+        return row;
       });
+      if (hasSelf) {
+        res.hasSelf = true;
+        res.autoScore = res.score; res.autoTotal = exam.total - selfTotal;
+        res.selfScore = selfScore; res.selfTotal = selfTotal;
+        res.extraScore = extraScore; res.extraTotal = extraTotal;
+        res.score += selfScore; /* 只有 scoring:"self" 的自評分併入合計；"none" 的附加練習不併入 */
+      }
       return res;
     }
 
     return {
       config, bank, buildExam, rebuildFromItems, planScore, gradeItem, isAnswered, isCorrect, sameAnswer,
-      describeAnswer, describeResponse, summarize, topicsOfUnits, buildPools, realize, apportion,
+      describeAnswer, describeResponse, summarize, topicsOfUnits, buildPools, realize, realizeSet, apportion, kindOf, checkKeywords,
       availableTypes(units) { const tp = topicsOfUnits(units); return types.map(t => t.key).filter(k => tp.topics.some(tt => bank.specsOf(tt).some(s => s.type === k))); }
     };
   }
