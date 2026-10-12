@@ -7,7 +7,7 @@ globalThis.window = globalThis;
 const dist = path.join(__dirname, "..");
 function load(rel) { const f = path.join(dist, rel); vm.runInThisContext(fs.readFileSync(f, "utf8"), { filename: f }); }
 load("exam-engine/kit.js"); load("exam-engine/engine.js");
-console.warn = function () {};
+const warns = []; console.warn = function (m) { warns.push(String(m)); };
 
 let pass = 0, fail = 0;
 function check(name, cond, detail) { if (cond) { pass++; console.log("PASS  " + name); } else { fail++; console.log("FAIL  " + name + (detail ? "  -> " + detail : "")); } }
@@ -167,6 +167,65 @@ check("rubric 可為 0 條（不顯示自評對照）", noRub.rubric.length === 
 const exOld = build({ types: ["zhuyin", "hanzi"] });
 const sOld = engine.summarize(exOld, {});
 check("不含造句的考卷：summarize 欄位與舊版相同（無新欄位）", Object.keys(sOld).sort().join() === "bySection,byTag,byType,byUnit,correctCount,count,details,score,total,wrong" && sOld.bySection.every(s => Object.keys(s).sort().join() === "earned,max,name,right,total,type"));
+
+/* ---- 11. A1：題組池不足時降組數、不交錯、不重複同一篇 ---- */
+function setsOK(e) {
+  const rd = e.items.filter(i => i.type === "reading");
+  if (!rd.length) return true;
+  const ids = []; rd.forEach(i => { if (ids.indexOf(i.setId) < 0) ids.push(i.setId); });
+  const contiguous = ids.every(id => { const g = rd.filter(i => i.setId === id); const first = rd.indexOf(g[0]); return g.length === 5 && g.every((i, k) => rd[first + k] === i && i.setIndex === k); });
+  const passages = new Set(rd.map(i => i.passage));
+  return contiguous && passages.size === ids.length && new Set(ids).size === ids.length;
+}
+[["reading"], ["reading", "sentence"], ["reading", "zhuyin"], ["reading", "pattern", "hanzi_mc"]].forEach(types => {
+  let ok = true, tot = true, maxSets = 0, err = "";
+  for (let k = 0; k < 100; k++) {
+    try { const e = build({ types }); if (e.total !== 100) tot = false; if (!setsOK(e)) ok = false; maxSets = Math.max(maxSets, e.items.filter(i => i.type === "reading").length / 5); }
+    catch (e) { ok = false; err = e.message; }
+  }
+  check("A1 只勾 [" + types.join("+") + "] ×100：總分 100、題組不交錯、同一篇不重複、組數 <= 題庫篇數 2（最大 " + maxSets + "）", ok && tot && maxSets <= 2 && maxSets >= 1, err);
+});
+{
+  /* 題庫只有 1 篇、卻要求 5 題以上：降成 1 組，不重複 */
+  const oneBank = ExamEngine.createBank();
+  oneBank.register("lab-b", "g", [bank.byId(bank.specsOf("lab-b")[0].id)].map(s => Object.assign({}, s, { id: "one-1" })));
+  const e1 = ExamEngine.create(cfg, oneBank).buildExam({ mode: "score", units: units.slice(1), types: ["reading"], levelMin: 1, levelMax: 5 });
+  check("A1 題庫只有 1 篇：只出 1 組 5 題、總分 100、setId 帶唯一序號（含 #）", e1.items.length === 5 && e1.total === 100 && /#\d+$/.test(e1.items[0].setId) && setsOK(e1));
+}
+
+/* ---- 12. B1：plain() 以 \s 去空白（不是刪字母 s） ---- */
+{
+  const g1 = graded(["專心"], 4, "我上課 很 專 心聽講。");
+  check("B1 『我上課 很 專 心聽講。』專心判對、滿分", g1.g.parts[0].ok && g1.g.earned === 4);
+  const a2 = pi("又高又大");
+  check("B1 『又高 又大』照抄例句（含空白）判錯", !engine.isCorrect(a2, "又高 又大") && !engine.isCorrect(a2, "又高　又大"));
+  const g3 = graded(["專心"], 4, "我 很 專 心 聽 講。");
+  check("B1 空白不計入字數：去空白後 7 字 <8 → 字數條不過", g3.g.parts.find(p => /至少/.test(p.label)).ok === false);
+  check("B1 英文字母 s 不被刪：『ss 專心專心專心。』字數 = 去空白後計", graded(["專心"], 4, "ss 專心專心專心。").g.parts.find(p => /至少/.test(p.label)).ok === true);
+}
+
+/* ---- 13. C1：poolKey 跨題型不洩題 ---- */
+{
+  const w0 = warns.length; let dup = 0, exams = 0, noKey = 0, shortage = 0;
+  for (let k = 0; k < 200; k++) {
+    const e = build(); exams++;
+    const seen = {};
+    e.items.forEach(i => { const sp = bank.byId(i.specId); if (!sp.poolKey) { noKey++; return; } if (seen[sp.poolKey]) dup++; seen[sp.poolKey] = 1; });
+  }
+  shortage = warns.slice(w0).filter(m => /題庫池不足/.test(m)).length;
+  check("C1 200 份全選卷：同 poolKey 跨題型/同題型重複為 0", dup === 0 && exams === 200, "dup=" + dup);
+  check("C1 全選卷池夠用，沒有『題庫池不足』退讓警告", shortage === 0, "shortage=" + shortage);
+  check("C1 xxx 與 xxx_mc 的 spec 共用 poolKey（四個家族各筆）", ["zhuyin", "hanzi", "homophone", "wrongchar"].every(b => { const f = bank.all().filter(s => s.type === b), m = bank.all().filter(s => s.type === b + "_mc"); return f.length === m.length && f.every(s => s.poolKey) && f.every((s, i) => s.poolKey === m[i].poolKey); }));
+  check("C1 無 poolKey 的 spec 行為不變（數學回歸快照另跑 verify-regression 全等）", noKey > 0);
+}
+
+/* ---- 14. E1：練習模式只選題組 ---- */
+{
+  let msg = ""; try { engine.buildExam({ mode: "practice", units, types: ["reading"] }); } catch (e) { msg = e.message; }
+  check("E1 練習模式只選閱讀題組 → 『閱讀題組不支援逐題練習』", /閱讀題組不支援逐題練習/.test(msg), msg);
+  let msg2 = ""; try { engine.buildExam({ mode: "practice", units, types: [] }); } catch (e) { msg2 = e.message; }
+  check("E1 沒選任何題型 → 仍是原本的『沒有可用題目』訊息", /沒有可用題目/.test(msg2), msg2);
+}
 
 console.log("\n" + (fail ? "FAIL (" + fail + " failed, " + pass + " passed)" : "ALL PASS  (" + pass + " pass, 0 fail)"));
 process.exit(fail ? 1 : 0);

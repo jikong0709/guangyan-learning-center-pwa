@@ -53,7 +53,7 @@ async function answerAll(page, opts) {
       const page = await ctx.newPage();
       const errs = [];
       page.on("pageerror", e => errs.push("pageerror: " + e.message));
-      page.on("console", m => { if (m.type() === "error") errs.push("console: " + m.text()); });
+      page.on("console", m => { if (m.type() === "error" && !/閱讀題組不支援逐題練習/.test(m.text())) errs.push("console: " + m.text()); });
       page.on("dialog", d => d.dismiss());
       const noOverflow = async (label) => {
         const w = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth));
@@ -87,10 +87,7 @@ async function answerAll(page, opts) {
       check(vp.name + " 閱讀 5 題連續編號", rdNos.length === 5 && rdNos.every((x, i) => x === rdNos[0] + i), rdNos.join(","));
       check(vp.name + " 單選形式有 radio、填寫形式有文字框（國字注音選擇題不再被畫成文字框）", (await page.locator("[data-type=zhuyin_mc] input[type=radio]").count()) === 16 && (await page.locator("[data-type=zhuyin_mc] input.ex-input").count()) === 0 && (await page.locator("[data-type=zhuyin] input.ex-input").count()) === 4 && (await page.locator("[data-type=zhuyin] input[type=radio]").count()) === 0);
       check(vp.name + " 照樣寫短語：題幹含例句、文字作答", (await page.locator("[data-type=pattern] input.ex-input").count()) === 2 && /例：/.test(await page.textContent("[data-type=pattern] .ex-stem")));
-      check(vp.name + " 造句區：1 題、輸入框、指定語詞 chip、參考例句預設收合", (await page.locator(".ex-selfwrite").count()) === 1 && (await page.locator("[data-type=sentence] .ex-kw").count()) >= 1 && (await page.locator(".ex-sample.is-collapsed").count()) === 1);
-      await page.locator("[data-type=sentence] .ex-btn-small").first().click();
-      check(vp.name + " 點「看參考例句」可展開", (await page.locator(".ex-sample:not(.is-collapsed)").count()) === 1);
-      await page.locator("[data-type=sentence] .ex-btn-small").first().click();
+      check(vp.name + " 造句區：1 題、輸入框、指定語詞 chip；計分卷交卷前沒有「看參考例句」鈕、頁面上看不到例句", (await page.locator(".ex-selfwrite").count()) === 1 && (await page.locator("[data-type=sentence] .ex-kw").count()) >= 1 && (await page.locator(".ex-sample").count()) === 0 && (await page.locator("[data-type=sentence] button").count()) === 0);
       await noOverflow("考卷頁");
       await page.screenshot({ path: path.join(SHOT, vp.name + "-2-exam.png"), fullPage: true });
 
@@ -100,7 +97,7 @@ async function answerAll(page, opts) {
         const d = s => { const e = document.querySelector(s); return e ? getComputedStyle(e).display : "missing"; };
         return { selfwrite: d(".ex-selfwrite"), lines: d("[data-type=sentence] .ex-printlines"), sample: d(".ex-sample"), passage: d(".ex-examview .ex-passage:not(.ex-keypassage)"), fillIn: d(".ex-input"), line: d("[data-type=pattern] .ex-printline") };
       });
-      check(vp.name + " 列印考卷：造句輸入框隱藏、橫線顯示、參考例句不外洩、短文顯示、填寫橫線顯示", pr.selfwrite === "none" && pr.lines === "block" && pr.sample === "none" && pr.passage !== "none" && pr.fillIn === "none" && pr.line === "block", JSON.stringify(pr));
+      check(vp.name + " 列印考卷：造句輸入框隱藏、橫線顯示、參考例句不外洩、短文顯示、填寫橫線顯示", pr.selfwrite === "none" && pr.lines === "block" && pr.sample === "missing" && pr.passage !== "none" && pr.fillIn === "none" && pr.line === "block", JSON.stringify(pr));
       await page.emulateMedia({ media: "screen" });
 
       /* --- 作答（造句：含指定語詞、句末標點、夠長 → 規則全中）--- */
@@ -172,6 +169,20 @@ async function answerAll(page, opts) {
       await page.click("#ex-start"); await page.waitForSelector("#ex-submit");
       check(vp.name + " 20 題練習：20 題、無短文題組", (await page.locator("article.ex-q").count()) === 20 && (await page.locator(".ex-passage").count()) === 0);
 
+      /* --- 練習模式含造句：可看參考例句；只選閱讀題組 → 明確錯誤訊息 --- */
+      await page.evaluate(() => { const b = Array.from(document.querySelectorAll("button")).find(x => /回設定頁/.test(x.textContent)); if (b) b.click(); });
+      await page.waitForSelector("#ex-start");
+      const cbs = page.locator("input[name=type]");
+      for (let i = 0; i < await cbs.count(); i++) if (await cbs.nth(i).isChecked()) await cbs.nth(i).uncheck();
+      await page.locator("input[name=type][value=reading]").check();
+      await page.locator("input[name=mode][value=practice]").check();
+      await page.click("#ex-start");
+      check(vp.name + " 練習模式只選閱讀題組 → 訊息「閱讀題組不支援逐題練習」", /閱讀題組不支援逐題練習/.test(await page.textContent(".ex-msg")));
+      await page.locator("input[name=type][value=reading]").uncheck();
+      await page.locator("input[name=type][value=sentence]").check();
+      await page.locator("input[name=type][value=zhuyin]").check();
+      await page.click("#ex-start"); await page.waitForSelector("#ex-submit");
+      check(vp.name + " 練習模式含造句：有「看參考例句」鈕，點了才顯示例句", (await page.locator(".ex-sample.is-collapsed").count()) >= 1 && await (async () => { await page.locator("button", { hasText: "看參考例句" }).first().click(); return (await page.locator(".ex-sample:not(.is-collapsed)").count()) >= 1; })());
       check(vp.name + " 全程 console / page error 為 0", errs.length === 0, errs.join(" ; "));
       await ctx.close();
     }

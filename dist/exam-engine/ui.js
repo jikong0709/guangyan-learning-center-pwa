@@ -353,7 +353,8 @@
         const peek = h("div", { class: "ex-sample is-collapsed", id: id + "-sample" }, [h("p", { text: "參考例句：" + it.sample })]);
         const peekBtn = h("button", { type: "button", class: "ex-btn ex-btn-small no-print", "aria-expanded": "false", "aria-controls": id + "-sample", text: "看參考例句（寫完再看）" });
         peekBtn.addEventListener("click", () => { const open = peek.classList.toggle("is-collapsed") === false; peekBtn.setAttribute("aria-expanded", open ? "true" : "false"); peekBtn.textContent = open ? "收起參考例句" : "看參考例句（寫完再看）"; });
-        area.appendChild(peekBtn); area.appendChild(peek);
+        /* 計分卷交卷前不給看參考例句；逐題練習可看 */
+        if (practice) { area.appendChild(peekBtn); area.appendChild(peek); }
       } else {
         const input = h("input", { type: "text", class: "ex-input", id: id + "-in", autocomplete: "off", autocapitalize: "off", spellcheck: "false", placeholder: it.type === "word" ? "請寫出答案和單位" : "請輸入答案" });
         input.addEventListener("input", () => changed(input.value));

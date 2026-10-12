@@ -198,6 +198,7 @@
       throw lastErr || new Error("realize 失敗");
     }
     /* 題組（一篇短文多題）：gen 回傳 {passage, passageTitle?, questions:[{stem,options,answer,explain,...}×setSize]}，展開成 setSize 個 item，帶 setId/setIndex/passage */
+    let setSeq = 0;
     function realizeSet(spec) {
       let lastErr = null;
       const def = typeByKey[spec.type];
@@ -212,11 +213,12 @@
           if (typeof r.passage !== "string" || !r.passage.trim()) throw new Error("passage 空白");
           if (!Array.isArray(r.questions) || r.questions.length !== size) throw new Error("questions 必須剛好 " + size + " 題");
           r.questions.forEach(q => validateRaw(spec, q));
+          const setNo = ++setSeq;
           return r.questions.map((q, i) => {
             const item = {
               specId: spec.id, topic: spec.topic, type: spec.type, level: spec.level, tag: spec.tag,
               stem: q.stem, explain: q.explain, trapNote: q.trapNote || "",
-              setId: spec.id, setIndex: i, setSize: size, passage: r.passage
+              setId: spec.id + "#" + setNo, setIndex: i, setSize: size, passage: r.passage
             };
             if (typeof r.passageTitle === "string" && r.passageTitle.trim()) item.passageTitle = r.passageTitle;
             if (typeof q.explain2 === "string" && q.explain2.trim()) item.explain2 = q.explain2;
@@ -254,7 +256,7 @@
     const LEVEL_PREF = { extend: l => l >= 4, trap: l => l >= 2 && l <= 4, basic: l => l <= 3 };
     function selectOnce(pools, counts, tagPlan, cover) {
       const topicUsed = {}; const levelUsed = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      const used = new Set(); const out = {}; let repeated = false;
+      const used = new Set(); const usedKeys = new Set(); const out = {}; let repeated = false;
       const slots = []; let gk = Math.floor(Math.random() * 5);
       Object.keys(counts).forEach(k => {
         out[k] = [];
@@ -263,7 +265,7 @@
       });
       shuffle(slots).forEach(slot => {
         const all = pools[slot.type];
-        let cands = all.filter(s => !used.has(s.id));
+        let cands = all.filter(s => !used.has(s.id) && !(s.poolKey && usedKeys.has(s.poolKey)));
         if (!cands.length) { cands = all; repeated = true; }
         const topicSet = {}; cands.forEach(s => { topicSet[s.topic] = true; });
         const tl = Object.keys(topicSet);
@@ -280,7 +282,7 @@
         let minL = Infinity; list.forEach(s => { minL = Math.min(minL, levelUsed[s.level]); });
         list = list.filter(s => levelUsed[s.level] === minL);
         const spec = pickOne(list);
-        used.add(spec.id); topicUsed[topic] = (topicUsed[topic] || 0) + 1; levelUsed[spec.level]++;
+        used.add(spec.id); if (spec.poolKey) usedKeys.add(spec.poolKey); topicUsed[topic] = (topicUsed[topic] || 0) + 1; levelUsed[spec.level]++;
         out[slot.type].push(spec);
       });
       return { out, topicUsed, repeated };
@@ -353,7 +355,7 @@
       if (t.stdWith) Object.keys(t.stdWith).forEach(o => { if (keys.indexOf(o) >= 0) { c = t.stdWith[o].count; p = t.stdWith[o].pts; } });
       return { count: c, pts: p };
     }
-    function planScore(keys, fixed) {
+    function planScore(keys, fixed, caps) {
       const total = scoreCfg.total;
       const stds = keys.map(k => stdFor(k, keys));
       const wsum = stds.reduce((a, s) => a + s.count * s.pts, 0);
@@ -362,7 +364,8 @@
         keys.forEach((k, i) => {
           const t = typeByKey[k];
           const T = total * (stds[i].count * stds[i].pts) / wsum;
-          let cmin = fixed ? fixed[k] : (t.minCount || scoreCfg.minPerType); const cmax = fixed ? fixed[k] : (t.maxCount || 25) * (1 + relax);
+          let cmin = fixed ? fixed[k] : (t.minCount || scoreCfg.minPerType); let cmax = fixed ? fixed[k] : (t.maxCount || 25) * (1 + relax);
+          if (caps && caps[k] != null) cmax = Math.min(cmax, caps[k]);
           /* 題組型：題數只能是 setSize 的倍數（整篇一起算） */
           const step = t.passageSet ? Math.max(1, t.setSize || 1) : 1;
           if (step > 1) cmin = Math.max(1, Math.ceil(cmin / step)) * step;
@@ -430,6 +433,7 @@
       /* 逐題練習不含題組（需整組作答） */
       const poolTypes = mode === "practice" ? wantTypes.filter(k => !isSetType(k)) : wantTypes;
       const pools = buildPools(topics, poolTypes, lvMin, lvMax);
+      if (mode === "practice" && wantTypes.length && !poolTypes.length) throw new Error("閱讀題組不支援逐題練習，請改用一百分計分卷，或加選其他題型");
       const avail = poolTypes.filter(k => pools[k].length > 0);
       if (!avail.length) throw new Error("所選條件沒有可用題目（題庫可能尚未準備）");
       if (avail.length < wantTypes.length) console.warn("ExamEngine: 這些題型沒有可用題目，已略過：" + wantTypes.filter(k => avail.indexOf(k) < 0).join(","));
@@ -438,7 +442,10 @@
         const base = Math.floor(practiceCfg.count / avail.length); let rem = practiceCfg.count - base * avail.length;
         avail.forEach(k => { counts[k] = base + (rem > 0 ? 1 : 0); if (rem > 0) rem--; });
       } else {
-        scorePlan = planScore(avail, null);
+        /* 題組：整篇不重複使用，題庫篇數不足時降低組數（planScore 以題數上限限制） */
+        let caps = null;
+        avail.forEach(k => { if (isSetType(k)) { caps = caps || {}; caps[k] = pools[k].length * (typeByKey[k].setSize || 1); } });
+        scorePlan = caps ? planScore(avail, null, caps) : planScore(avail, null);
         if (!scorePlan) throw new Error("無法規劃計分卷版型");
         avail.forEach(k => { counts[k] = isSetType(k) ? scorePlan[k].n / (typeByKey[k].setSize || 1) : scorePlan[k].n; });
       }
@@ -489,7 +496,7 @@
       if (sameAnswer(resp, item)) return true;
       return !!(item.mustInclude && phraseRule(item, resp));
     }
-    function plain(x) { return String(x == null ? "" : x).normalize("NFKC").replace(/[s　]+/g, ""); }
+    function plain(x) { return String(x == null ? "" : x).normalize("NFKC").replace(/[\s　]+/g, ""); }
     /* 造句規則批改：逐條回傳 {label, pts, ok}；沒寫句子全部 ok=false */
     function checkRules(item, resp) {
       const t = plain(resp), has = t !== "";

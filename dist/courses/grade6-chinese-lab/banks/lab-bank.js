@@ -7,45 +7,55 @@
   const levelOf = i => (i % 5) + 1;
   const tagOf = i => (i < 2 ? "trap" : (i < 4 ? "extend" : "basic"));
   const specsA = [];
-  function add(type, i, gen) {
+  /* poolKey：同一份底層字詞資料產生的 xxx 與 xxx_mc 共用同一個 poolKey，組卷時同卷只取一次（避免填寫題洩選擇題的答案） */
+  function add(type, i, gen, poolKey) {
     const level = levelOf(i);
-    specsA.push({ id: "lab-" + type + "-L" + level + "-" + String(i + 1).padStart(2, "0"), type: type, level: level, tag: tagOf(i), gen: gen });
+    specsA.push({ id: "lab-" + type + "-L" + level + "-" + String(i + 1).padStart(2, "0"), type: type, level: level, tag: tagOf(i), poolKey: poolKey, gen: gen });
   }
   function pickOthers(kit, all, self, key, n) { return kit.shuffle(all.filter(x => x !== self)).slice(0, n).map(x => x[key]); }
 
   /* 字與注音（皆為極基本字音） */
-  const ZY = [
-    { c: "山", z: "ㄕㄢ", ctx: "（　）脈" }, { c: "水", z: "ㄕㄨㄟˇ", ctx: "喝（　）" }, { c: "日", z: "ㄖˋ", ctx: "星期（　）" },
-    { c: "月", z: "ㄩㄝˋ", ctx: "（　）亮" }, { c: "口", z: "ㄎㄡˇ", ctx: "門（　）" }, { c: "木", z: "ㄇㄨˋ", ctx: "樹（　）" },
-    { c: "火", z: "ㄏㄨㄛˇ", ctx: "（　）山" }, { c: "田", z: "ㄊㄧㄢˊ", ctx: "稻（　）" }, { c: "手", z: "ㄕㄡˇ", ctx: "（　）機" },
-    { c: "人", z: "ㄖㄣˊ", ctx: "客（　）" }
+  const ZYA = [
+    { c: "山", z: "ㄕㄢ" }, { c: "水", z: "ㄕㄨㄟˇ" }, { c: "日", z: "ㄖˋ" }, { c: "月", z: "ㄩㄝˋ" },
+    { c: "口", z: "ㄎㄡˇ" }, { c: "木", z: "ㄇㄨˋ" }, { c: "火", z: "ㄏㄨㄛˇ" }, { c: "田", z: "ㄊㄧㄢˊ" }
   ];
-  ZY.forEach((r, i) => {
-    add("zhuyin", i, () => ({ stem: LAB + "請寫出「" + r.c + "」的注音。", answer: r.z, accepted: [], explain: "「" + r.c + "」讀作" + r.z + "。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "注意聲調符號不要漏寫。" : undefined }));
-    add("zhuyin_mc", i, kit => ({ stem: LAB + "「" + r.c + "」的注音是哪一個？", options: [r.z].concat(pickOthers(kit, ZY, r, "z", 3)), answer: 0, explain: "「" + r.c + "」讀作" + r.z + "。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "注意聲調符號。" : undefined }));
-    add("hanzi", i, () => ({ stem: LAB + "依注音寫出國字：" + r.ctx + "（" + r.z + "）", answer: r.c, accepted: [], explain: r.ctx.replace("（　）", r.c) + "。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "注意字形，不要寫成形近字。" : undefined }));
-    add("hanzi_mc", i, kit => ({ stem: LAB + "依注音選出正確國字：" + r.ctx + "（" + r.z + "）", options: [r.c].concat(pickOthers(kit, ZY, r, "c", 3)), answer: 0, explain: r.ctx.replace("（　）", r.c) + "。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "注意字形。" : undefined }));
+  const ZYH = [
+    { c: "手", z: "ㄕㄡˇ", ctx: "（　）機" }, { c: "人", z: "ㄖㄣˊ", ctx: "客（　）" }, { c: "土", z: "ㄊㄨˇ", ctx: "（　）壤" }, { c: "雨", z: "ㄩˇ", ctx: "（　）傘" },
+    { c: "天", z: "ㄊㄧㄢ", ctx: "（　）空" }, { c: "花", z: "ㄏㄨㄚ", ctx: "（　）朵" }, { c: "草", z: "ㄘㄠˇ", ctx: "（　）原" }, { c: "魚", z: "ㄩˊ", ctx: "（　）刺" }
+  ];
+  ZYA.forEach((r, i) => {
+    const pk = "lab-zy-" + r.c;
+    add("zhuyin", i, () => ({ stem: LAB + "請寫出「" + r.c + "」的注音。", answer: r.z, accepted: [], explain: "「" + r.c + "」讀作" + r.z + "。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "注意聲調符號不要漏寫。" : undefined }), pk);
+    add("zhuyin_mc", i, kit => ({ stem: LAB + "「" + r.c + "」的注音是哪一個？", options: [r.z].concat(pickOthers(kit, ZYA, r, "z", 3)), answer: 0, explain: "「" + r.c + "」讀作" + r.z + "。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "注意聲調符號。" : undefined }), pk);
+  });
+  ZYH.forEach((r, i) => {
+    const pk = "lab-hz-" + r.c;
+    add("hanzi", i, () => ({ stem: LAB + "依注音寫出國字：" + r.ctx + "（" + r.z + "）", answer: r.c, accepted: [], explain: r.ctx.replace("（　）", r.c) + "。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "注意字形，不要寫成形近字。" : undefined }), pk);
+    add("hanzi_mc", i, kit => ({ stem: LAB + "依注音選出正確國字：" + r.ctx + "（" + r.z + "）", options: [r.c].concat(pickOthers(kit, ZYH, r, "c", 3)), answer: 0, explain: r.ctx.replace("（　）", r.c) + "。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "注意字形。" : undefined }), pk);
   });
 
   /* 同音字：句子、正確字、同音錯誤字、注音 */
   const HP = [
     { s: "媽媽（　）廚房做菜。", ok: "在", bad: "再", z: "ㄗㄞˋ" }, { s: "請你（　）說一次。", ok: "再", bad: "在", z: "ㄗㄞˋ" },
-    { s: "他（　）經回家了。", ok: "已", bad: "以", z: "ㄧˇ" }, { s: "這個（　）位很舒服。", ok: "座", bad: "坐", z: "ㄗㄨㄛˋ" }
+    { s: "他（　）經回家了。", ok: "已", bad: "以", z: "ㄧˇ" }, { s: "這個（　）位很舒服。", ok: "座", bad: "坐", z: "ㄗㄨㄛˋ" },
+    { s: "他跑（　）很快。", ok: "得", bad: "的", z: "ㄉㄜ˙" }, { s: "這是我（　）書包。", ok: "的", bad: "得", z: "ㄉㄜ˙" },
+    { s: "媽媽在廚房（　）飯。", ok: "做", bad: "作", z: "ㄗㄨㄛˋ" }, { s: "我在寫（　）業。", ok: "作", bad: "做", z: "ㄗㄨㄛˋ" }
   ];
   const POOL = ["山", "水", "日", "月", "火", "田"];
   HP.forEach((r, i) => {
-    add("homophone", i, () => ({ stem: LAB + "同音字，（　）內填入正確的字（" + r.z + "）：" + r.s, answer: r.ok, accepted: [], explain: "依句意應填「" + r.ok + "」，不是「" + r.bad + "」。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "「" + r.ok + "」和「" + r.bad + "」讀音相同、意思不同。" : undefined }));
-    add("homophone_mc", i, kit => ({ stem: LAB + "同音字，選出填入（　）最適當的字（" + r.z + "）：" + r.s, options: [r.ok, r.bad].concat(kit.shuffle(POOL).slice(0, 2)), answer: 0, explain: "依句意應填「" + r.ok + "」，不是「" + r.bad + "」。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "「" + r.ok + "」和「" + r.bad + "」讀音相同、意思不同。" : undefined }));
+    add("homophone", i, () => ({ stem: LAB + "同音字，（　）內填入正確的字（" + r.z + "）：" + r.s, answer: r.ok, accepted: [], explain: "依句意應填「" + r.ok + "」，不是「" + r.bad + "」。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "「" + r.ok + "」和「" + r.bad + "」讀音相同、意思不同。" : undefined }), "lab-hp-" + i);
+    add("homophone_mc", i, kit => ({ stem: LAB + "同音字，選出填入（　）最適當的字（" + r.z + "）：" + r.s, options: [r.ok, r.bad].concat(kit.shuffle(POOL).slice(0, 2)), answer: 0, explain: "依句意應填「" + r.ok + "」，不是「" + r.bad + "」。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "「" + r.ok + "」和「" + r.bad + "」讀音相同、意思不同。" : undefined }), "lab-hp-" + i);
   });
 
   /* 找錯字：含錯字的句子、錯字、正確字 */
   const WC = [
     { s: "我們再公園裡玩耍。", bad: "再", ok: "在" }, { s: "明天請你在來一次。", bad: "在", ok: "再" },
-    { s: "弟弟以經睡著了。", bad: "以", ok: "已" }, { s: "我喜歡吃蘋果和香焦。", bad: "焦", ok: "蕉" }
+    { s: "弟弟以經睡著了。", bad: "以", ok: "已" }, { s: "我喜歡吃蘋果和香焦。", bad: "焦", ok: "蕉" },
+    { s: "他跑的很快。", bad: "的", ok: "得" }, { s: "媽媽在廚房作飯。", bad: "作", ok: "做" }
   ];
   WC.forEach((r, i) => {
-    add("wrongchar", i, () => ({ stem: LAB + "句中有一個錯字，請寫出正確的字：" + r.s, answer: r.ok, accepted: [], explain: "錯字是「" + r.bad + "」，應改成「" + r.ok + "」。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "錯字常是讀音相同或字形相近的字。" : undefined }));
-    add("wrongchar_mc", i, kit => ({ stem: LAB + "句中有一個錯字，選出應該改成的正確字：" + r.s, options: [r.ok, r.bad].concat(kit.shuffle(POOL).slice(0, 2)), answer: 0, explain: "錯字是「" + r.bad + "」，應改成「" + r.ok + "」。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "錯字常是讀音相同或字形相近的字。" : undefined }));
+    add("wrongchar", i, () => ({ stem: LAB + "句中有一個錯字，請寫出正確的字：" + r.s, answer: r.ok, accepted: [], explain: "錯字是「" + r.bad + "」，應改成「" + r.ok + "」。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "錯字常是讀音相同或字形相近的字。" : undefined }), "lab-wc-" + i);
+    add("wrongchar_mc", i, kit => ({ stem: LAB + "句中有一個錯字，選出應該改成的正確字：" + r.s, options: [r.ok, r.bad].concat(kit.shuffle(POOL).slice(0, 2)), answer: 0, explain: "錯字是「" + r.bad + "」，應改成「" + r.ok + "」。（LAB 假資料）", trapNote: tagOf(i) === "trap" ? "錯字常是讀音相同或字形相近的字。" : undefined }), "lab-wc-" + i);
   });
 
   /* 照樣寫短語：題幹放例句示範結構；accepted 列常見寫法，其餘符合 mustInclude 結構詞且夠長、非照抄例句也算對 */
