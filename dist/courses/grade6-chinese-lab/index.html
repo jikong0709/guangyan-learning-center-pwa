@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>LAB 國語樣板測試｜莓好學習區（非正式）</title>
+  <link rel="stylesheet" href="../../exam-engine/exam.css">
+</head>
+<body class="ex-body">
+  <header class="ex-topbar"><div class="ex-topbar-in"><div class="ex-brand">莓好學習區 LAB<small>引擎測試頁・假資料・未上線</small></div></div></header>
+  <main class="ex-main"><div id="exam-root" aria-live="off"><p style="text-align:center;color:#786f78">載入題庫中…</p></div><noscript><p>需要開啟 JavaScript。</p></noscript></main>
+  <footer class="ex-footer"><p>LAB 測試頁：所有題目為【LAB】假資料，非課文、非出版社內容，請勿對外分享。</p><p id="curriculum-source"></p></footer>
+  <script src="../../exam-engine/kit.js"></script>
+  <script src="../../exam-engine/engine.js"></script>
+  <script src="./config.js"></script>
+  <script src="./banks/lab-bank.js"></script>
+  <script src="../../exam-engine/ui.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var cfg = window.ExamConfig;
+    var engine = window.ExamEngine.create(cfg, window.ExamBank);
+    window.ExamUI.start({ engine: engine, config: cfg, root: document.getElementById("exam-root"), version: cfg.defaultVersion });
+  })();
+  </script>
+</body>
+</html>

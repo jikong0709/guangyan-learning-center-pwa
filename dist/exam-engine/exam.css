@@ -161,3 +161,35 @@ body.ex-body {
   body.ex-print-key .ex-examview > *:not(.ex-key), body.ex-print-key .ex-resultview > *:not(.ex-key) { display: none !important; }
   body.ex-print-key .ex-keycard { break-inside: avoid; border-color: #999; }
 }
+
+/* ===== 題組短文、自評題（2026-10-12 追加；不影響既有題型） ===== */
+.ex-passage { margin: 14px 0 4px; padding: 14px 16px; border: 1px solid var(--line); border-left: 6px solid var(--ex-brand); border-radius: 14px; background: #fffdfb; break-inside: avoid; break-after: avoid; }
+.ex-passage-lead { margin: 0 0 6px; font-weight: 800; color: var(--ex-brand-dark); font-size: .9rem; }
+.ex-passage-title { margin: 0 0 6px; font-size: 1.05rem; text-align: center; }
+.ex-passage-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.9; }
+.ex-keypassage { background: #fff; }
+.ex-review-passage { margin: 6px 0; }
+.ex-review-passage summary { cursor: pointer; font-weight: 700; color: var(--ex-brand-dark); min-height: 32px; }
+.ex-kws { margin: 4px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ex-kws-label { font-weight: 700; color: var(--muted); }
+.ex-kw { padding: 2px 12px; border-radius: 999px; background: var(--ex-amber-soft); border: 1px solid #ecd49a; color: var(--ex-amber); font-weight: 800; }
+.ex-selfwrite { width: 100%; min-height: 84px; padding: 8px 12px; border: 2px dashed var(--ex-brand); border-radius: 12px; font: inherit; font-size: 1.05rem; background: #fff; color: var(--ink); resize: vertical; }
+.ex-selfwrite:focus-visible, .ex-rub-row input:focus-visible { outline: 3px solid #d7b5c8; outline-offset: 2px; }
+.ex-sample { padding: 8px 12px; border: 1px solid #bdd6c8; border-radius: 10px; background: var(--ex-sage-soft); }
+.ex-sample p { margin: 0; }
+.ex-rubric { margin: 6px 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.ex-rubric-title { margin: 0 0 4px; font-weight: 800; color: var(--ex-brand-dark); font-size: .9rem; }
+.ex-rubric-row { margin: 2px 0; }
+.ex-rub-row { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 6px 0; cursor: pointer; overflow-wrap: anywhere; }
+.ex-rub-row input { width: 22px; height: 22px; flex: 0 0 22px; accent-color: var(--ex-brand-dark); margin: 2px 0 0; }
+.ex-rub-box { display: none; }
+.ex-kwcheck { background: var(--ex-amber-soft); border-radius: 10px; padding: 6px 10px; }
+@media (max-width: 520px) { .ex-passage { padding: 12px; } .ex-selfwrite { font-size: 1rem; } }
+@media print {
+  .ex-selfwrite, .ex-sample { display: none !important; }
+  .ex-rub-row input { display: none; }
+  .ex-rub-box { display: inline; font-size: 1.1rem; }
+  .ex-passage { border-color: #333; background: #fff; }
+  .ex-kw { border-color: #333; background: #fff; color: #000; }
+  .ex-selfcard { break-inside: avoid; }
+}
