@@ -510,13 +510,48 @@
         return { label: r.label, pts: (item.rulePts || [])[i] || 0, ok };
       });
     }
-    /* 照樣寫短語等：accepted 以外的規則判定（含全部指定結構詞、夠長、不是照抄例句） */
+    /* 照樣寫短語等：accepted 以外的規則判定。
+       結構詞的次數、順序以例句為準（各結構詞出現次數須與例句相同、依序出現）；
+       每段內容至少 1 字，且不可全是數字、不可整句只用同一個字、不可每段都是同字疊字。 */
     function phraseRule(item, resp) {
       const t = plain(resp);
       if (!t) return false;
       if (item.example && t === plain(item.example)) return false;
       if (item.minLen && Array.from(t).length < item.minLen) return false;
-      return item.mustInclude.every(w => t.indexOf(plain(w)) >= 0);
+      const words = item.mustInclude.map(plain).filter(Boolean);
+      if (!words.length) return false;
+      const example = plain(item.example || "");
+      const countOf = (s, w) => { let n = 0; for (let at = 0; (at = s.indexOf(w, at)) >= 0; at += w.length) n++; return n; };
+      const tokens = [];
+      words.forEach(w => {
+        const expected = example ? Math.max(1, countOf(example, w)) : 1;
+        for (let i = 0, at = -1; i < expected; i++) {
+          at = example ? example.indexOf(w, at + 1) : words.indexOf(w);
+          tokens.push({ word: w, order: at < 0 ? words.indexOf(w) : at });
+        }
+      });
+      tokens.sort((a, b) => a.order - b.order);
+      for (const w of words) {
+        const expected = tokens.filter(tok => tok.word === w).length;
+        if (countOf(t, w) !== expected) return false;
+      }
+      const segments = [];
+      let cursor = 0;
+      for (let i = 0; i < tokens.length; i++) {
+        const at = t.indexOf(tokens[i].word, cursor);
+        if (at < 0) return false;
+        cursor = at + tokens[i].word.length;
+        const next = tokens[i + 1];
+        const end = next ? t.indexOf(next.word, cursor) : t.length;
+        if (end < 0) return false;
+        const seg = Array.from(t.slice(cursor, end).replace(/[，、。．；：！？!?,.「」『』（）()]/g, ""));
+        if (seg.length < 1 || seg.every(ch => /[零〇一二三四五六七八九十百千萬億兩]/.test(ch))) return false;
+        segments.push(seg);
+      }
+      const all = [].concat.apply([], segments);
+      if (all.length >= 2 && new Set(all).size < 2) return false;
+      if (segments.every(seg => seg.length >= 2 && new Set(seg).size === 1)) return false;
+      return true;
     }
     function gradeItem(item, resp) {
       if (kindOf(item) === "selfcheck") {

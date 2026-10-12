@@ -94,11 +94,38 @@ check("沒寫造句 → 0 分", engine.summarize(ex, {}).score === 0);
 function pi(example) { const spec = bank.all().find(s => s.type === "pattern" && engine.realize(s).example === example); return engine.realize(spec); }
 const a = pi("又高又大");
 check("照樣寫：accepted 命中 → 對", engine.isCorrect(a, "又圓又胖") && engine.isCorrect(a, a.answer));
-check("照樣寫：不在 accepted 但含結構詞且夠長 → 對", engine.isCorrect(a, "又吃又喝") && engine.isCorrect(a, "又 快 又 準"));
+check("照樣寫：不在 accepted、結構正確且每段至少 2 字 → 對", engine.isCorrect(a, "又快速又準確") && engine.isCorrect(a, "又 安靜 又 整潔"));
 check("照樣寫：照抄例句 → 錯", !engine.isCorrect(a, "又高又大"));
 check("照樣寫：缺結構詞 → 錯；太短 → 錯；空白 → 錯", !engine.isCorrect(a, "很大很高") && !engine.isCorrect(a, "又大") && !engine.isCorrect(a, ""));
 const b = pi("不但聰明，而且努力");
 check("照樣寫：需同時含『不但』『而且』", engine.isCorrect(b, "不但會唱歌，而且會跳舞") && !engine.isCorrect(b, "不但會唱歌") && !engine.isCorrect(b, "而且會跳舞"));
+const because = engine.realize({ id: "because", type: "pattern", level: 1, tag: "basic", topic: "x", gen: () => ({ stem: "s", explain: "e", answer: "因為反覆練習，所以演出穩定", accepted: [], mustInclude: ["因為", "所以"], minLen: 8, example: "因為先分工，所以進度順利" }) });
+check("照樣寫：結構詞需依例句次數與順序各出現一次", !engine.isCorrect(a, "又又又又") && !engine.isCorrect(pi("越跑越快"), "越越越越") && !engine.isCorrect(b, "不但而且不但而且") && !engine.isCorrect(because, "因為所以因為所以"));
+const oneThenPattern = pi("一邊吃飯，一邊看電視");
+check("照樣寫：內容不得是同字／數字堆疊", !engine.isCorrect(a, "又好好又棒棒") && !engine.isCorrect(oneThenPattern, "一邊一二，一邊三四"));
+const oneThen = engine.realize({ id: "one-then", type: "pattern", level: 1, tag: "basic", topic: "x", gen: () => ({ stem: "s", explain: "e", answer: "一看到老師，就主動問好", accepted: [], mustInclude: ["一", "就"], minLen: 7, example: "一聽見鈴聲，就回到座位" }) });
+check("照樣寫：『一二三，就四五』與倒序『今天我就一個人去玩』不得過關", !engine.isCorrect(oneThen, "一二三，就四五") && !engine.isCorrect(oneThen, "今天我就一個人去玩"));
+check("照樣寫：accepted 命中仍優先算對", engine.isCorrect(a, "又香又甜"));
+/* H1：phraseRule 正反例（每段 ≥1 字；攔下疊字、數字、亂序） */
+const ruleCases = [
+  { ex: "又明亮又寬敞", must: ["又"], min: 4, pass: ["又酸又甜", "又大又圓", "又高又壯"], fail: ["又又又又", "又好好又棒棒", "又一二又三四"] },
+  { ex: "越討論越清楚", must: ["越"], min: 4, pass: ["越跑越快", "越寫越多", "越想越生氣", "越來越好"], fail: ["越越越越"] },
+  { ex: "有的搬桌子，有的排列椅子", must: ["有的"], min: 8, pass: ["有的看書，有的畫畫"], fail: [] },
+  { ex: "先確認數量，再貼上標籤", must: ["先", "再"], min: 6, pass: ["先打掃再拖地", "先洗手，再吃飯", "先洗手再吃飯"], fail: [] },
+  { ex: "一邊核對清單，一邊整理材料", must: ["一邊"], min: 8, pass: ["一邊寫作業，一邊聽廣播"], fail: ["一邊一二，一邊三四"] },
+  { ex: "不但準時完成，而且主動檢查", must: ["不但", "而且"], min: 8, pass: ["不但認真，而且細心"], fail: ["不但而且不但而且", "而且會游泳，不但會潛水"] },
+  { ex: "因為先分配工作，所以進度很順利", must: ["因為", "所以"], min: 8, pass: ["因為下大雨，所以取消比賽"], fail: ["因為所以因為所以"] },
+  { ex: "一聽見鈴聲，就回到座位", must: ["一", "就"], min: 7, pass: ["一下課，就衝出教室"], fail: ["一二三，就四五", "今天我就一個人去玩", "一一一就就就"] },
+  { ex: "雖然時間不多，但是大家仍仔細核對", must: ["雖然", "但是"], min: 9, pass: ["雖然很累，但是不放棄"], fail: [] },
+  { ex: "如果每個人都盡責，就能準時完成", must: ["如果", "就"], min: 8, pass: ["如果下雨，就改期舉行"], fail: [] }
+];
+let ruleOK = true; const ruleBad = [];
+ruleCases.forEach((c, ci) => {
+  const it = engine.realize({ id: "rc" + ci, type: "pattern", level: 1, tag: "basic", topic: "x", gen: () => ({ stem: "s", explain: "e", answer: "zz", accepted: [], mustInclude: c.must, minLen: c.min, example: c.ex }) });
+  c.pass.forEach(r => { if (!engine.isCorrect(it, r)) { ruleOK = false; ruleBad.push("應過:" + r); } });
+  c.fail.forEach(r => { if (engine.isCorrect(it, r)) { ruleOK = false; ruleBad.push("應擋:" + r); } });
+});
+check("H1 phraseRule：9 個被誤殺正解＋6 個一般正解可過，所有亂寫反例（含倒序、數字、疊字）皆攔下", ruleOK, ruleBad.join(" "));
 check("照樣寫：describeAnswer 顯示參考答案", engine.describeAnswer(a) === a.answer);
 const plain = engine.realize({ id: "pl", type: "zhuyin", level: 1, tag: "basic", topic: "x", gen: () => ({ stem: "s", explain: "e", answer: "ㄕㄢ" }) });
 check("一般填空題不帶 mustInclude 等欄位、行為不變", !("mustInclude" in plain) && !("minLen" in plain) && !("example" in plain) && engine.isCorrect(plain, "ㄕㄢ") && !engine.isCorrect(plain, "ㄕㄢㄕ"));
