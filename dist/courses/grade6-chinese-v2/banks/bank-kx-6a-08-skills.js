@@ -17,7 +17,8 @@ for(let k=0;k<TOPIC_CONCEPTS.length;k++){for(let j=0;j<TOPIC_CONTEXTS.length;j++
  add("lessonmc",i,m,()=>({stem,options:[correct,...wrongs],answer:0,explain:"此題所問的情境是「"+part[0]+"」，應先"+part[1]+"，而不是直接猜測或忽略差異。"}),correct,"依已確認課名主題自編原創生活情境；非課文細節");
 }}
 PATTERNS.forEach((r,i)=>{let m=t(i);add("pattern",i,m,()=>({stem:"請照樣寫一個完整短語。例：「"+r[0]+"」。（　）",answer:r[2],accepted:[r[2]],mustInclude:r[1],minLen:r[3],example:r[0],explain:"需保留例句結構「"+r[1].join("、")+"」並換成自己寫的內容，例如「"+r[2]+"」。"}),r[2],"一般句型規則／自編原創例句");});
-THEME_WORDS.slice(0,5).forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"homophone:theme:"+i},stem=(j?"選字填寫正確語詞：":"依語意選出正確字形：")+"「"+r[0].replace(r[4],"（　）")+"」；提示：「"+r[1]+"」。";add("homophone",k,m,()=>({stem,options:[r[4],...r[5]],answer:0,explain:"正解是「"+r[4]+"」，正確語詞為「"+r[0]+"」。"}),r[4],"課名主題自編延伸語詞／字形待辭典核對");}});
+const HOMO_WORDS=[["狡猾","用小聰明欺瞞他人","狡",["腳","角","佼"]],["老虎","大型貓科動物","虎",["唬","琥","滸"]],["狐狸","形似犬類的動物","狐",["胡","湖","弧"]],["說謊","說出不真實的話","謊",["恍","晃","幌"]],["貪心","過度想占有事物","貪",["攤","灘","癱"]]];
+HOMO_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){let k=i*2+j,m={...t(k),lessonBased:true,poolKey:"homophone:separate:"+i};add("homophone",k,m,()=>({stem:"選出「"+r[0].replace(r[2],"（　）")+"」正確用字，意思是「"+r[1]+"」。",options:[r[2],...r[3]],answer:0,explain:"應填「"+r[2]+"」，組成「"+r[0]+"」。"}),r[2],"主題延伸詞語／教育部辭典待核");}});
 PHRASES.slice(0,8).forEach((w,i)=>{let m=t(i);let sample="今天我們在小組活動中練習"+w+"，最後順利完成老師交代的任務。";add("sentence",i,m,()=>({stem:"請用「"+w+"」造一個完整的句子。",keywords:[w],sample,rubric:["正確使用「"+w+"」且符合語意","句子完整通順，有情境與動作","句末使用正確標點","句子長度至少十二字"],explain:"先確認「"+w+"」的意思，再寫完整的人物與動作。"}),sample,"原創例句／一般語詞能力練習");});
 global.ExamBank.register(TOPIC,"general-skills-draft",specs);
 })(typeof window!=="undefined"?window:globalThis);
