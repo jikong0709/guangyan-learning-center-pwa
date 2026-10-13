@@ -21,5 +21,9 @@ PATTERNS.forEach((r,i)=>{let m=t(i);add("pattern",i,m,()=>({stem:"請照樣寫�
 const HOMO_WORDS=[["耶誕","節慶","耶",["爺","椰","揶"]],["平安","安全","安",["鞍","氨","庵"]],["冬衣","冬天的衣物","冬",["東","咚","苳"]],["喜悅","快樂","悅",["月","越","閱"]],["鈴聲","鈴鐺聲音","鈴",["靈","凌","陵"]]];
 HOMO_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"homophone:separate:"+i};add("homophone",k,m,()=>({stem:(j?"仔細選字：":"依詞義填字：")+"「"+r[0].replace(r[2],"（　）")+"」，意思為「"+r[1]+"」。",options:[r[2],...r[3]],answer:0,explain:"本題詞語「"+r[0]+"」，答案「"+r[2]+"」。"}),r[2],"字音字形待核");}});
 PHRASES.slice(0,8).forEach((w,i)=>{let m=t(i);let sample="今天我們在小組活動中練習"+w+"，最後順利完成老師交代的任務。";add("sentence",i,m,()=>({stem:"請用「"+w+"」造一個完整的句子。",keywords:[w],sample,rubric:["正確使用「"+w+"」且符合語意","句子完整通順，有情境與動作","句末使用正確標點","句子長度至少十二字"],explain:"先確認「"+w+"」的意思，再寫完整的人物與動作。"}),sample,"原創例句／一般語詞能力練習");});
+
+/* Two optional writing/choice alternatives; original approved lesson-1 exam is unchanged. */
+THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,meta={...t(k),lessonBased:true,poolKey:"wrong:theme:"+i};add("wrongchar_mc",k,meta,()=>({stem:(j?"練習單選字：":"黑板選字：")+"「"+r[2]+"」應更換哪個字？",options:[r[4],...r[5]],answer:0,explain:"正確語詞為「"+r[0]+"」，應改正為「"+r[4]+"」。"}),r[4],"主題延伸錯字選擇／辭典待核");}});
+HOMO_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,meta={...t(k),lessonBased:true,poolKey:"homophone:separate:"+i};add("homophone_text",k,meta,()=>({stem:(j?"語詞寫字練習：":"依釋義填字：")+"「"+r[0].replace(r[2],"（　）")+"」指「"+r[1]+"」，請填入正確字。",answer:r[2],explain:"應填「"+r[2]+"」，組成「"+r[0]+"」。"}),r[2],"主題延伸選字填寫／辭典待核");}});
 global.ExamBank.register(TOPIC,"general-skills-draft",specs);
 })(typeof window!=="undefined"?window:globalThis);
