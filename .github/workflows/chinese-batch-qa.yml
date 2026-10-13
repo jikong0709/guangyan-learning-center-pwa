@@ -61,6 +61,15 @@ jobs:
       - name: 115-edition lesson source provenance
         if: always()
         run: node dist/courses/grade6-chinese-v2/verify-edition-provenance.js
+      - name: Classify leakage evidence without relaxing original gate
+        if: always()
+        run: node dist/courses/grade6-chinese-v2/diagnose-leak-collisions.js
+      - name: Retain leakage evidence JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grade6-chinese-leakage-diagnostic
+          path: dist/courses/grade6-chinese-v2/qa-reports/leak-collision-diagnostic.json
       - name: Strict 4400-paper leakage and lesson-specific ratio
         if: always()
         run: node dist/courses/grade6-chinese-v2/verify-batch-leaks.js
