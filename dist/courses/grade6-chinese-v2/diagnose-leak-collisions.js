@@ -8,7 +8,7 @@ for(const rel of ["exam-engine/kit.js","exam-engine/engine.js","courses/grade6-c
 for(let n=1;n<=12;n++){let nn=String(n).padStart(2,"0");load(path.join(__dirname,"banks","bank-kx-6a-"+nn+".js"));if(n>1)load(path.join(__dirname,"banks","bank-kx-6a-"+nn+"-skills.js"));}
 const bank=globalThis.ExamBank,cfg=globalThis.ExamConfig,engine=globalThis.ExamEngine.create(cfg,bank);
 const clean=s=>String(s??"").normalize("NFKC").replace(/[\s，、。．；：！？!?「」『』（）(),.]/g,"");
-const categories={},examples=[],lesson={},sourcePairs={};
+const categories={},exposure={},examples=[],lesson={},sourcePairs={};
 function rng(seed,fn){let old=Math.random,x=seed>>>0;Math.random=()=>{x=(Math.imul(1664525,x)+1013904223)>>>0;return x/4294967296;};try{return fn();}finally{Math.random=old;}}
 for(let n=2;n<=12;n++){
  const topic="kx-6a-"+String(n).padStart(2,"0"),specs=new Map(bank.specsOf(topic).map(s=>[s.id,s])),unit=cfg.versions.kanghsuan.units.find(u=>u.unitId==="六上-"+n);
@@ -32,9 +32,9 @@ for(let n=2;n<=12;n++){
      const targetCorrectOption=targetCorrectIndex===null?null:clean((other.options||[])[targetCorrectIndex]||"");
      const targetCorrectVisible=Boolean(targetCorrectOption&&targetCorrectOption.includes(term));
      const exposureClass=targetCorrectVisible?"CORRECT_OPTION_EXPOSED":matchedOptionIndices.length?"DISTRACTOR_OPTION_ONLY":"STEM_ONLY";
+     if(!locations.length)return;
      exposure[exposureClass]=(exposure[exposureClass]||0)+1;
      lesson[topic][targetCorrectVisible?"correctOption":matchedOptionIndices.length?"distractorOnly":"stemOnly"]++;
-     if(!locations.length)return;
      const location=locations.includes("stem")?"stem":"option";
      const pairKey=q.specId+" => "+other.specId+" => "+term;
      sourcePairs[pairKey]=(sourcePairs[pairKey]||0)+1;
@@ -53,7 +53,7 @@ for(let n=2;n<=12;n++){
 }
 const target=path.join(__dirname,"qa-reports");fs.mkdirSync(target,{recursive:true});
 const prioritized=Object.entries(sourcePairs).sort((a,b)=>b[1]-a[1]).slice(0,200).map(([pair,hits])=>({pair,hits}));
-fs.writeFileSync(path.join(target,"leak-collision-diagnostic.json"),JSON.stringify({notice:"DIAGNOSTIC_ONLY; counts one collision per source/destination pair and answer term (rather than per location). The strict gate is unchanged; candidate semantic classifications require human review.",categories,lesson,prioritized,examples},null,2),"utf8");
+fs.writeFileSync(path.join(target,"leak-collision-diagnostic.json"),JSON.stringify({notice:"DIAGNOSTIC_ONLY; counts one collision per source/destination pair and answer term (rather than per location). The strict gate is unchanged; candidate semantic classifications require human review.",categories,exposure,lesson,prioritized,examples},null,2),"utf8");
 console.log("Collision classification",JSON.stringify(categories));
 console.log("Exposure classification",JSON.stringify(exposure));
 Object.entries(lesson).forEach(([key,value])=>console.log("DIAGNOSTIC",key,JSON.stringify(value)));
