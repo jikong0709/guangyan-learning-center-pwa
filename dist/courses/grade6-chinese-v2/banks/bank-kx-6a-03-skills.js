@@ -13,7 +13,7 @@ for(let k=0;k<MC_CONCEPTS.length;k++)for(let j=0;j<MC_CONTEXTS.length;j++){
  const i=k*MC_CONTEXTS.length+j,c=MC_CONCEPTS[k],place=MC_CONTEXTS[j];
  const correct=place.replace("時","後")+"，"+c[1];
  const stem=place+"遇到「"+c[0]+"」，哪一種方法最合適？";
- const wrong=["直接責怪別人並拒絕討論","不查明原因就公布決定","不願接受任何修正建議"];
+ const wrong=["不看當下狀況，只靠想像便斷言","把過錯全推給別人，毫不負責","一遇困難便棄之不顧"];
  const m={...t(i),lessonBased:true,poolKey:"lesson-concept:"+k+":"+j};
  add("lessonmc",i,m,()=>({stem,options:[correct,...wrong],answer:0,explain:"此情境的問題是「"+c[0]+"」，採取「"+c[1]+"」才能回應真實需要。"}),correct,"依確認課名主題自編的生活推理情境，非出版社課文內容");
 }
