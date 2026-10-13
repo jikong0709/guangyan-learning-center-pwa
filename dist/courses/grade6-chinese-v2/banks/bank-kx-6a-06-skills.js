@@ -12,7 +12,7 @@ for(let k=0;k<TOPIC_CONCEPTS.length;k++){for(let j=0;j<TOPIC_CONTEXTS.length;j++
  const i=k*TOPIC_CONTEXTS.length+j,part=TOPIC_CONCEPTS[k],context=TOPIC_CONTEXTS[j];
  const stem=context+"，如果遇到「"+part[0]+"」，最合理的處理方式是哪一項？";
  const correct=part[1]+"，並在"+context.replace("時","後")+"檢查實際結果";
- const wrongs=["忽略當事人的需求，直接替所有人做決定","不檢查資料來源，只根據猜測發布結論","遇到新的問題也不調整原有安排"];
+ const wrongs=[「不看當下狀況，只靠想像便斷言。」,「把過錯全推給別人，毫不負責。」,「一遇困難便棄之不顧。」];
  const m={...t(i),lessonBased:true,poolKey:"mc:topic:"+k+":"+j};
  add("lessonmc",i,m,()=>({stem,options:[correct,...wrongs],answer:0,explain:"此題所問的情境是「"+part[0]+"」，應先"+part[1]+"，而不是直接猜測或忽略差異。"}),correct,"依已確認課名主題自編原創生活情境；非課文細節");
 }}
