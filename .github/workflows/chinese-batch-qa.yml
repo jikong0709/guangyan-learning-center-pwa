@@ -32,6 +32,15 @@ jobs:
           done
       - name: Candidate checks and 400-paper generation per lesson
         run: node dist/courses/grade6-chinese-v2/verify-batch-candidates.js
+      - name: Generate lesson 2-12 per-question candidate audit reports
+        run: node dist/courses/grade6-chinese-v2/verify-batch-audits.js
+      - name: Retain candidate audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grade6-chinese-6a-audit-candidates
+          path: dist/courses/grade6-chinese-v2/qa-reports/*.md
+          if-no-files-found: error
       - name: Strict 4400-paper leakage and lesson-specific ratio
         run: node dist/courses/grade6-chinese-v2/verify-batch-leaks.js
       - name: Baseline Chinese lesson 1
