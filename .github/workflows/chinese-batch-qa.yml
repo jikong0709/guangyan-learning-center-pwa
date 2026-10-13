@@ -25,12 +25,17 @@ jobs:
               08|09|11) branch=feat/chinese-6a-${n}-20261012 ;;
             esac
             git fetch origin "$branch"
-            echo "LESSON_SHA $n $branch $(git rev-parse FETCH_HEAD)"
+            echo "LESSON_SHA $n $branch $(git rev-parse FETCH_HEAD)" | tee -a lesson-heads.txt
             for suffix in "" "-skills"; do
               file="dist/courses/grade6-chinese-v2/banks/bank-kx-6a-${n}${suffix}.js"
               git show "FETCH_HEAD:${file}" > "$file"
             done
           done
+      - name: Archive exact tested lesson SHA manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: grade6-chinese-tested-lesson-shas
+          path: lesson-heads.txt
       - name: Archive integrated offline candidate page
         uses: actions/upload-artifact@v4
         with:
