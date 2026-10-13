@@ -14,6 +14,7 @@ for(let n=2;n<=12;n++){
    const key=spec.type+"|"+String(q.stem||"");
    if(seen.has(key))errors.push(topic+" duplicate question wording "+key+" ("+seen.get(key)+" and "+spec.id+")");
    else seen.set(key,spec.id);
+   if(spec.type==="wrongchar"&&q.answer&&String(q.stem).includes(String(q.answer)))errors.push(spec.id+" typo answer exposed in own prompt");
    if(q.options){if(new Set(q.options).size!==q.options.length)errors.push(spec.id+" repeated option");if(q.options.length!==4)errors.push(spec.id+" not four options");}
    if(spec.type==="reading"&&!out.passage)errors.push(spec.id+" missing original passage");
   }
