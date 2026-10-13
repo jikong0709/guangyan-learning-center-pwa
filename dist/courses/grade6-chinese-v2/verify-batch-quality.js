@@ -6,8 +6,9 @@ for(const f of ["exam-engine/kit.js","exam-engine/engine.js","courses/grade6-chi
 for(let n=1;n<=12;n++){const nn=String(n).padStart(2,"0");for(const p of ["bank-kx-6a-"+nn+".js",...(n===1?[]:["bank-kx-6a-"+nn+"-skills.js"])]){const file=path.join(__dirname,"banks",p);vm.runInThisContext(fs.readFileSync(file,"utf8"),{filename:file});}}
 let errors=[],scanned=0;
 for(let n=2;n<=12;n++){
- const topic="kx-6a-"+String(n).padStart(2,"0"),seen=new Map();
+ const topic="kx-6a-"+String(n).padStart(2,"0"),seen=new Map(),counts={};
  for(const spec of globalThis.ExamBank.specsOf(topic)){
+  counts[spec.type]=(counts[spec.type]||0)+1;
   const out=spec.gen(globalThis.ExamKit),questions=spec.type==="reading"?out.questions:[out];
   for(const [index,q] of questions.entries()){
    scanned++;
@@ -19,6 +20,7 @@ for(let n=2;n<=12;n++){
    if(spec.type==="reading"&&!out.passage)errors.push(spec.id+" missing original passage");
   }
  }
+ for(const variant of ["wrongchar_mc","homophone_text"]){if((counts[variant]||0)<10)errors.push(topic+" missing "+variant+" alternative pool");}
 }
 console.log("Scanned",scanned,"question units; repeated stems/option faults",errors.length);
 errors.slice(0,60).forEach(x=>console.error("QA_FAIL",x));
