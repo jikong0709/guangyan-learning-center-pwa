@@ -31,6 +31,14 @@ jobs:
               git show "FETCH_HEAD:${file}" > "$file"
             done
           done
+      - name: Archive integrated offline candidate page
+        uses: actions/upload-artifact@v4
+        with:
+          name: grade6-chinese-11-lesson-candidate-site
+          path: |
+            dist/courses/grade6-chinese-v2/
+            dist/exam-engine/
+          if-no-files-found: error
       - name: Candidate checks and 400-paper generation per lesson
         run: node dist/courses/grade6-chinese-v2/verify-batch-candidates.js
       - name: Generate lesson 2-12 per-question candidate audit reports
