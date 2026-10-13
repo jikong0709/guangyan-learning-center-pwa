@@ -12,7 +12,7 @@ for(let k=0;k<TOPIC_CONCEPTS.length;k++)for(let j=0;j<TOPIC_CONTEXTS.length;j++)
  const i=k*5+j,c=TOPIC_CONCEPTS[k],context=TOPIC_CONTEXTS[j];
  const stem=context+"遇到「"+c[0]+"」，下列何者最適合？";
  const answer=c[1]+"，並依實際情況檢查結果";
- const wrongs=["直接責怪別人","不查證就隨意下結論","拒絕調整既有方法"];
+ const wrongs=["不看當下狀況，只靠想像便斷言","把過錯全推給別人，毫不負責","一遇困難便棄之不顧"];
  const m={...t(i),lessonBased:true,poolKey:"mc:fruit:"+k+":"+j};
  add("lessonmc",i,m,()=>({stem,options:[answer,...wrongs],answer:0,explain:"針對「"+c[0]+"」應先"+c[1]+"，才能合理判斷。"}),answer,"依已確認課名主題自編生活推理情境，非課文細節");
 }
