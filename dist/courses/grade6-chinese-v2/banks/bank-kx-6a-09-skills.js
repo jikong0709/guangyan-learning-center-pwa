@@ -19,7 +19,7 @@ for(let k=0;k<TOPIC_CONCEPTS.length;k++){for(let j=0;j<TOPIC_CONTEXTS.length;j++
 }}
 PATTERNS.forEach((r,i)=>{let m=t(i);add("pattern",i,m,()=>({stem:"請照樣寫一個完整短語。例：「"+r[0]+"」。（　）",answer:r[2],accepted:[r[2]],mustInclude:r[1],minLen:r[3],example:r[0],explain:"需保留例句結構「"+r[1].join("、")+"」並換成自己寫的內容，例如「"+r[2]+"」。"}),r[2],"一般句型規則／自編原創例句");});
 const HOMO_WORDS=[["從容","鎮定不慌張","容",["榮","融","蓉"]],["兵法","作戰策略","兵",["冰","濱","彬"]],["蜀漢","三國時代的政權","蜀",["鼠","暑","署"]],["敵情","對手的狀況","敵",["滴","迪","笛"]],["琴聲","琴發出的聲響","琴",["勤","禽","擒"]]];
-HOMO_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){let k=i*2+j,m={...t(k),lessonBased:true,poolKey:"homophone:separate:"+i};add("homophone",k,m,()=>({stem:"選字填空：「"+r[0].replace(r[2],"（　）")+"」；詞義：「"+r[1]+"」。",options:[r[2],...r[3]],answer:0,explain:"正確字「"+r[2]+"」組成「"+r[0]+"」。"}),r[2],"原創詞語選字練習／教育部辭典待核");}});
+HOMO_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){let k=i*2+j,m={...t(k),lessonBased:true,poolKey:"homophone:separate:"+i};add("homophone",k,m,()=>({stem:(j?"仔細選字：":"依詞義填字：")+"「"+r[0].replace(r[2],"（　）")+"」，意思為「"+r[1]+"」。",options:[r[2],...r[3]],answer:0,explain:"正確字「"+r[2]+"」組成「"+r[0]+"」。"}),r[2],"原創詞語選字練習／教育部辭典待核");}});
 PHRASES.slice(0,8).forEach((w,i)=>{let m=t(i);let sample="今天我們在小組活動中練習"+w+"，最後順利完成老師交代的任務。";add("sentence",i,m,()=>({stem:"請用「"+w+"」造一個完整的句子。",keywords:[w],sample,rubric:["正確使用「"+w+"」且符合語意","句子完整通順，有情境與動作","句末使用正確標點","句子長度至少十二字"],explain:"先確認「"+w+"」的意思，再寫完整的人物與動作。"}),sample,"原創例句／一般語詞能力練習");});
 global.ExamBank.register(TOPIC,"general-skills-draft",specs);
 })(typeof window!=="undefined"?window:globalThis);
