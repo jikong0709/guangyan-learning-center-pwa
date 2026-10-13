@@ -8,11 +8,11 @@ const THEME_WORDS=[["味蕾","舌頭上負責感受味道的構造","味雷","�
 const LESSON_TITLE="臺灣美食詩選";
 THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"wrong:theme:"+i};add("wrongchar",k,m,()=>({stem:(j===0?"課堂黑板":"主題延伸學習單")+"有語詞「"+r[2]+"」，其中有一個錯字，請寫出正確的字：（　）",answer:r[4],explain:"語詞「"+r[2]+"」裡的「"+r[3]+"」應改為「"+r[4]+"」，形成「"+r[0]+"」。"}),r[4],"依本課課名主題自編延伸詞／教育部辭典字形待核");}});
 THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"vocab:theme:"+i},stem=(j===0?"依詞義填入語詞：":"完成語詞釋義練習：")+"表示「"+r[1]+"」的語詞是（　）。";add("vocab",k,m,()=>({stem,answer:r[0],explain:"「"+r[0]+"」表示「"+r[1]+"」，符合本題釋義。"}),r[0],"依課名主題自編釋義／教育部辭典詞義待核");add("vocab_mc",k,m,()=>({stem,options:[r[0],...THEME_WORDS.filter(x=>x!==r).slice(0,3).map(x=>x[0])],answer:0,explain:"「"+r[0]+"」的意思是「"+r[1]+"」，其餘選項意義不同。"}),r[0],"依課名主題自編釋義／教育部辭典詞義待核");}});
-const TOPIC_CONCEPTS=[["想形容剛出爐的點心","先觀察香氣與溫度，再選擇詞語"],["介紹地方小吃卻只列名稱","先描寫食物特色，再補充生活情境"],["兩人對食物口感的感受不同","先聽取彼此描述，再比較感官經驗"],["想用短詩呈現市場場景","先挑選鮮明意象，再安排詩句節奏"],["讀者看不懂美食的特色","先加入具體細節，再刪掉空泛形容"],["想表達對家鄉味道的記憶","先回想特定場景，再連結味覺感受"]],TOPIC_CONTEXTS=["討論班級提案時","製作教學海報時","和家人交換經驗時","活動臨時變動時","寫下個人反思時"];
+const TOPIC_CONCEPTS=[["想形容剛出爐的點心","先觀察香氣與溫度，再選擇詞語"],["介紹地方小吃卻只列名稱","先描寫食物特色，再補充生活情境"],["兩人對食物口感的感受不同","先聽取彼此描述，再比較感官體會"],["想用短詩呈現市場場景","先挑選鮮明意象，再規畫詩句節奏"],["讀者看不懂美食的特色","先加入具體細節，再刪掉空泛形容"],["想表達對家鄉味道的記憶","先回想特定場景，再連結味覺感受"]],TOPIC_CONTEXTS=["商量班級提案時","製作教學海報時","和家人交換體會時","事情臨時變動時","寫下個人反思時"];
 for(let k=0;k<TOPIC_CONCEPTS.length;k++){for(let j=0;j<TOPIC_CONTEXTS.length;j++){
  const i=k*TOPIC_CONTEXTS.length+j,part=TOPIC_CONCEPTS[k],context=TOPIC_CONTEXTS[j];
  const stem=context+"，如果遇到「"+part[0]+"」，最合理的處理方式是哪一項？";
- const correct=part[1]+"，並在"+context.replace("時","後")+"檢查實際結果";
+ const correct=part[1]+"，並在"+context.replace("時","後")+"核對真切結果";
  const wrongs=["不看當下狀況，只靠想像便斷言","把過錯全推給別人，毫不負責","一遇困難便棄之不顧"];
  const m={...t(i),lessonBased:true,poolKey:"mc:topic:"+k+":"+j};
  add("lessonmc",i,m,()=>({stem,options:[correct,...wrongs],answer:0,explain:"此題所問的情境是「"+part[0]+"」，應先"+part[1]+"，而不是直接猜測或忽略差異。"}),correct,"依已確認課名主題自編原創生活情境；非課文細節");
