@@ -18,7 +18,8 @@ for(let k=0;k<MC_CONCEPTS.length;k++)for(let j=0;j<MC_CONTEXTS.length;j++){
  add("lessonmc",i,m,()=>({stem,options:[correct,...wrong],answer:0,explain:"此情境的問題是「"+c[0]+"」，採取「"+c[1]+"」才能回應真實需要。"}),correct,"依確認課名主題自編的生活推理情境，非出版社課文內容");
 }
 PATTERNS.forEach((r,i)=>{let m=t(i);add("pattern",i,m,()=>({stem:"請照樣寫一個完整短語。例：「"+r[0]+"」。（　）",answer:r[2],accepted:[r[2]],mustInclude:r[1],minLen:r[3],example:r[0],explain:"需保留例句結構「"+r[1].join("、")+"」並換成自己寫的內容，例如「"+r[2]+"」。"}),r[2],"一般句型規則／自編原創例句");});
-THEME_WORDS.slice(0,5).forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"homophone:theme:"+i},word=r[0].replace(r[4],"（　）");add("homophone",k,m,()=>({stem:(j===0?"選出正確字形：「":"依詞義選字：「")+word+"」；意思是「"+r[1]+"」。",options:[r[4],...r[5]],answer:0,explain:"組成語詞「"+r[0]+"」時要用「"+r[4]+"」，意思是「"+r[1]+"」。"}),r[4],"課名主題延伸字詞／教育部辭典字形待核");}});
+const HOMO_WORDS=[["心得","學習後得到的體會","得",["德","的","地"]],["轉變","從原來情況改成另一種狀態","變",["便","辨","辯"]],["潛能","尚未表現出來的能力","潛",["前","錢","鉗"]],["邁進","向目標繼續前進","邁",["賣","麥","脈"]],["自信","相信自己有能力完成事情","信",["訊","芯","興"]]];
+HOMO_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"homophone:separate:"+i},stem=(j?"選出正確字形：":"依語意選字：")+"「"+r[0].replace(r[2],"（　）")+"」；意思是「"+r[1]+"」。";add("homophone",k,m,()=>({stem,options:[r[2],...r[3]],answer:0,explain:"「"+r[0]+"」須用「"+r[2]+"」，才能表達「"+r[1]+"」。"}),r[2],"課名主題獨立選字池／教育部辭典字音字形待查");}});
 PHRASES.slice(0,8).forEach((w,i)=>{let m=t(i);let sample="今天我們在小組活動中練習"+w+"，最後順利完成老師交代的任務。";add("sentence",i,m,()=>({stem:"請用「"+w+"」造一個完整的句子。",keywords:[w],sample,rubric:["正確使用「"+w+"」且符合語意","句子完整通順，有情境與動作","句末使用正確標點","句子長度至少十二字"],explain:"先確認「"+w+"」的意思，再寫完整的人物與動作。"}),sample,"原創例句／一般語詞能力練習");});
 global.ExamBank.register(TOPIC,"general-skills-draft",specs);
 })(typeof window!=="undefined"?window:globalThis);
