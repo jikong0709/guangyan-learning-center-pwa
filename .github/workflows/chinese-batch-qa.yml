@@ -32,6 +32,8 @@ jobs:
           done
       - name: Candidate checks and 400-paper generation per lesson
         run: node dist/courses/grade6-chinese-v2/verify-batch-candidates.js
+      - name: Strict 4400-paper leakage and lesson-specific ratio
+        run: node dist/courses/grade6-chinese-v2/verify-batch-leaks.js
       - name: Baseline Chinese lesson 1
         run: node dist/courses/grade6-chinese-v2/verify-banks.js
       - name: Exam engine regression
