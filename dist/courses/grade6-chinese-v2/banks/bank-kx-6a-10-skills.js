@@ -7,11 +7,11 @@ WORDS.forEach((r,i)=>{for(const direction of ["z","h"]){const meta={...t(i),pool
 const THEME_WORDS=[["祝福","向他人表達美好的祝願","住福","住","祝",["住","助","注"]],["關懷","關心照顧他人","關壞","壞","懷",["壞","槐","淮"]],["贈禮","將禮物送給別人","增禮","增","贈",["增","憎","繒"]],["節慶","節日的慶祝活動","結慶","結","節",["結","截","潔"]],["善意","善良友好的用心","扇意","扇","善",["扇","膳","繕"]],["分享","與別人一同享有事物","分亨","亨","享",["亨","響","想"]]],LESSON_TITLE="耶誕節";
 THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"wrong:theme:"+i};add("wrongchar",k,m,()=>({stem:(j?"學習單":"黑板")+"中出現錯字語詞「"+r[2]+"」，應改成哪一個正確字：（　）",answer:r[4],explain:"「"+r[2]+"」中的「"+r[3]+"」應改為「"+r[4]+"」，才是「"+r[0]+"」。"}),r[4],"課名主題自編延伸語詞／字形待教育部辭典核對");}});
 THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"vocab:theme:"+i},stem=(j?"語詞意義練習：":"依定義填空：")+"「"+r[1]+"」應填入（　）。";add("vocab",k,m,()=>({stem,answer:r[0],explain:"這個意思對應到「"+r[0]+"」，意指「"+r[1]+"」。"}),r[0],"課名主題自編延伸語詞／詞義待教育部辭典核對");add("vocab_mc",k,m,()=>({stem,options:[r[0],...THEME_WORDS.filter(x=>x!==r).slice(0,3).map(x=>x[0])],answer:0,explain:"「"+r[0]+"」的詞義符合題幹中的定義。"}),r[0],"課名主題自編延伸語詞／詞義待教育部辭典核對");}});
-const TOPIC_CONCEPTS=[["準備交換禮物卻忽略對方喜好","先了解對方需要，再挑選物品"],["節慶活動造成大量浪費","先評估可重複使用資源，再布置場地"],["有人無法參與慶祝活動","先詢問原因，再提出可行的關懷方式"],["班級規劃公益募集活動","先確認受助需求，再整理捐贈品"],["節日只剩下競相比較價格","先回想分享目的，再調整活動內容"],["想寫卡片表達感謝","先描述對方具體幫助，再表達心意"]],TOPIC_CONTEXTS=["討論班級提案時","製作教學海報時","和家人交換經驗時","活動臨時變動時","寫下個人反思時"];
+const TOPIC_CONCEPTS=[["準備交換禮物卻忽略對方喜好","先了解對方需要，再挑選物品"],["節慶事情造成大量浪費","先評估可重複使用物資，再布置場地"],["有人無法參與慶祝事情","先詢問原因，再提出可行的關懷方式"],["班級規劃公益募集事情","先確認受助需求，再歸納捐贈品"],["節日只剩下競相比較價格","先回想分享目的，再修改事情內容"],["想寫卡片表達感謝","先描述對方具體幫助，再表達心意"]],TOPIC_CONTEXTS=["商量班級提案時","製作教學海報時","和家人交換體會時","事情臨時變動時","寫下個人反思時"];
 for(let k=0;k<TOPIC_CONCEPTS.length;k++){for(let j=0;j<TOPIC_CONTEXTS.length;j++){
  const i=k*TOPIC_CONTEXTS.length+j,part=TOPIC_CONCEPTS[k],context=TOPIC_CONTEXTS[j];
  const stem=context+"，如果遇到「"+part[0]+"」，最合理的處理方式是哪一項？";
- const correct=part[1]+"，並在"+context.replace("時","後")+"檢查實際結果";
+ const correct=part[1]+"，並在"+context.replace("時","後")+"核對真切結果";
  const wrongs=["不看當下狀況，只靠想像便斷言","把過錯全推給別人，毫不負責","一遇困難便棄之不顧"];
  const m={...t(i),lessonBased:true,poolKey:"mc:topic:"+k+":"+j};
  add("lessonmc",i,m,()=>({stem,options:[correct,...wrongs],answer:0,explain:"此題所問的情境是「"+part[0]+"」，應先"+part[1]+"，而不是直接猜測或忽略差異。"}),correct,"依已確認課名主題自編原創生活情境；非課文細節");
