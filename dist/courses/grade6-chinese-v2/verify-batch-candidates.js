@@ -22,4 +22,4 @@ console.log(id,JSON.stringify(counts));
 }
 console.log("Candidate papers:",built,"Failures:",errors.length);
 errors.slice(0,60).forEach(e=>console.error("FAIL",e));
-console.log(errors.length?"FAIL":"ALL PASS");process.exit(errors.length?1:0);
+console.log(errors.length?"SHAPE FAIL":"SHAPE PASS / NOT_FACT_VERIFIED / NOT_ANTI_LEAK_PASSED");process.exit(errors.length?1:0);
