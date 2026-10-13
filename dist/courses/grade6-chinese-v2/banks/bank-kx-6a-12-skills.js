@@ -7,11 +7,11 @@ WORDS.forEach((r,i)=>{for(const direction of ["z","h"]){const meta={...t(i),pool
 const THEME_WORDS=[["果實","植物開花後結出的部分","果食","食","實",["食","時","石"]],["酸甜","同時帶酸味與甜味","酸田","田","甜",["田","填","恬"]],["豐收","農作物收穫豐富","風收","風","豐",["風","封","峰"]],["成熟","生長發育已達完整階段","成孰","孰","熟",["孰","塾","蜀"]],["採摘","從植物上取下果實","採則","則","摘",["則","責","擇"]],["觀察","仔細查看與了解","觀查","查","察",["查","擦","差"]]],LESSON_TITLE="橘子";
 THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"wrong:theme:"+i};add("wrongchar",k,m,()=>({stem:(j?"學習單":"黑板")+"中出現錯字語詞「"+r[2]+"」，應改成哪一個正確字：（　）",answer:r[4],explain:"「"+r[2]+"」中的「"+r[3]+"」應改為「"+r[4]+"」，才是「"+r[0]+"」。"}),r[4],"課名主題自編延伸語詞／字形待教育部辭典核對");}});
 THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"vocab:theme:"+i},stem=(j?"語詞意義練習：":"依定義填空：")+"「"+r[1]+"」應填入（　）。";add("vocab",k,m,()=>({stem,answer:r[0],explain:"這個意思對應到「"+r[0]+"」，意指「"+r[1]+"」。"}),r[0],"課名主題自編延伸語詞／詞義待教育部辭典核對");add("vocab_mc",k,m,()=>({stem,options:[r[0],...THEME_WORDS.filter(x=>x!==r).slice(0,3).map(x=>x[0])],answer:0,explain:"「"+r[0]+"」的詞義符合題幹中的定義。"}),r[0],"課名主題自編延伸語詞／詞義待教育部辭典核對");}});
-const TOPIC_CONCEPTS=[["橘子外皮顏色不同","記錄成熟程度再比較"],["只憑外觀評價水果","先觀察實際品質"],["果樹生長狀況改變","先檢查環境條件"],["想分享採收成果","先清點數量公平分配"],["描寫水果缺少細節","增加感官觀察"],["照料果樹失敗","找出原因調整照護"]],TOPIC_CONTEXTS=["班會討論時","製作海報時","分享體驗時","活動遇到變化時","整理心得時"];
+const TOPIC_CONCEPTS=[["橘子外皮顏色不同","記錄成熟程度再比較"],["只憑外觀評價水果","先觀察真切品質"],["果樹生長狀況改變","先核對環境條件"],["想分享採收成果","先清點數量公平分配"],["描寫水果缺少細節","增加感官觀察"],["照料果樹失敗","找出原因修改照護"]],TOPIC_CONTEXTS=["班會商量時","製作海報時","分享體驗時","事情遇到變化時","歸納心得時"];
 for(let k=0;k<TOPIC_CONCEPTS.length;k++)for(let j=0;j<TOPIC_CONTEXTS.length;j++){
  const i=k*5+j,c=TOPIC_CONCEPTS[k],context=TOPIC_CONTEXTS[j];
  const stem=context+"遇到「"+c[0]+"」，下列何者最適合？";
- const answer=c[1]+"，並依實際情況檢查結果";
+ const answer=c[1]+"，並依真切情況核對結果";
  const wrongs=["不看當下狀況，只靠想像便斷言","把過錯全推給別人，毫不負責","一遇困難便棄之不顧"];
  const m={...t(i),lessonBased:true,poolKey:"mc:fruit:"+k+":"+j};
  add("lessonmc",i,m,()=>({stem,options:[answer,...wrongs],answer:0,explain:"針對「"+c[0]+"」應先"+c[1]+"，才能合理判斷。"}),answer,"依已確認課名主題自編生活推理情境，非課文細節");
