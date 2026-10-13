@@ -22,6 +22,31 @@ for(let n=2;n<=12;n++){
  }
  for(const variant of ["wrongchar_mc","homophone_text"]){if((counts[variant]||0)<10)errors.push(topic+" missing "+variant+" alternative pool");}
 }
+/* Regression for directly exposed answer characters confirmed by prior sampled-paper evidence.
+   This is additive: the original 4400-paper strict leakage gate remains unchanged. */
+const resolvedCrossQuestionCases={
+  2:{"07":"樸","08":"樸"},
+  5:{"07":"韻","08":"韻"},
+  6:{"01":"萃","02":"萃"},
+  7:{"01":"櫃","02":"櫃","03":"墊","04":"墊"},
+  10:{"01":"緞","02":"緞"},
+  12:{"01":"蒂","02":"蒂"}
+};
+for(const [lesson,expected] of Object.entries(resolvedCrossQuestionCases)){
+  const topic="kx-6a-"+String(lesson).padStart(2,"0"),specs=globalThis.ExamBank.specsOf(topic);
+  const readingText=specs.filter(x=>x.type==="reading").map(x=>{
+    const sample=x.gen(globalThis.ExamKit);
+    return [sample.passage,...(sample.questions||[]).flatMap(q=>[q.stem,...(q.options||[])])].join(" ");
+  }).join(" ");
+  for(const [suffix,answer] of Object.entries(expected)){
+    const spec=specs.find(x=>x.type==="wrongchar"&&x.id.endsWith("-"+suffix));
+    if(!spec){errors.push(topic+" missing targeted correction question "+suffix);continue;}
+    if(String(spec.audit?.answer)!==answer)errors.push(spec.id+" expected corrected audit answer "+answer);
+    const q=spec.gen(globalThis.ExamKit);
+    if(String(q.answer)!==answer)errors.push(spec.id+" corrected written answer mismatch");
+    if(readingText.includes(answer))errors.push(spec.id+" corrected answer still visible in original reading text");
+  }
+}
 console.log("Scanned",scanned,"question units; repeated stems/option faults",errors.length);
 errors.slice(0,60).forEach(x=>console.error("QA_FAIL",x));
 console.log(errors.length?"QUALITY_BLOCKED":"QUALITY_PASS");
