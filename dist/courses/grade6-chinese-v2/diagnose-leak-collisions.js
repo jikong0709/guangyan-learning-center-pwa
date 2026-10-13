@@ -34,7 +34,7 @@ for(let n=2;n<=12;n++){
      const exposureClass=targetCorrectVisible?"CORRECT_OPTION_EXPOSED":matchedOptionIndices.length?"DISTRACTOR_OPTION_ONLY":"STEM_ONLY";
      exposure[exposureClass]=(exposure[exposureClass]||0)+1;
      lesson[topic][targetCorrectVisible?"correctOption":matchedOptionIndices.length?"distractorOnly":"stemOnly"]++;
-     if(!locations.length)continue;
+     if(!locations.length)return;
      const location=locations.includes("stem")?"stem":"option";
      const pairKey=q.specId+" => "+other.specId+" => "+term;
      sourcePairs[pairKey]=(sourcePairs[pairKey]||0)+1;
