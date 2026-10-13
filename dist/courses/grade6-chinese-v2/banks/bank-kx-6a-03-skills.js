@@ -8,7 +8,7 @@ const THEME_WORDS=[["自省","反思自己的言行","自醒","醒","省",["醒"
 const LESSON_TITLE="談遇見更好的自己";
 THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"wrong:theme:"+i};add("wrongchar",k,m,()=>({stem:(j===0?"課堂黑板":"主題延伸學習單")+"有語詞「"+r[2]+"」，其中有一個錯字，請寫出正確的字：（　）",answer:r[4],explain:"語詞「"+r[2]+"」裡的「"+r[3]+"」應改為「"+r[4]+"」，形成「"+r[0]+"」。"}),r[4],"依本課課名主題自編延伸詞／教育部辭典字形待核");}});
 THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"vocab:theme:"+i},stem=(j===0?"依詞義填入語詞：":"完成語詞釋義練習：")+"表示「"+r[1]+"」的語詞是（　）。";add("vocab",k,m,()=>({stem,answer:r[0],explain:"「"+r[0]+"」表示「"+r[1]+"」，符合本題釋義。"}),r[0],"依課名主題自編釋義／教育部辭典詞義待核");add("vocab_mc",k,m,()=>({stem,options:[r[0],...THEME_WORDS.filter(x=>x!==r).slice(0,3).map(x=>x[0])],answer:0,explain:"「"+r[0]+"」的意思是「"+r[1]+"」，其餘選項意義不同。"}),r[0],"依課名主題自編釋義／教育部辭典詞義待核");}});
-const MC_CONCEPTS=[["練習沒進步","記錄能力再調整方法"],["挫折後想放棄","分析原因再試一次"],["受到批評","聽懂建議再決定改進"],["目標過高","拆成可完成的小步驟"],["拿自己和別人比較","先回顧個人起點"],["成功後懈怠","安排下一次練習"]],MC_CONTEXTS=["班級討論時","準備展示時","完成記錄時","遇到改變時","寫學習心得時"];
+const MC_CONCEPTS=[["試做沒進步","記錄能力再修改方法"],["挫折後想放棄","分析原因再試一次"],["受到批評","聽懂建議再決定改進"],["方向過高","拆成可完成的小步驟"],["拿自己和別人比較","先回顧個人起點"],["成功後懈怠","規畫下一次試做"]],MC_CONTEXTS=["班級商量時","準備展示時","完成記錄時","遇到改變時","寫研讀心得時"];
 for(let k=0;k<MC_CONCEPTS.length;k++)for(let j=0;j<MC_CONTEXTS.length;j++){
  const i=k*MC_CONTEXTS.length+j,c=MC_CONCEPTS[k],place=MC_CONTEXTS[j];
  const correct=place.replace("時","後")+"，"+c[1];
