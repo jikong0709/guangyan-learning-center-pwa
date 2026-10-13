@@ -8,11 +8,11 @@ const THEME_WORDS=[["節儉","用度有節制，不隨意浪費","節檢","檢",
 const LESSON_TITLE="朱子治家格言選";
 THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"wrong:theme:"+i};add("wrongchar",k,m,()=>({stem:(j===0?"課堂黑板":"主題延伸學習單")+"有語詞「"+r[2]+"」，其中有一個錯字，請寫出正確的字：（　）",answer:r[4],explain:"語詞「"+r[2]+"」裡的「"+r[3]+"」應改為「"+r[4]+"」，形成「"+r[0]+"」。"}),r[4],"依本課課名主題自編延伸詞／教育部辭典字形待核");}});
 THEME_WORDS.forEach((r,i)=>{for(let j=0;j<2;j++){const k=i*2+j,m={...t(k),lessonBased:true,poolKey:"vocab:theme:"+i},stem=(j===0?"依詞義填入語詞：":"完成語詞釋義練習：")+"表示「"+r[1]+"」的語詞是（　）。";add("vocab",k,m,()=>({stem,answer:r[0],explain:"「"+r[0]+"」表示「"+r[1]+"」，符合本題釋義。"}),r[0],"依課名主題自編釋義／教育部辭典詞義待核");add("vocab_mc",k,m,()=>({stem,options:[r[0],...THEME_WORDS.filter(x=>x!==r).slice(0,3).map(x=>x[0])],answer:0,explain:"「"+r[0]+"」的意思是「"+r[1]+"」，其餘選項意義不同。"}),r[0],"依課名主題自編釋義／教育部辭典詞義待核");}});
-const TOPIC_CONCEPTS=[["家中還能使用的物品被直接丟棄","先分辨可用物品，再分類保存"],["家庭共同使用的空間混亂","先訂出整理順序，再分工完成"],["有人只想買新的用品","先評估真實需要，再決定是否購買"],["用水後忘了把水龍頭關緊","先檢查使用狀況，再改掉浪費習慣"],["同學借走東西忘了歸還","先禮貌提醒，再確認歸還時間"],["家庭成員對用錢方式意見不同","先了解彼此需求，再商量安排"]],TOPIC_CONTEXTS=["討論班級提案時","製作教學海報時","和家人交換經驗時","活動臨時變動時","寫下個人反思時"];
+const TOPIC_CONCEPTS=[["家中還能使用的物品被直接丟棄","先分辨可用物品，再分類保存"],["家庭共同使用的空間混亂","先訂出歸納順序，再分派完成"],["有人只想買新的用品","先評估真實需要，再決定是否購買"],["用水後忘了把水龍頭關緊","先核對使用狀況，再改掉浪費習慣"],["同學借走東西忘了歸還","先禮貌提醒，再確認歸還時間"],["家庭成員對用錢方式意見不同","先了解彼此需求，再商量規畫"]],TOPIC_CONTEXTS=["商量班級提案時","製作教學海報時","和家人交換體會時","事情臨時變動時","寫下個人反思時"];
 for(let k=0;k<TOPIC_CONCEPTS.length;k++){for(let j=0;j<TOPIC_CONTEXTS.length;j++){
  const i=k*TOPIC_CONTEXTS.length+j,part=TOPIC_CONCEPTS[k],context=TOPIC_CONTEXTS[j];
  const stem=context+"，如果遇到「"+part[0]+"」，最合理的處理方式是哪一項？";
- const correct=part[1]+"，並在"+context.replace("時","後")+"檢查實際結果";
+ const correct=part[1]+"，並在"+context.replace("時","後")+"核對真切結果";
  const wrongs=["不看當下狀況，只靠想像便斷言","把過錯全推給別人，毫不負責","一遇困難便棄之不顧"];
  const m={...t(i),lessonBased:true,poolKey:"mc:topic:"+k+":"+j};
  add("lessonmc",i,m,()=>({stem,options:[correct,...wrongs],answer:0,explain:"此題所問的情境是「"+part[0]+"」，應先"+part[1]+"，而不是直接猜測或忽略差異。"}),correct,"依已確認課名主題自編原創生活情境；非課文細節");
