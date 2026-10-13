@@ -41,6 +41,9 @@ jobs:
           name: grade6-chinese-6a-audit-candidates
           path: dist/courses/grade6-chinese-v2/qa-reports/*.md
           if-no-files-found: error
+      - name: 115-edition lesson source provenance
+        if: always()
+        run: node dist/courses/grade6-chinese-v2/verify-edition-provenance.js
       - name: Strict 4400-paper leakage and lesson-specific ratio
         run: node dist/courses/grade6-chinese-v2/verify-batch-leaks.js
       - name: Baseline Chinese lesson 1
