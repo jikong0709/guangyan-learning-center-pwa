@@ -50,6 +50,9 @@ jobs:
           name: grade6-chinese-6a-audit-candidates
           path: dist/courses/grade6-chinese-v2/qa-reports/*.md
           if-no-files-found: error
+      - name: Student-facing question quality and duplicates
+        if: always()
+        run: node dist/courses/grade6-chinese-v2/verify-batch-quality.js
       - name: 115-edition lesson source provenance
         if: always()
         run: node dist/courses/grade6-chinese-v2/verify-edition-provenance.js
