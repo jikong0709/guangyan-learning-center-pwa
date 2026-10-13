@@ -45,6 +45,7 @@ jobs:
         if: always()
         run: node dist/courses/grade6-chinese-v2/verify-edition-provenance.js
       - name: Strict 4400-paper leakage and lesson-specific ratio
+        if: always()
         run: node dist/courses/grade6-chinese-v2/verify-batch-leaks.js
       - name: Baseline Chinese lesson 1
         if: always()
