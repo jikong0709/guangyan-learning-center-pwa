@@ -44,6 +44,11 @@ jobs:
             dist/courses/grade6-chinese-v2/
             dist/exam-engine/
           if-no-files-found: error
+      - name: Syntax check candidate diagnostic and validation scripts
+        run: |
+          node --check dist/courses/grade6-chinese-v2/diagnose-leak-collisions.js
+          node --check dist/courses/grade6-chinese-v2/verify-batch-leaks.js
+          node --check dist/courses/grade6-chinese-v2/verify-batch-quality.js
       - name: Candidate checks and 400-paper generation per lesson
         run: node dist/courses/grade6-chinese-v2/verify-batch-candidates.js
       - name: Generate lesson 2-12 per-question candidate audit reports
