@@ -1,0 +1,7 @@
+/* Independent learning-progress navigation: no changes to existing PWA styles or engine */
+.berry-progress-nav{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;margin-left:auto;margin-right:12px}
+.berry-progress-nav a{display:inline-flex;align-items:center;min-height:40px;padding:8px 12px;border-radius:999px;font-weight:800;font-size:.9rem;text-decoration:none;color:#19275f;white-space:nowrap}
+.berry-progress-nav a[aria-current="page"]{background:linear-gradient(120deg,#ff799a,#ff467d);color:white}
+.berry-progress-nav a:hover,.berry-progress-nav a:focus-visible{background:#ffe7ef;color:#92214a}
+.berry-progress-nav a[aria-current="page"]:hover{background:#e63269;color:white}
+@media(max-width:720px){.topbar-inner{flex-wrap:wrap;gap:4px;padding-top:8px;padding-bottom:8px}.berry-progress-nav{order:3;width:100%;margin:0;justify-content:space-around;gap:1px}.berry-progress-nav a{font-size:.76rem;padding:7px 5px;min-height:38px}.top-actions{margin-left:auto}}
