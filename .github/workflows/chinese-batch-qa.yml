@@ -1,0 +1,47 @@
+name: Chinese semester-one candidate validation
+on:
+  pull_request:
+    paths:
+      - 'dist/courses/grade6-chinese-v2/**'
+      - '.github/workflows/chinese-batch-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Collect candidate files from independent lesson branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          for n in $(seq -w 2 12); do
+            case "$n" in
+              02) branch=feat/chinese-6a-02-source-20261012 ;;
+              03|04|05|06|07|10|12) branch=feat/chinese-6a-${n}-batch-20261013 ;;
+              08|09|11) branch=feat/chinese-6a-${n}-20261012 ;;
+            esac
+            git fetch origin "$branch"
+            for suffix in "" "-skills"; do
+              file="dist/courses/grade6-chinese-v2/banks/bank-kx-6a-${n}${suffix}.js"
+              git show "FETCH_HEAD:${file}" > "$file"
+            done
+          done
+      - name: Candidate checks and 400-paper generation per lesson
+        run: node dist/courses/grade6-chinese-v2/verify-batch-candidates.js
+      - name: Baseline Chinese lesson 1
+        run: node dist/courses/grade6-chinese-v2/verify-banks.js
+      - name: Exam engine regression
+        run: node dist/exam-engine/verify-regression.js
+      - name: Exam engine self-check
+        run: node dist/exam-engine/verify-selfcheck.js
+      - name: Math unchanged regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          for t in banks numbers notation engine explain; do
+            node "dist/courses/grade6-math/verify-${t}.js"
+          done
