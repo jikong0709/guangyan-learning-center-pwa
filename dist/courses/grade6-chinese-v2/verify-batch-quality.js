@@ -26,6 +26,10 @@ for(let n=2;n<=12;n++){
    This is additive: the original 4400-paper strict leakage gate remains unchanged. */
 const resolvedCrossQuestionCases={
   2:{"07":"樸","08":"樸"},
+  4:{"03":"酥","04":"酥"},
+  8:{"05":"辯","06":"辯"},
+  9:{"01":"旗","02":"旗","09":"陣","10":"陣"},
+  11:{"01":"歉","02":"歉"},
   5:{"07":"韻","08":"韻"},
   6:{"01":"萃","02":"萃"},
   7:{"01":"櫃","02":"櫃","03":"墊","04":"墊"},
@@ -46,6 +50,19 @@ for(const [lesson,expected] of Object.entries(resolvedCrossQuestionCases)){
     if(String(q.answer)!==answer)errors.push(spec.id+" corrected written answer mismatch");
     if(readingText.includes(answer))errors.push(spec.id+" corrected answer still visible in original reading text");
   }
+}
+const resolvedHomophoneReadingCases={11:{"01":"餅","02":"餅"},12:{"07":"肥","08":"肥"}};
+for(const [lesson,items] of Object.entries(resolvedHomophoneReadingCases)){
+ const topic="kx-6a-"+String(lesson).padStart(2,"0"),specs=globalThis.ExamBank.specsOf(topic);
+ const readingText=specs.filter(x=>x.type==="reading").map(x=>{const r=x.gen(globalThis.ExamKit);return [r.passage,...(r.questions||[]).flatMap(y=>[y.stem,...(y.options||[])])].join(" ");}).join(" ");
+ for(const [suffix,answer] of Object.entries(items)){
+  const spec=specs.find(x=>x.type==="homophone"&&x.id.endsWith("-"+suffix));
+  if(!spec){errors.push(topic+" missing repaired homophone "+suffix);continue;}
+  if(String(spec.audit?.answer)!==answer)errors.push(spec.id+" repaired answer mismatches audit");
+  const q=spec.gen(globalThis.ExamKit);
+  if(q.options?.[q.answer]!==answer)errors.push(spec.id+" repaired selected answer mismatch");
+  if(readingText.includes(answer))errors.push(spec.id+" repaired homophone answer appears in reading");
+ }
 }
 console.log("Scanned",scanned,"question units; repeated stems/option faults",errors.length);
 errors.slice(0,60).forEach(x=>console.error("QA_FAIL",x));
