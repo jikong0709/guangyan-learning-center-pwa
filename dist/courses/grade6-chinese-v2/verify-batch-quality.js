@@ -92,3 +92,5 @@ console.log("Scanned",scanned,"question units; repeated stems/option faults",err
 errors.slice(0,60).forEach(x=>console.error("QA_FAIL",x));
 console.log(errors.length?"QUALITY_BLOCKED":"QUALITY_PASS");
 process.exit(errors.length?1:0);
+
+// WAVE5 Batch05: rerun original strict PR validation using refreshed lesson-source branch HEADs.
