@@ -64,6 +64,30 @@ for(const [lesson,items] of Object.entries(resolvedHomophoneReadingCases)){
   if(readingText.includes(answer))errors.push(spec.id+" repaired homophone answer appears in reading");
  }
 }
+/* Fourth-wave specific direct-answer regression. Strict cross-item gate remains unchanged. */
+const waveFourCases={
+  4:{homophone:{"07":"糕","08":"糕"}},
+  5:{wrongchar:{"01":"燉","02":"燉","09":"餚","10":"餚"}},
+  6:{wrongchar:{"09":"壺","10":"壺"}},
+  7:{wrongchar:{"07":"扣","08":"扣"}},
+  8:{wrongchar:{"07":"穿","08":"穿"}},
+  10:{wrongchar:{"07":"繩","08":"繩"}},
+  11:{wrongchar:{"09":"釋","10":"釋"}},
+  12:{wrongchar:{"07":"籽","08":"籽"}}
+};
+for(const [lesson,types] of Object.entries(waveFourCases)){
+ const topic="kx-6a-"+String(lesson).padStart(2,"0"),specs=globalThis.ExamBank.specsOf(topic);
+ const fullReading=specs.filter(x=>x.type==="reading").map(x=>{const z=x.gen(globalThis.ExamKit);return [z.passage,...(z.questions||[]).flatMap(q=>[q.stem,...(q.options||[])])].join(" ");}).join(" ");
+ for(const [type,entries] of Object.entries(types))for(const [suffix,expected] of Object.entries(entries)){
+  const sp=specs.find(x=>x.type===type&&x.id.endsWith("-"+suffix));
+  if(!sp){errors.push(topic+" missing fourth-wave "+type+" "+suffix);continue;}
+  if(String(sp.audit?.answer)!==expected)errors.push(sp.id+" audit inconsistent after fourth-wave fix");
+  const q=sp.gen(globalThis.ExamKit);
+  const actual=type==="homophone"?q.options?.[q.answer]:q.answer;
+  if(actual!==expected)errors.push(sp.id+" generated answer inconsistent after fourth-wave fix");
+  if(fullReading.includes(expected))errors.push(sp.id+" exposed in reading despite fourth-wave fix");
+ }
+}
 console.log("Scanned",scanned,"question units; repeated stems/option faults",errors.length);
 errors.slice(0,60).forEach(x=>console.error("QA_FAIL",x));
 console.log(errors.length?"QUALITY_BLOCKED":"QUALITY_PASS");
