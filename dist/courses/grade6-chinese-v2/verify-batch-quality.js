@@ -90,6 +90,13 @@ for(const [lesson,types] of Object.entries(waveFourCases)){
 }
 console.log("Scanned",scanned,"question units; repeated stems/option faults",errors.length);
 errors.slice(0,60).forEach(x=>console.error("QA_FAIL",x));
+
+/* Regression: lesson 07 reading must not disclose these independently-tested answers. */
+{
+ const specs=globalThis.ExamBank.specsOf("kx-6a-07");
+ const text=specs.filter(s=>s.type==="reading").map(s=>{const r=s.gen(globalThis.ExamKit);return [r.passage,...r.questions.flatMap(q=>[q.stem,...(q.options||[])])].join(" ");}).join(" ");
+ for(const ch of ["滑","練","標"])if(text.includes(ch))errors.push("kx-6a-07 reading exposes target answer "+ch);
+}
 console.log(errors.length?"QUALITY_BLOCKED":"QUALITY_PASS");
 process.exit(errors.length?1:0);
 
