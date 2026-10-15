@@ -60,6 +60,18 @@ for(const [topic,word] of [["kx-6a-06","計"],["kx-6a-11","明"]]){
  const text=globalThis.ExamBank.specsOf(topic).filter(s=>s.type==="reading").map(s=>{let r=s.gen(globalThis.ExamKit);return [r.passage,...r.questions.flatMap(q=>[q.stem,...(q.options||[])])].join(" ");}).join(" ");
  if(text.includes(word))errors.push(topic+" answer collision "+word);
 }
+/* Cross-skill regression: lesson02 wrongchar L2-07 must not expose L1-01 answer 儉. */
+{
+ const specs=globalThis.ExamBank.specsOf("kx-6a-02");
+ const source=specs.find(s=>s.id==="kx-6a-02-wrongchar-L1-01");
+ const target=specs.find(s=>s.id==="kx-6a-02-wrongchar-L2-07");
+ if(!source||!target)errors.push("lesson02 wrongchar cross-skill specs missing");
+ else{
+  const a=source.gen(globalThis.ExamKit),b=target.gen(globalThis.ExamKit);
+  if(String(a.answer)!=="儉"||String(b.answer)!=="樸")errors.push("lesson02 wrongchar expected answers changed");
+  if(String(b.stem).includes(String(a.answer)))errors.push("lesson02 wrongchar cross-item answer leaked");
+ }
+}
 /* Regression for directly exposed answer characters confirmed by prior sampled-paper evidence.
    This is additive: the original 4400-paper strict leakage gate remains unchanged. */
 const resolvedCrossQuestionCases={
