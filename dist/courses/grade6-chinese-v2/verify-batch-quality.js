@@ -47,6 +47,14 @@ for(const [topic,character] of [["kx-6a-08","錄"],["kx-6a-12","計"]]){
  }).join(" ");
  if(readingText.includes(character))errors.push(topic+" reading exposes answer "+character);
 }
+/* Guard reading answer exposures in lessons 3 and 11. */
+for(const [topic,character] of [["kx-6a-03","練"],["kx-6a-11","標"]]){
+ const reading=globalThis.ExamBank.specsOf(topic).filter(s=>s.type==="reading").map(s=>{
+  const q=s.gen(globalThis.ExamKit);
+  return [q.passage,...q.questions.flatMap(x=>[x.stem,...(x.options||[])])].join(" ");
+ }).join(" ");
+ if(reading.includes(character))errors.push(topic+" reading exposes "+character);
+}
 /* Regression for directly exposed answer characters confirmed by prior sampled-paper evidence.
    This is additive: the original 4400-paper strict leakage gate remains unchanged. */
 const resolvedCrossQuestionCases={
