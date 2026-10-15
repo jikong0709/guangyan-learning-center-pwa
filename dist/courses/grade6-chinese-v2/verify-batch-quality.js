@@ -143,3 +143,5 @@ process.exit(errors.length?1:0);
 // WAVE5 Batch06: recheck unchanged strict gates using updated lesson 02, 03 and 06 sources.
 
 // WAVE5 Batch07: retest original strict checks with the latest lesson 12 reading source.
+
+// Revalidate restored lesson 11 fourth-wave regression without changing gates.
