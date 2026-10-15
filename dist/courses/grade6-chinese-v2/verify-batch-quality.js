@@ -55,6 +55,11 @@ for(const [topic,character] of [["kx-6a-03","練"],["kx-6a-11","標"]]){
  }).join(" ");
  if(reading.includes(character))errors.push(topic+" reading exposes "+character);
 }
+
+for(const [topic,word] of [["kx-6a-06","計"],["kx-6a-11","明"]]){
+ const text=globalThis.ExamBank.specsOf(topic).filter(s=>s.type==="reading").map(s=>{let r=s.gen(globalThis.ExamKit);return [r.passage,...r.questions.flatMap(q=>[q.stem,...(q.options||[])])].join(" ");}).join(" ");
+ if(text.includes(word))errors.push(topic+" answer collision "+word);
+}
 /* Regression for directly exposed answer characters confirmed by prior sampled-paper evidence.
    This is additive: the original 4400-paper strict leakage gate remains unchanged. */
 const resolvedCrossQuestionCases={
