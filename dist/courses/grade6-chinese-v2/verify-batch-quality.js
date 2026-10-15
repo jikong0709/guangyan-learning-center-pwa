@@ -31,6 +31,14 @@ for(let n=2;n<=12;n++){
  }).join(" ");
  if(readingText.includes("座"))errors.push("kx-6a-11 homophone answer 座 exposed in original reading");
 }
+/* Wave5: prevent exact high-frequency cross-question answer-character exposures. */
+for(const [topic,answerChar] of [["kx-6a-02","善"],["kx-6a-12","察"]]){
+ const readingText=globalThis.ExamBank.specsOf(topic).filter(s=>s.type==="reading").map(s=>{
+  const q=s.gen(globalThis.ExamKit);
+  return [q.passage,...q.questions.flatMap(v=>[v.stem,...(v.options||[])])].join(" ");
+ }).join(" ");
+ if(readingText.includes(answerChar))errors.push(topic+" reading exposes answer "+answerChar);
+}
 /* Regression for directly exposed answer characters confirmed by prior sampled-paper evidence.
    This is additive: the original 4400-paper strict leakage gate remains unchanged. */
 const resolvedCrossQuestionCases={
