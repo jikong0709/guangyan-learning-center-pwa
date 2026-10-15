@@ -94,3 +94,5 @@ console.log(errors.length?"QUALITY_BLOCKED":"QUALITY_PASS");
 process.exit(errors.length?1:0);
 
 // WAVE5 Batch05: rerun original strict PR validation using refreshed lesson-source branch HEADs.
+
+// WAVE5 Batch06: recheck unchanged strict gates using updated lesson 02, 03 and 06 sources.
