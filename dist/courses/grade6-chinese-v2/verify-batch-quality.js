@@ -22,6 +22,15 @@ for(let n=2;n<=12;n++){
  }
  for(const variant of ["wrongchar_mc","homophone_text"]){if((counts[variant]||0)<10)errors.push(topic+" missing "+variant+" alternative pool");}
 }
+/* Fifth-wave regression: lesson 11 reading may not reveal the homophone answer 座. */
+{
+ const specs=globalThis.ExamBank.specsOf("kx-6a-11");
+ const readingText=specs.filter(x=>x.type==="reading").map(x=>{
+  const r=x.gen(globalThis.ExamKit);
+  return [r.passage,...r.questions.flatMap(q=>[q.stem,...(q.options||[])])].join(" ");
+ }).join(" ");
+ if(readingText.includes("座"))errors.push("kx-6a-11 homophone answer 座 exposed in original reading");
+}
 /* Regression for directly exposed answer characters confirmed by prior sampled-paper evidence.
    This is additive: the original 4400-paper strict leakage gate remains unchanged. */
 const resolvedCrossQuestionCases={
