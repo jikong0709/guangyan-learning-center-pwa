@@ -9,22 +9,25 @@ for(const rel of ["exam-engine/kit.js","exam-engine/engine.js","courses/grade6-c
 for(let n=1;n<=12;n++){let num=String(n).padStart(2,"0");load("courses/grade6-chinese-v2/banks/bank-kx-6a-"+num+".js");if(n>1)load("courses/grade6-chinese-v2/banks/bank-kx-6a-"+num+"-skills.js");}
 const {adaptiveGuardedBuildExam,collisions}=require("./candidate-cross-item-guard");
 const bank=globalThis.ExamBank,config=globalThis.ExamConfig;
-let passed=0,blocked=0;const evidence=[];
+let passed=0,blocked=0;const evidence=[];const samplesPerLesson=8;
 for(let n=2;n<=12;n++){
  const unit=config.versions.kanghsuan.units.find(u=>u.unitId==="六上-"+n);
  assert.ok(unit,"lesson unit exists");
  const opts={mode:"score",units:[unit],types:config.defaultTypes,levelMin:1,levelMax:5};
- const result=adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes:36});
- if(result.ok){
-  assert.equal(result.paper.total,100,"full score preserved");
-  assert.equal(collisions(result.paper,bank).length,0,"zero cross-item leakage");
-  assert.equal(result.paper.items.length,result.paper.sections.reduce((n,s)=>n+s.items.length,0),"sections intact");
-  passed++;
- }else{
-  assert.ok(["ORIGINAL_EXAM_CONSTRAINT_FAILED","NO_SAFE_PRUNE","PRUNE_BUDGET_EXHAUSTED","POOL_OR_PLAN_BLOCKED"].includes(result.reason),"known fail-closed reason");
-  blocked++;
+ for(let sample=0;sample<samplesPerLesson;sample++){
+  const result=adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes:36});
+  if(result.ok){
+   assert.equal(result.paper.total,100,"full score preserved");
+   assert.equal(collisions(result.paper,bank).length,0,"zero cross-item leakage");
+   assert.equal(result.paper.items.length,result.paper.sections.reduce((v,s)=>v+s.items.length,0),"sections intact");
+   passed++;
+  }else{
+   assert.ok(["ORIGINAL_EXAM_CONSTRAINT_FAILED","NO_SAFE_PRUNE","PRUNE_BUDGET_EXHAUSTED","POOL_OR_PLAN_BLOCKED","DUPLICATE_POOLKEY_POOL_EXHAUSTED"].includes(result.reason),"known fail-closed reason");
+   blocked++;
+   evidence.push({lesson:n,sample,reason:result.reason,prunes:result.prunes,attempts:result.attempts,best:result.best??0,example:result.example||null});
+  }
  }
- evidence.push({lesson:n,ok:result.ok,reason:result.reason||null,prunes:result.prunes,attempts:result.attempts,best:result.best??0,duplicatePoolKeys:result.duplicatePoolKeys||0,ratioFailures:result.ratioFailures||0,scoreInvalid:!!result.scoreInvalid,sections:result.sections||null,example:result.example||null});
 }
-assert.equal(passed+blocked,11,"all eleven lessons checked");
-console.log("CANDIDATE_INTEGRATION_PASS",JSON.stringify({passed,blocked,evidence}));
+assert.equal(passed+blocked,11*samplesPerLesson,"all repeated lesson samples checked");
+console.log("CANDIDATE_INTEGRATION_REPEAT",JSON.stringify({samplesPerLesson,passed,blocked,evidence:evidence.slice(0,25)}));
+if(blocked)process.exitCode=1;
