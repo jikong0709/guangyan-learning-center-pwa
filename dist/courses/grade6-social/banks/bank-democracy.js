@@ -46,4 +46,10 @@ fill:[
  [["居民選出地方首長與議員並參與地方事務，屬於地方（　）。","地方依法律自主辦理事務稱為地方（　）。"],"自治",["地方自治"],"地方自治讓地方依需求辦理公共事務。"],
  [["讓人民取得政策、預算與決策資料，稱為資訊（　）。","政府資訊（　）有助人民監督。"],"公開",["資訊公開"],"資訊公開提升政府透明與可問責性。"],
  [["行政、立法、司法等機關彼此分工制衡，稱為權力（　）。","避免權力集中常採權力（　）。"],"分立",["權力分立"],"權力分立以分工與制衡降低濫權風險。"]
-]});})();
+],
+metadata:{
+single:[{level:1,tag:"basic"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:3,tag:"basic"},{level:3,tag:"basic"},{level:3,tag:"basic"},{level:1,tag:"basic"},{level:2,tag:"basic"},{level:3,tag:"extend"},{level:3,tag:"trap",trapNote:"多數決的程序不代表可以忽略少數者的基本權利。"},{level:4,tag:"extend"},{level:3,tag:"trap",trapNote:"政府與人民都受法律規範，不能把公權力視為不受限制。"}],
+tf:[{level:1,tag:"basic"},{level:2,tag:"trap",trapNote:"依法行政是法治政府的重要原則，不能因為方便就忽略法律。"},{level:3,tag:"trap",trapNote:"權力集中可能增加濫權風險；權力分立與制衡的目的正是降低此風險。"},{level:3,tag:"basic"},{level:3,tag:"trap",trapNote:"司法判斷應依法律與證據，不應服從輿論壓力。"},{level:2,tag:"basic"},{level:2,tag:"trap",trapNote:"無記名投票的重點是保護選民的選擇，不是公開選票。"},{level:3,tag:"extend"},{level:3,tag:"basic"},{level:5,tag:"extend"},{level:4,tag:"extend"},{level:2,tag:"trap",trapNote:"民主允許不同意見，不要求所有人想法一致。"}],
+fill:[{level:1,tag:"basic"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:3,tag:"trap",trapNote:"無記名投票不記錄投票者身分，不能寫成公開投票。"},{level:2,tag:"basic"},{level:3,tag:"extend"},{level:3,tag:"extend"},{level:3,tag:"trap",trapNote:"權力分立是分工與制衡，不是把權力集中在同一機關。"}]
+}
+});})();
