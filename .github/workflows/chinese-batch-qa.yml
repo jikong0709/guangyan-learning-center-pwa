@@ -8,6 +8,13 @@ on:
 permissions:
   contents: read
 jobs:
+  candidate_guard_unit:
+    name: Isolated candidate guard acceptance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify fail-closed guard in isolation
+        run: node dist/courses/grade6-chinese-v2/verify-candidate-guard-unit.js
   verify:
     runs-on: ubuntu-latest
     steps:
