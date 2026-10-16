@@ -13,7 +13,7 @@ for(let lesson=2;lesson<=12;lesson++){
  for(const type of config.defaultTypes){
   const specs=bank.specsOf(topic).filter(s=>s.type===type),unique=new Set(specs.map(s=>s.poolKey||s.id));
   const typeConfig=config.types.find(t=>t.key===type);
-  rows.push({type,specs:specs.length,uniqueKeys:unique.size,duplicateDefinitions:specs.length-unique.size,standardCount:typeConfig?.stdCount||0,lessonBased:specs.filter(s=>s.lessonBased).length});
+  rows.push({type,specs:specs.length,uniqueKeys:unique.size,duplicateDefinitions:specs.length-unique.size,standardCount:typeConfig?.stdCount||0,requiredSpecs:typeConfig?.passageSet?Math.ceil((typeConfig.stdCount||0)/(typeConfig.setSize||1)):(typeConfig?.stdCount||0),lessonBased:specs.filter(s=>s.lessonBased).length});
  }
  all.push({lesson,types:rows});
 }
@@ -21,7 +21,7 @@ const target=all.find(x=>x.lesson===6);
 const errors=[];
 if(!target)errors.push("lesson 6 missing");
 for(const row of target?.types||[]){
- if(row.uniqueKeys<Math.min(row.standardCount,config.types.find(t=>t.key===row.type)?.maxCount||row.standardCount))errors.push("lesson 6 "+row.type+" insufficient unique pool keys "+row.uniqueKeys+"/"+row.standardCount);
+ if(row.uniqueKeys<row.requiredSpecs)errors.push("lesson 6 "+row.type+" insufficient unique pool keys "+row.uniqueKeys+"/"+row.standardCount);
 }
 const output={status:errors.length?"SOURCE_POOL_SHORTAGE":"NO_STATIC_SHORTAGE",issues:errors,lessons:all};
 fs.mkdirSync(path.join(__dirname,"qa-reports"),{recursive:true});
