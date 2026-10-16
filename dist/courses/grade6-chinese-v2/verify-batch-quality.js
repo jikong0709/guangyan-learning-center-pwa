@@ -72,6 +72,14 @@ for(const [topic,word] of [["kx-6a-06","計"],["kx-6a-11","明"]]){
   if(String(b.stem).includes(String(a.answer)))errors.push("lesson02 wrongchar cross-item answer leaked");
  }
 }
+/* Guard lesson 08 wrongchar answer from lesson scenario. */
+{
+ const specs=globalThis.ExamBank.specsOf("kx-6a-08");
+ const a=specs.find(x=>x.id==="kx-6a-08-wrongchar-L1-01");
+ const b=specs.find(x=>x.id==="kx-6a-08-lessonmc-L2-07");
+ if(!a||!b)errors.push("lesson08 cross-item specs missing");
+ else if(String(b.gen(globalThis.ExamKit).stem).includes(String(a.gen(globalThis.ExamKit).answer)))errors.push("lesson08 cross-item answer exposed");
+}
 /* Regression for directly exposed answer characters confirmed by prior sampled-paper evidence.
    This is additive: the original 4400-paper strict leakage gate remains unchanged. */
 const resolvedCrossQuestionCases={
