@@ -46,4 +46,11 @@ fill:[
  [["不同文化互相接觸、理解與影響，稱為跨文化（　）。","全球旅行促進跨文化（　）。"],"交流",["跨文化交流"],"跨文化交流能增加理解也需尊重差異。"],
  [["供應鏈公開來源與生產過程，稱為供應鏈（　）。","可查詢商品來源代表供應鏈較（　）。"],"透明",["透明度"],"透明資訊有助追蹤勞動、環境與品質責任。"],
  [["跨國災難中以生命、需求與尊嚴為核心的援助稱為（　）援助。","重大災害後的國際救援屬（　）援助。"],"人道",["人道援助"],"人道援助以救命、減輕痛苦與保障尊嚴為目的。"]
-]});})();
+],
+metadata:{
+single:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"extend"},{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":4,"tag":"extend"},{"level":5,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":4,"tag":"extend"}],
+multi:[{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":4,"tag":"extend"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":5,"tag":"extend"}],
+tf:[{"level":1,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":5,"tag":"extend"},{"level":2,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":3,"tag":"extend"},{"level":2,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":4,"tag":"basic"}],
+fill:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":4,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"extend"},{"level":4,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"跨國連結同時可能帶來合作與風險，不能把全球化簡化為全好或全壞。"},{"level":3,"tag":"extend"}]
+}
+});})();
