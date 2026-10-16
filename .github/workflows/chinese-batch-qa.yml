@@ -48,6 +48,7 @@ jobs:
         run: |
           node --check dist/courses/grade6-chinese-v2/diagnose-leak-collisions.js
           node --check dist/courses/grade6-chinese-v2/verify-batch-leaks.js
+          node --check dist/courses/grade6-chinese-v2/candidate-cross-item-guard.js
           node --check dist/courses/grade6-chinese-v2/verify-batch-quality.js
       - name: Candidate checks and 400-paper generation per lesson
         run: node dist/courses/grade6-chinese-v2/verify-batch-candidates.js
