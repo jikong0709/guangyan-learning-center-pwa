@@ -46,4 +46,11 @@ fill:[
  [["國家間交換商品與服務稱為國際（　）。","進出口都是國際（　）活動。"],"貿易",["國際貿易"],"國際貿易連結各地市場與生產。"],
  [["政府依法向人民或企業徵收的款項稱為（　）。","公共服務的重要財源之一是（　）。"],"稅",["稅收","稅款"],"稅收支應公共建設與服務。"],
  [["買方想購買商品的意願與能力，稱為（　）。","市場中消費者想買的數量屬於（　）。"],"需求",[],"需求描述消費者在一定條件下願意且能購買的情況。"]
-]});})();
+],
+metadata:{
+single:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"extend"},{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":4,"tag":"extend"},{"level":5,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":4,"tag":"extend"}],
+multi:[{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":4,"tag":"extend"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":5,"tag":"extend"}],
+tf:[{"level":1,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":5,"tag":"extend"},{"level":2,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":3,"tag":"extend"},{"level":2,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":4,"tag":"basic"}],
+fill:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":4,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"extend"},{"level":4,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"要分辨標價、單價、機會成本與付款方式，不能只憑表面價格判斷。"},{"level":3,"tag":"extend"}]
+}
+});})();
