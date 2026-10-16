@@ -121,7 +121,10 @@ for(const [topic,old] of [
  ["kx-6a-10","捐贈箱裡有很多不合尺寸的衣服"],
  ["kx-6a-10","贈送物資應重視對方的需要而非只是捐出數量"],
  ["kx-6a-11","學校午餐區"],
- ["kx-6a-10","整理冬季募集物資"]
+ ["kx-6a-10","整理冬季募集物資"],
+ ["kx-6a-05","主角調整行動的方式是什麼？"],
+ ["kx-6a-05","街區活動中心"],
+ ["kx-6a-11","安排班級下午茶"]
 ]){
  const reading=globalThis.ExamBank.specsOf(topic).find(x=>x.id===topic+"-reading-L1-01");
  if(!reading){errors.push(topic+" reading L1-01 not found");continue;}
