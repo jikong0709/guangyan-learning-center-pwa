@@ -115,6 +115,18 @@ for(const [topic,word] of [["kx-6a-02","珍惜資源不等於勉強留住不能�
  const entire=JSON.stringify(q);
  if(entire.includes(word))errors.push(topic+" confirmed cross-item answer still appears in reading");
 }
+/* Reading corrections from latest exact source/target collision evidence. */
+for(const [topic,old] of [
+ ["kx-6a-06","製作飲食文化看板"],
+ ["kx-6a-10","捐贈箱裡有很多不合尺寸的衣服"],
+ ["kx-6a-10","贈送物資應重視對方的需要而非只是捐出數量"],
+ ["kx-6a-11","學校午餐區"]
+]){
+ const reading=globalThis.ExamBank.specsOf(topic).find(x=>x.id===topic+"-reading-L1-01");
+ if(!reading){errors.push(topic+" reading L1-01 not found");continue;}
+ const raw=reading.gen(globalThis.ExamKit);
+ if(JSON.stringify(raw).includes(old))errors.push(topic+" reading still includes collision phrase "+old);
+}
 /* Regression for directly exposed answer characters confirmed by prior sampled-paper evidence.
    This is additive: the original 4400-paper strict leakage gate remains unchanged. */
 const resolvedCrossQuestionCases={
