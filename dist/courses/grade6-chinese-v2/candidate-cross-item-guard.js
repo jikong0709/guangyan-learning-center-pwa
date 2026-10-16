@@ -74,7 +74,7 @@ function adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes=18}={}){
   const scoreInvalid=exam.total!==config.score.total;
   if(!hits.length){
    if(duplicatePoolKeys&&!ratioFailures&&!scoreInvalid){
-    const removable=duplicateSpecIds.map(id=>original.get(id)).find(sp=>sp&&sp.type!=="reading"&&!excluded.has(sp.id)&&sizes[sp.type]>((config.types.find(t=>t.key===sp.type)?.minCount||2)+1));
+    const removable=duplicateSpecIds.map(id=>original.get(id)).find(sp=>sp&&sp.type!=="reading"&&!excluded.has(sp.id)&&sizes[sp.type]>((config.types.find(t=>t.key===sp.type)?.minCount||2)+1)&&(!sp.lessonBased||lessonBasedSizes[sp.type]>({wrongchar:3,vocab:3,homophone:2,lessonmc:6}[sp.type]||0)));
     if(removable&&step<maxPrunes){excluded.add(removable.id);sizes[removable.type]--;if(removable.lessonBased)lessonBasedSizes[removable.type]--;continue;}
    }
    if(duplicatePoolKeys||ratioFailures||scoreInvalid)return {ok:false,reason:"ORIGINAL_EXAM_CONSTRAINT_FAILED",prunes:excluded.size,attempts,best:0,example,duplicatePoolKeys,ratioFailures,scoreInvalid,sections:(exam.sections||[]).map(x=>({type:x.type,count:x.count,lessonBased:(x.items||[]).filter(it=>bank.byId(it.specId)?.lessonBased).length}))};
