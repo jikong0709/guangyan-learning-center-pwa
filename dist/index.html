@@ -8,7 +8,7 @@
   <title>莓好學習區｜教材中心</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=23">
+  <link rel="stylesheet" href="./styles.css?v=24">
   <link rel="stylesheet" href="./affiliate-carousel.css">
   <link rel="stylesheet" href="./learning-navigation.css">
 </head>
@@ -17,7 +17,7 @@
   <header class="topbar"><div class="shell topbar-inner">
     <button class="brand" type="button" data-action="home" aria-label="返回學習儀表板"><span aria-hidden="true">🍓</span><span>莓好學習區</span></button>
     <nav class="berry-progress-nav" aria-label="學習區分頁"><a href="./index.html" aria-current="page">教材中心</a><a href="./self-progress.html">自學進度</a><a href="./school-progress.html">學校進度</a><a href="./school-progress.html#add">新增進度</a></nav>
-    <div class="top-actions"><span id="networkBadge" class="badge">連線中</span><button id="installBtn" class="btn btn-small" hidden>安裝 APP</button></div>
+    <div class="top-actions"><span id="networkBadge" class="badge">連線中</span><div class="auth-wrap"><span id="authStatus" class="auth-status" aria-live="polite">登入狀態讀取中</span><button id="googleLoginBtn" class="btn btn-small" type="button">使用 Google 登入</button><button id="logoutBtn" class="btn btn-small btn-ghost" type="button" hidden>登出</button></div><button id="installBtn" class="btn btn-small" hidden>安裝 APP</button></div>
   </div></header>
   <main id="main" class="shell">
     <section id="libraryView">
@@ -31,7 +31,7 @@
       </div>
     </section>
     <section id="dashboardView" hidden>
-      <div class="intro card"><div><span class="kicker">73 個學習日任務</span><h1>英語<span>｜</span>單字儲備庫</h1><p>每天 5 個新字，學完小考全對才亮燈；每 6 天一次週考。進度只保存在這台裝置的瀏覽器。</p></div><button class="btn btn-primary" data-action="continue">繼續學習</button></div>
+      <div class="intro card"><div><span class="kicker">73 個學習日任務</span><h1>英語<span>｜</span>單字儲備庫</h1><p>每天 5 個新字，學完小考全對才亮燈；每 6 天一次週考。未登入時保存在本機，登入後會同步到個人雲端。</p></div><button class="btn btn-primary" data-action="continue">繼續學習</button></div>
       <div id="migrateNotice" class="notice card" role="status" hidden><p><strong>學習流程已改版，進度已重新開始。</strong>新版改為 73 個學習日＋週考，每個字只學一次，舊版的進度編號無法沿用；舊資料已備份在這台裝置的瀏覽器裡，沒有遺失。</p><button class="btn btn-small" data-action="dismiss-notice">知道了</button></div>
       <button class="btn btn-ghost subject-back" data-action="home">← 返回教材中心</button>
       <div class="level-tabs" role="tablist" aria-label="學習階段">
@@ -63,6 +63,6 @@
     <div data-affiliate-carousel data-storefront-url="https://collshp.com/sberrychang?view=storefront" data-theme="learning-center" data-limit="12"></div>
   </main>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./vocabulary.js?v=23"></script><script src="./english-plan.js?v=23"></script><script src="./course-catalog.js?v=23"></script><script src="./app.js?v=23"></script><script src="./affiliate-carousel.config.js"></script><script src="./affiliate-carousel-v2.js"></script>
+  <script src="./vocabulary.js?v=24"></script><script src="./english-plan.js?v=24"></script><script src="./course-catalog.js?v=24"></script><script src="./supabase-config.js?v=24"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script><script src="./app.js?v=24"></script><script src="./auth.js?v=24"></script><script src="./affiliate-carousel.config.js"></script><script src="./affiliate-carousel-v2.js"></script>
 </body></html>
 

@@ -1,6 +1,6 @@
 # 莓好學習區 PWA
 
-不需要登入或後端的靜態學習 APP，可部署到 GitHub Pages。
+可離線使用的靜態學習 APP；未登入時保留本機進度，使用 Google 登入後以 Supabase 同步個人學習進度，可部署到 GitHub Pages。
 
 ## 目前功能
 
@@ -10,7 +10,7 @@
 - 數學：目前為國小六年級，依翰林、康軒、南一三種版本分流；各版本涵蓋六上、六下全年單元、小節卷與總評量。
 - 版本架構：`dist/course-catalog.js` 集中管理版本名稱、狀態、說明與入口，後續新增版本不必重寫首頁。
 - PWA：可安裝、Service Worker 離線快取。
-- 本機進度：localStorage 儲存（英語進度 schemaVersion 2，舊版進度會備份後重新開始），支援 JSON 匯出／匯入。
+- 學習進度：localStorage 儲存（英語進度 schemaVersion 2，舊版進度會備份後重新開始），支援 JSON 匯出／匯入；Google 登入後同步至 Supabase，未登入或離線時仍可繼續使用本機進度。
 
 ## 目錄
 

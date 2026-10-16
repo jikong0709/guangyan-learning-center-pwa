@@ -41,7 +41,11 @@
     storeSet(KEY,JSON.stringify(s));
     return s;
   }
-  function save(){return storeSet(KEY,JSON.stringify(state))}
+  function save(){
+    var ok=storeSet(KEY,JSON.stringify(state));
+    if(ok)document.dispatchEvent(new CustomEvent("meihao:progress-changed",{detail:{state:JSON.parse(JSON.stringify(state)),schemaVersion:SCHEMA}}));
+    return ok;
+  }
   function esc(v){return String(v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
   function toast(m){var b=el("#toast");b.textContent=m;b.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){b.classList.remove("show")},2500)}
   function canSpeak(){return "speechSynthesis" in window&&typeof SpeechSynthesisUtterance!=="undefined"}
@@ -282,5 +286,10 @@ var SYN_HINT="<small class=\"hint\">（有多個英文字都能表示這個意�
   el("#installBtn").addEventListener("click",function(){if(!deferredInstall)return;deferredInstall.prompt();deferredInstall.userChoice.then(function(){deferredInstall=null;el("#installBtn").hidden=true})});
   function network(){el("#networkBadge").textContent=navigator.onLine?"線上模式":"離線模式"}window.addEventListener("online",network);window.addEventListener("offline",network);network();
   if("serviceWorker" in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("./sw.js").catch(console.warn)});
+  window.MeihaoLearningProgress={
+    schemaVersion:SCHEMA,
+    read:function(){return JSON.parse(JSON.stringify(state))},
+    apply:function(next){state=normalize(next||{});storeSet(KEY,JSON.stringify(state));renderDashboard()}
+  };
   renderCourseVersions();renderJunior(7);renderDashboard();
 })();
