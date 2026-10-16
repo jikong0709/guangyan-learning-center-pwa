@@ -46,4 +46,11 @@ fill:[
  [["保護老建築前先蒐集資料、評估狀況，稱為調查與（　）。","文化資產施工前需先進行專業（　）。"],"研究",["評估"],"研究與評估能避免破壞原有價值。"],
  [["尊重不同語言、族群與生活方式，體現文化（　）性。","社會中存在多種文化表現，稱為文化（　）性。"],"多樣",["多樣性","文化多樣性"],"文化多樣性表示社會擁有不同文化表現。"],
  [["理解物件的來源、用途與時代背景，就是理解它的文化（　）。","展示文物不能脫離原有（　）。"],"脈絡",["背景"],"文化脈絡賦予物件較完整的意義。"]
-]});})();
+],
+metadata:{
+single:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"extend"},{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":4,"tag":"extend"},{"level":5,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":4,"tag":"extend"}],
+multi:[{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":4,"tag":"extend"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":5,"tag":"extend"}],
+tf:[{"level":1,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":5,"tag":"extend"},{"level":2,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":3,"tag":"extend"},{"level":2,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":4,"tag":"basic"}],
+fill:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":4,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"extend"},{"level":4,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"避免把單一經驗概括到整個族群；應尊重文化脈絡與群體內部差異。"},{"level":3,"tag":"extend"}]
+}
+});})();
