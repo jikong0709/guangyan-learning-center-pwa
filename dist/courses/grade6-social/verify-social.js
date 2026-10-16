@@ -48,7 +48,26 @@ check(counts.single >= 20, "第一單元單選題 spec 不足：" + counts.singl
 check(counts.fill >= 5, "第一單元填空題 spec 不足：" + counts.fill + "/5");
 const allIds = new Set();
 for (const topic of cfg.allTopics) {
-  for (const s of specsByTopic[topic]) {
+  const topicSpecs = specsByTopic[topic];
+  const perType = { single: [], multi: [], tf: [], fill: [] };
+  const topicLevels = new Set(), trapTypes = new Set();
+  let trapCount = 0, extendCount = 0;
+  topicSpecs.forEach(s => {
+    if (perType[s.type]) perType[s.type].push(s);
+    topicLevels.add(s.level);
+    if (s.tag === "trap") { trapCount++; trapTypes.add(s.type); }
+    if (s.tag === "extend") extendCount++;
+  });
+  for (const [type, min] of Object.entries({ single: 12, multi: 6, tf: 12, fill: 10 })) {
+    check(perType[type].length >= min, topic + " 題型 " + type + " 數量不足：" + perType[type].length + "/" + min);
+    const typeLevels = new Set(perType[type].map(s => s.level));
+    check(typeLevels.size >= 3, topic + " 題型 " + type + " 難度只涵蓋 " + typeLevels.size + " 級（需至少 3 級）");
+  }
+  for (const level of [1, 2, 3, 4, 5]) check(topicLevels.has(level), topic + " 缺少難度 level " + level);
+  check(trapCount >= 10, topic + " trap 標籤不足：" + trapCount + "/10");
+  check(extendCount >= 8, topic + " extend 標籤不足：" + extendCount + "/8");
+  check(trapTypes.size >= 3, topic + " trap 只分布於 " + trapTypes.size + " 種題型（需至少 3 種）");
+  for (const s of topicSpecs) {
     check(!allIds.has(s.id), "spec id 重複：" + s.id);
     allIds.add(s.id);
     check(["tf", "single", "fill", "multi"].includes(s.type), "不支援題型：" + s.id + " " + s.type);
