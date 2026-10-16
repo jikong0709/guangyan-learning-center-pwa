@@ -80,6 +80,11 @@ for(const [topic,word] of [["kx-6a-06","計"],["kx-6a-11","明"]]){
  if(!a||!b)errors.push("lesson08 cross-item specs missing");
  else if(String(b.gen(globalThis.ExamKit).stem).includes(String(a.gen(globalThis.ExamKit).answer)))errors.push("lesson08 cross-item answer exposed");
 }
+/* Reading guards for lessons 04 and 05. */
+for(const [topic,letter] of [["kx-6a-04","汁"],["kx-6a-05","滋"]]){
+ const reading=globalThis.ExamBank.specsOf(topic).filter(s=>s.type==="reading").map(s=>{const q=s.gen(globalThis.ExamKit);return [q.passage,...q.questions.flatMap(x=>[x.stem,...(x.options||[])])].join(" ");}).join(" ");
+ if(reading.includes(letter))errors.push(topic+" reading exposed "+letter);
+}
 /* Regression for directly exposed answer characters confirmed by prior sampled-paper evidence.
    This is additive: the original 4400-paper strict leakage gate remains unchanged. */
 const resolvedCrossQuestionCases={
