@@ -7,7 +7,7 @@
       const value = attrs[key];
       if (key === "className") node.className = value;
       else if (key === "text") node.textContent = value;
-      else if (key.indexOf("on") === 0 && typeof value === "function") node.addEventListener(key.slice(2), value);
+      else if (key.indexOf("on") === 0 && typeof value === "function") node.addEventListener(key.slice(2).toLowerCase(), value);
       else if (value != null) node.setAttribute(key, value);
     });
     (children || []).forEach(function (child) {
