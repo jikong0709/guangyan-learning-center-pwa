@@ -49,6 +49,12 @@ function adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes=18}={}){
  const excluded=new Set(),topics=(opts.units||[]).flatMap(u=>u.topics||[]);
  const original=new Map(topics.flatMap(t=>bank.specsOf(t)).map(s=>[s.id,s]));
  const sizes={},lessonBasedSizes={};for(const s of original.values()){sizes[s.type]=(sizes[s.type]||0)+1;if(s.lessonBased)lessonBasedSizes[s.type]=(lessonBasedSizes[s.type]||0)+1;}
+ function enoughUniqueAfterDrop(spec){
+  const setting=config.types.find(t=>t.key===spec.type);
+  const required=setting?.passageSet?Math.ceil((setting.stdCount||0)/(setting.setSize||1)):(setting?.stdCount||0);
+  const remaining=[...original.values()].filter(x=>x.type===spec.type&&x.id!==spec.id&&!excluded.has(x.id));
+  return new Set(remaining.map(x=>x.poolKey||x.id)).size>=required;
+ }
  const proxy={
   specsOf:t=>bank.specsOf(t).filter(s=>!excluded.has(s.id)),
   byId:id=>bank.byId(id),
@@ -74,7 +80,7 @@ function adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes=18}={}){
   const scoreInvalid=exam.total!==config.score.total;
   if(!hits.length){
    if(duplicatePoolKeys&&!ratioFailures&&!scoreInvalid){
-    const removable=duplicateSpecIds.map(id=>original.get(id)).find(sp=>sp&&sp.type!=="reading"&&!excluded.has(sp.id)&&sizes[sp.type]>((config.types.find(t=>t.key===sp.type)?.minCount||2)+1)&&(!sp.lessonBased||lessonBasedSizes[sp.type]>({wrongchar:3,vocab:3,homophone:2,lessonmc:6}[sp.type]||0)));
+    const removable=duplicateSpecIds.map(id=>original.get(id)).find(sp=>sp&&sp.type!=="reading"&&!excluded.has(sp.id)&&sizes[sp.type]>((config.types.find(t=>t.key===sp.type)?.minCount||2)+1)&&(!sp.lessonBased||lessonBasedSizes[sp.type]>({wrongchar:3,vocab:3,homophone:2,lessonmc:6}[sp.type]||0))&&enoughUniqueAfterDrop(sp));
     if(removable&&step<maxPrunes){excluded.add(removable.id);sizes[removable.type]--;if(removable.lessonBased)lessonBasedSizes[removable.type]--;continue;}
    }
    if(duplicatePoolKeys||ratioFailures||scoreInvalid)return {ok:false,reason:"ORIGINAL_EXAM_CONSTRAINT_FAILED",prunes:excluded.size,attempts,best:0,example,duplicatePoolKeys,ratioFailures,scoreInvalid,sections:(exam.sections||[]).map(x=>({type:x.type,count:x.count,lessonBased:(x.items||[]).filter(it=>bank.byId(it.specId)?.lessonBased).length}))};
@@ -89,6 +95,7 @@ function adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes=18}={}){
    const min=Math.max(2,(t?.minCount||2)+1);
    const requiredLessonBased={wrongchar:3,vocab:3,homophone:2,lessonmc:6}[sp.type]||0;
    if(sp.lessonBased&&lessonBasedSizes[sp.type]-1<requiredLessonBased)return false;
+   if(!enoughUniqueAfterDrop(sp))return false;
    return (sizes[sp.type]-1)>min;
   });
   if(!candidates.length)return {ok:false,reason:"NO_SAFE_PRUNE",prunes:excluded.size,attempts,best,example};
