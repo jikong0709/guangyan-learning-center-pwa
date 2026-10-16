@@ -46,4 +46,11 @@ fill:[
  [["污染與環境利益是否公平分配，屬於環境（　）。","弱勢是否承受較多污染是環境（　）議題。"],"正義",["環境正義"],"環境正義關心風險、利益與參與機會的公平。"],
  [["社區受到災害後恢復並調整的能力稱為（　）性。","面對洪水仍能維持功能，是城市（　）性。"],"韌",["韌性"],"韌性包含承受、恢復與學習調整能力。"],
  [["從生產到廢棄的整體環境影響評估稱為生命（　）評估。","比較產品全程影響可做生命（　）評估。"],"週期",["生命週期"],"生命週期觀點避免只看單一階段而轉移污染。"]
-]});})();
+],
+metadata:{
+single:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"extend"},{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":4,"tag":"extend"},{"level":5,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":4,"tag":"extend"}],
+multi:[{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":4,"tag":"extend"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":5,"tag":"extend"}],
+tf:[{"level":1,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":5,"tag":"extend"},{"level":2,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":3,"tag":"extend"},{"level":2,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":4,"tag":"basic"}],
+fill:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":4,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"extend"},{"level":4,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"需同時考量經濟、社會與環境，避免把單一行動視為必然有效。"},{"level":3,"tag":"extend"}]
+}
+});})();
