@@ -49,6 +49,7 @@ jobs:
           node --check dist/courses/grade6-chinese-v2/diagnose-leak-collisions.js
           node --check dist/courses/grade6-chinese-v2/verify-batch-leaks.js
           node --check dist/courses/grade6-chinese-v2/candidate-cross-item-guard.js
+          node --check dist/courses/grade6-chinese-v2/analyze-candidate-guard.js
           node --check dist/courses/grade6-chinese-v2/verify-batch-quality.js
       - name: Candidate checks and 400-paper generation per lesson
         run: node dist/courses/grade6-chinese-v2/verify-batch-candidates.js
@@ -76,6 +77,16 @@ jobs:
         with:
           name: grade6-chinese-leakage-diagnostic
           path: dist/courses/grade6-chinese-v2/qa-reports/leak-collision-diagnostic.json
+      - name: Diagnose feasibility of opt-in candidate guard
+        if: always()
+        run: node dist/courses/grade6-chinese-v2/analyze-candidate-guard.js
+      - name: Retain candidate guard feasibility
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grade6-chinese-candidate-guard-feasibility
+          path: dist/courses/grade6-chinese-v2/qa-reports/candidate-guard-feasibility.json
+          if-no-files-found: warn
       - name: Strict 4400-paper leakage and lesson-specific ratio
         if: always()
         run: node dist/courses/grade6-chinese-v2/verify-batch-leaks.js
