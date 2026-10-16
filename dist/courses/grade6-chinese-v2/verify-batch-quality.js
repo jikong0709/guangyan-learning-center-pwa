@@ -85,6 +85,19 @@ for(const [topic,letter] of [["kx-6a-04","汁"],["kx-6a-05","滋"]]){
  const reading=globalThis.ExamBank.specsOf(topic).filter(s=>s.type==="reading").map(s=>{const q=s.gen(globalThis.ExamKit);return [q.passage,...q.questions.flatMap(x=>[x.stem,...(x.options||[])])].join(" ");}).join(" ");
  if(reading.includes(letter))errors.push(topic+" reading exposed "+letter);
 }
+/* Candidate-only guard unit smoke tests; original strict scanner is unchanged. */
+{
+ const guard=require("./candidate-cross-item-guard");
+ const specs={a:{type:"wrongchar",audit:{answer:"儉"},leakTerms:[]},b:{type:"lessonmc",leakTerms:[]}};
+ const bank={byId:id=>specs[id]};
+ const leaked={items:[{specId:"a",stem:"找出錯字"},{specId:"b",stem:"儉僕如何修改？",options:["儉","樸"]}]};
+ const safe={items:[{specId:"a",stem:"找出錯字"},{specId:"b",stem:"簡僕如何修改？",options:["樸","僕"]}]};
+ if(guard.collisions(leaked,bank).length!==1)errors.push("candidate guard failed to identify cross-item answer");
+ if(guard.collisions(safe,bank).length!==0)errors.push("candidate guard false-positive");
+ try{guard.guardedBuildExam({buildExam:()=>leaked},bank,{},2);errors.push("candidate guard did not fail closed");}
+ catch(e){if(!String(e.message).includes("CANDIDATE_LEAK_GUARD_BLOCKED"))errors.push("candidate guard wrong error");}
+ if(guard.guardedBuildExam({buildExam:()=>safe},bank,{},1).paper!==safe)errors.push("candidate guard rejected safe paper");
+}
 /* Regression for directly exposed answer characters confirmed by prior sampled-paper evidence.
    This is additive: the original 4400-paper strict leakage gate remains unchanged. */
 const resolvedCrossQuestionCases={
