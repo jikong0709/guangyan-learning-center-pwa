@@ -48,7 +48,7 @@ function guardedBuildExam(engine,bank,opts,attempts=16){
 function adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes=18}={}){
  const excluded=new Set(),topics=(opts.units||[]).flatMap(u=>u.topics||[]);
  const original=new Map(topics.flatMap(t=>bank.specsOf(t)).map(s=>[s.id,s]));
- const sizes={};for(const s of original.values())sizes[s.type]=(sizes[s.type]||0)+1;
+ const sizes={},lessonBasedSizes={};for(const s of original.values()){sizes[s.type]=(sizes[s.type]||0)+1;if(s.lessonBased)lessonBasedSizes[s.type]=(lessonBasedSizes[s.type]||0)+1;}
  const proxy={
   specsOf:t=>bank.specsOf(t).filter(s=>!excluded.has(s.id)),
   byId:id=>bank.byId(id),
@@ -82,12 +82,14 @@ function adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes=18}={}){
   const candidates=[...degrees].filter(([id])=>{
    const sp=original.get(id);if(!sp||excluded.has(id)||sp.type==="reading")return false;
    const t=config.types.find(x=>x.key===sp.type);
-   const min=Math.max(2,Math.min(t?.stdCount||2,t?.maxCount||2));
+   const min=Math.max(2,(t?.minCount||2)+1);
+   const requiredLessonBased={wrongchar:3,vocab:3,homophone:2,lessonmc:6}[sp.type]||0;
+   if(sp.lessonBased&&lessonBasedSizes[sp.type]-1<requiredLessonBased)return false;
    return (sizes[sp.type]-1)>min;
   });
   if(!candidates.length)return {ok:false,reason:"NO_SAFE_PRUNE",prunes:excluded.size,attempts,best,example};
   candidates.sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
-  const victim=candidates[0][0];excluded.add(victim);sizes[original.get(victim).type]--;
+  const victim=candidates[0][0],victimSpec=original.get(victim);excluded.add(victim);sizes[victimSpec.type]--;if(victimSpec.lessonBased)lessonBasedSizes[victimSpec.type]--;
  }
  return {ok:false,reason:"PRUNE_BUDGET_EXHAUSTED",prunes:excluded.size,attempts,best,example};
 }
