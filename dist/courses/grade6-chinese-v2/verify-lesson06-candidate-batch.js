@@ -15,10 +15,11 @@ for(let i=0;i<samples;i++){
  const paper=res.paper;
  assert.equal(paper.total,100);
  assert.equal(collisions(paper,bank).length,0);
- const used=new Set();
+ const used=new Map();
  for(const sec of paper.sections)for(const q of sec.items){const spec=bank.byId(q.specId);if(!spec?.poolKey)continue;
-  const key=spec.poolKey+"::"+(q.setId||q.specId);
-  if(used.has(key))continue;used.add(key);
+  const key=spec.poolKey;
+  if(used.has(key)&&!(q.setId&&used.get(key)===q.setId))throw new Error("duplicate pool key in lesson 06: "+key);
+  used.set(key,q.setId||q.specId);
  }
  passed++;
 }
