@@ -61,7 +61,21 @@ function adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes=18}={}){
   try{exam=engine.buildExam(opts);attempts++;}
   catch(e){return {ok:false,reason:"POOL_OR_PLAN_BLOCKED",prunes:excluded.size,attempts,best,example,message:e.message};}
   const hits=collisions(exam,bank);
-  if(!hits.length)return {ok:true,paper:exam,prunes:excluded.size,attempts};
+  const seenKeys=new Set();
+  let duplicatePoolKeys=0,ratioFailures=0;
+  for(const sec of exam.sections||[]){
+   for(const it of sec.items||[]){
+    const sp=bank.byId(it.specId);
+    if(sp?.poolKey){if(seenKeys.has(sp.poolKey))duplicatePoolKeys++;seenKeys.add(sp.poolKey);}
+   }
+   const need={wrongchar:3,vocab:3,homophone:2,lessonmc:6}[sec.type];
+   if(need&&(sec.items||[]).filter(it=>bank.byId(it.specId)?.lessonBased).length<need)ratioFailures++;
+  }
+  const scoreInvalid=exam.total!==config.score.total;
+  if(!hits.length){
+   if(duplicatePoolKeys||ratioFailures||scoreInvalid)return {ok:false,reason:"ORIGINAL_EXAM_CONSTRAINT_FAILED",prunes:excluded.size,attempts,duplicatePoolKeys,ratioFailures,scoreInvalid};
+   return {ok:true,paper:exam,prunes:excluded.size,attempts};
+  }
   if(hits.length<best){best=hits.length;example=hits[0];}
   const degrees=new Map();
   for(const h of hits){degrees.set(h.source,(degrees.get(h.source)||0)+1);degrees.set(h.target,(degrees.get(h.target)||0)+1);}
