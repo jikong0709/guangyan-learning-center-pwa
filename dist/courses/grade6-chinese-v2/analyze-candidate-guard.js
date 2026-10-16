@@ -6,9 +6,9 @@ const base=__dirname,root=path.join(base,"../..");
 function load(file){vm.runInThisContext(fs.readFileSync(path.join(root,file),"utf8"),{filename:file});}
 for(const file of ["exam-engine/kit.js","exam-engine/engine.js","courses/grade6-chinese-v2/config.js","courses/grade6-chinese-v2/config-batch-extension.js"])load(file);
 for(let n=1;n<=12;n++){const nn=String(n).padStart(2,"0");load("courses/grade6-chinese-v2/banks/bank-kx-6a-"+nn+".js");if(n>1)load("courses/grade6-chinese-v2/banks/bank-kx-6a-"+nn+"-skills.js");}
-const {collisions,guardedBuildExam}=require("./candidate-cross-item-guard");
+const {collisions,guardedBuildExam,adaptiveGuardedBuildExam}=require("./candidate-cross-item-guard");
 const bank=globalThis.ExamBank,cfg=globalThis.ExamConfig,engine=globalThis.ExamEngine.create(cfg,bank);
-const findings=[];let safeCount=0;
+const findings=[],adaptiveFindings=[];let safeCount=0;
 for(let n=2;n<=12;n++){
  const unit=cfg.versions.kanghsuan.units.find(u=>u.unitId==="六上-"+n);
  const opts={mode:"score",units:[unit],types:cfg.defaultTypes,levelMin:1,levelMax:5};
@@ -24,8 +24,10 @@ for(let n=2;n<=12;n++){
   }
  }
  findings.push({lesson:n,safe,blocked,bestUnresolvedLeakCount:best});
+ const adaptive=adaptiveGuardedBuildExam(cfg,bank,opts,{maxPrunes:18});
+ adaptiveFindings.push({lesson:n,ok:adaptive.ok,reason:adaptive.reason||null,bestUnresolvedLeakCount:adaptive.best??0,prunes:adaptive.prunes,attempts:adaptive.attempts});
 }
-const report={guardMode:"isolated-nonproduction-feasibility",attemptsPerPaper:4,samplesPerLesson:3,safeCount,findings};
+const report={guardMode:"isolated-nonproduction-feasibility",attemptsPerPaper:4,samplesPerLesson:3,safeCount,findings,adaptiveFindings};
 fs.mkdirSync(path.join(base,"qa-reports"),{recursive:true});
 fs.writeFileSync(path.join(base,"qa-reports","candidate-guard-feasibility.json"),JSON.stringify(report,null,2)+"\n");
 console.log("CANDIDATE_GUARD_FEASIBILITY",JSON.stringify(report));
