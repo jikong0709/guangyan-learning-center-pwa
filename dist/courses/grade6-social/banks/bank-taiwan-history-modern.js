@@ -46,4 +46,11 @@ fill:[
  [["一九七〇年代推動的重大基礎建設稱為（　）建設。","港口、鐵路與能源等計畫合稱（　）建設。"],"十大",["十大建設"],"十大建設加強交通、能源與重工業基礎。"],
  [["人口與產業向都市集中稱為都市（　）。","工業化常伴隨都市（　）增加。"],"化",["都市化"],"都市化描述都市人口比例與建成環境增加。"],
  [["把口述、檔案與報紙互相比較，叫交叉（　）。","多種近代史料需要交叉（　）。"],"查證",["比對"],"交叉查證可檢查不同來源的差異與限制。"]
-]});})();
+],
+metadata:{
+single:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"extend"},{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":4,"tag":"extend"},{"level":5,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":4,"tag":"extend"}],
+multi:[{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":4,"tag":"extend"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":5,"tag":"extend"}],
+tf:[{"level":1,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":5,"tag":"extend"},{"level":2,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":3,"tag":"extend"},{"level":2,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":4,"tag":"basic"}],
+fill:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":4,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"extend"},{"level":4,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"需區分事件年份、政治制度與經濟轉型，不能把長期變化簡化為單一事件。"},{"level":3,"tag":"extend"}]
+}
+});})();
