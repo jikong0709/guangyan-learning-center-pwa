@@ -84,6 +84,9 @@ jobs:
         with:
           name: grade6-chinese-leakage-diagnostic
           path: dist/courses/grade6-chinese-v2/qa-reports/leak-collision-diagnostic.json
+      - name: Candidate guard real-bank integration smoke
+        if: always()
+        run: node dist/courses/grade6-chinese-v2/verify-candidate-integration.js
       - name: Diagnose feasibility of opt-in candidate guard
         if: always()
         run: node dist/courses/grade6-chinese-v2/analyze-candidate-guard.js
