@@ -61,18 +61,22 @@ function adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes=18}={}){
   try{exam=engine.buildExam(opts);attempts++;}
   catch(e){return {ok:false,reason:"POOL_OR_PLAN_BLOCKED",prunes:excluded.size,attempts,best,example,message:e.message};}
   const hits=collisions(exam,bank);
-  const seenKeys=new Set();
+  const seenKeys=new Map(),duplicateSpecIds=[];
   let duplicatePoolKeys=0,ratioFailures=0;
   for(const sec of exam.sections||[]){
    for(const it of sec.items||[]){
     const sp=bank.byId(it.specId);
-    if(sp?.poolKey){if(seenKeys.has(sp.poolKey))duplicatePoolKeys++;seenKeys.add(sp.poolKey);}
+    if(sp?.poolKey){if(seenKeys.has(sp.poolKey)){duplicatePoolKeys++;duplicateSpecIds.push(it.specId);}else seenKeys.set(sp.poolKey,it.specId);}
    }
    const need={wrongchar:3,vocab:3,homophone:2,lessonmc:6}[sec.type];
    if(need&&(sec.items||[]).filter(it=>bank.byId(it.specId)?.lessonBased).length<need)ratioFailures++;
   }
   const scoreInvalid=exam.total!==config.score.total;
   if(!hits.length){
+   if(duplicatePoolKeys&&!ratioFailures&&!scoreInvalid){
+    const removable=duplicateSpecIds.map(id=>original.get(id)).find(sp=>sp&&sp.type!=="reading"&&!excluded.has(sp.id)&&sizes[sp.type]>((config.types.find(t=>t.key===sp.type)?.minCount||2)+1));
+    if(removable&&step<maxPrunes){excluded.add(removable.id);sizes[removable.type]--;if(removable.lessonBased)lessonBasedSizes[removable.type]--;continue;}
+   }
    if(duplicatePoolKeys||ratioFailures||scoreInvalid)return {ok:false,reason:"ORIGINAL_EXAM_CONSTRAINT_FAILED",prunes:excluded.size,attempts,best:0,example,duplicatePoolKeys,ratioFailures,scoreInvalid,sections:(exam.sections||[]).map(x=>({type:x.type,count:x.count,lessonBased:(x.items||[]).filter(it=>bank.byId(it.specId)?.lessonBased).length}))};
    return {ok:true,paper:exam,prunes:excluded.size,attempts};
   }
