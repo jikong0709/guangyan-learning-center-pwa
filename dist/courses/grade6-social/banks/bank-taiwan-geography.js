@@ -46,4 +46,11 @@ fill:[
  [["地圖上表示方向，常以（　）針或方位標示。","地圖的（　）針可指出北方。"],"指北",["指北針"],"指北針幫助使用者辨認地圖方向。"],
  [["地圖上相同高度各點連成的線稱為（　）線。","判讀山坡陡緩常查看（　）線。"],"等高",["等高線"],"等高線連接海拔相同的地點。"],
  [["臺灣位於歐亞板塊與（　）海板塊交界附近。","造成臺灣地殼活動頻繁的另一板塊是（　）海板塊。"],"菲律賓",["菲律賓海","菲律賓海板塊"],"臺灣位在歐亞板塊與菲律賓海板塊交界附近。"]
-]});})();
+],
+metadata:{
+single:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"extend"},{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":4,"tag":"extend"},{"level":5,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":4,"tag":"extend"}],
+multi:[{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":4,"tag":"extend"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":5,"tag":"extend"}],
+tf:[{"level":1,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":5,"tag":"extend"},{"level":2,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":3,"tag":"extend"},{"level":2,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":4,"tag":"basic"}],
+fill:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":4,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"extend"},{"level":4,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"避免把極端說法當成一般規律；應結合地形、降雨與地理位置判斷。"},{"level":3,"tag":"extend"}]
+}
+});})();
