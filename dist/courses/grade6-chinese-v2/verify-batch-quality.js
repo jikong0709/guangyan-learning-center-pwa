@@ -98,6 +98,15 @@ for(const [topic,letter] of [["kx-6a-04","汁"],["kx-6a-05","滋"]]){
  catch(e){if(!String(e.message).includes("CANDIDATE_LEAK_GUARD_BLOCKED"))errors.push("candidate guard wrong error");}
  if(guard.guardedBuildExam({buildExam:()=>safe},bank,{},1).paper!==safe)errors.push("candidate guard rejected safe paper");
 }
+/* Lesson02 and 10 regression: source text must not reveal answer in reading options. */
+for(const [topic,letter] of [["kx-6a-02","善"],["kx-6a-10","享"]]){
+ const spec=globalThis.ExamBank.specsOf(topic).find(s=>s.id===topic+"-reading-L1-01");
+ if(spec){
+  const q=spec.gen(globalThis.ExamKit);
+  const text=JSON.stringify(q);
+  if(text.includes(letter))errors.push(topic+" reading reveals "+letter);
+ }
+}
 /* Regression for confirmed cross-item answers in original reading sets. */
 for(const [topic,word] of [["kx-6a-02","珍惜資源不等於勉強留住不能使用的物品"],["kx-6a-05","家人團聚時出現"],["kx-6a-10","分享應重視對方的需要而非只是捐出數量"]]){
  const s=globalThis.ExamBank.specsOf(topic).find(x=>x.id===topic+"-reading-L1-01");
