@@ -46,4 +46,11 @@ fill:[
  [["地圖上說明符號意義的部分叫（　）。","要知道地圖符號代表什麼，應查看（　）。"],"圖例",[],"圖例解釋地圖所用的符號與顏色。"],
  [["圖上距離與實際距離的關係由（　）尺表示。","估算地圖距離要查看（　）尺。"],"比例",["比例尺"],"比例尺提供圖上與實際距離的換算關係。"],
  [["一定面積內平均人口數稱為人口（　）。","比較地區人口集中程度常用人口（　）。"],"密度",["人口密度"],"人口密度反映人口在土地上的集中程度。"]
-]});})();
+],
+metadata:{
+single:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"extend"},{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":4,"tag":"extend"},{"level":5,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":4,"tag":"extend"}],
+multi:[{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":4,"tag":"extend"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":5,"tag":"extend"}],
+tf:[{"level":1,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":5,"tag":"extend"},{"level":2,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":3,"tag":"extend"},{"level":2,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":4,"tag":"basic"}],
+fill:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":4,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"extend"},{"level":4,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"地理概念需依緯度、經度、海拔與區域位置判斷，不能以單一條件推論所有地方。"},{"level":3,"tag":"extend"}]
+}
+});})();
