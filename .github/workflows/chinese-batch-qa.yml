@@ -93,6 +93,9 @@ jobs:
         with:
           name: grade6-chinese-poolkey-capacity
           path: dist/courses/grade6-chinese-v2/qa-reports/poolkey-capacity.json
+      - name: Lesson 06 repeated candidate safety gate
+        if: always()
+        run: node dist/courses/grade6-chinese-v2/verify-lesson06-candidate-batch.js
       - name: Candidate guard real-bank integration smoke
         if: always()
         run: node dist/courses/grade6-chinese-v2/verify-candidate-integration.js
