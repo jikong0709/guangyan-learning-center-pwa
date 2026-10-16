@@ -73,7 +73,7 @@ function adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes=18}={}){
   }
   const scoreInvalid=exam.total!==config.score.total;
   if(!hits.length){
-   if(duplicatePoolKeys||ratioFailures||scoreInvalid)return {ok:false,reason:"ORIGINAL_EXAM_CONSTRAINT_FAILED",prunes:excluded.size,attempts,duplicatePoolKeys,ratioFailures,scoreInvalid};
+   if(duplicatePoolKeys||ratioFailures||scoreInvalid)return {ok:false,reason:"ORIGINAL_EXAM_CONSTRAINT_FAILED",prunes:excluded.size,attempts,best:0,example,duplicatePoolKeys,ratioFailures,scoreInvalid,sections:(exam.sections||[]).map(x=>({type:x.type,count:x.count,lessonBased:(x.items||[]).filter(it=>bank.byId(it.specId)?.lessonBased).length}))};
    return {ok:true,paper:exam,prunes:excluded.size,attempts};
   }
   if(hits.length<best){best=hits.length;example=hits[0];}
