@@ -84,6 +84,15 @@ jobs:
         with:
           name: grade6-chinese-leakage-diagnostic
           path: dist/courses/grade6-chinese-v2/qa-reports/leak-collision-diagnostic.json
+      - name: Audit lesson 06 and batch unique-key capacity
+        if: always()
+        run: node dist/courses/grade6-chinese-v2/diagnose-poolkey-capacity.js
+      - name: Retain unique-key capacity diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grade6-chinese-poolkey-capacity
+          path: dist/courses/grade6-chinese-v2/qa-reports/poolkey-capacity.json
       - name: Candidate guard real-bank integration smoke
         if: always()
         run: node dist/courses/grade6-chinese-v2/verify-candidate-integration.js
