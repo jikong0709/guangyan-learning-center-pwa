@@ -48,6 +48,7 @@ fill:[
  [["權利行使若影響別人，應同時承擔相應（　）。","享有自由也要負起（　）。"],"責任",["義務"],"權利與責任相互配合，才能維持共同生活秩序。"]
 ],
 metadata:{
+multi:[{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"基本自由仍有法律界線，不能把自由理解為可侵害他人。"},{"level":3,"tag":"trap","trapNote":"個人資料與影像分享要顧及隱私、同意及安全。"},{"level":4,"tag":"extend"},{"level":3,"tag":"trap","trapNote":"網路內容仍有著作權與隱私限制，不能因為公開可見就任意使用。"},{"level":4,"tag":"extend"}],
 single:[{level:2,tag:"basic"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:3,tag:"extend"},{level:1,tag:"basic"},{level:3,tag:"extend"},{level:3,tag:"trap",trapNote:"網路可取得不代表可以任意使用；應確認授權並標示來源。"},{level:4,tag:"extend"},{level:3,tag:"extend"},{level:3,tag:"extend"}],
 tf:[{level:2,tag:"trap",trapNote:"言論自由不代表可任意誹謗、威脅或侵害他人權利。"},{level:3,tag:"trap",trapNote:"隱私權是保護個人資訊，不是允許公開他人資料。"},{level:4,tag:"extend"},{level:1,tag:"basic"},{level:3,tag:"extend"},{level:2,tag:"basic"},{level:1,tag:"basic"},{level:3,tag:"trap",trapNote:"匿名不等於免除法律責任。"},{level:3,tag:"trap",trapNote:"公開他人影像可能影響隱私與安全，應審慎處理。"},{level:3,tag:"extend"},{level:3,tag:"extend"},{level:5,tag:"extend"}],
 fill:[{level:1,tag:"basic"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:3,tag:"extend"},{level:2,tag:"basic"},{level:2,tag:"basic"},{level:3,tag:"extend"},{level:3,tag:"trap",trapNote:"有權利仍需承擔相應責任，不能把權利理解成完全不受限制。"}]
