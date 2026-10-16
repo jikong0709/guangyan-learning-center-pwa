@@ -46,4 +46,11 @@ fill:[
  [["十九世紀臺灣重要外銷品包含茶、糖與（　）。","樟樹的枝葉與木材可提煉出（　）。"],"樟腦",[],"樟腦是十九世紀臺灣重要出口品。"],
  [["事件發生當時形成的資料，常稱為（　）手史料。","當時留下的契約屬（　）手史料。"],"第一",["第一手","第一手史料"],"第一手史料在研究事件時具有直接性。"],
  [["把不同來源的資料互相比較，稱為交叉（　）。","歷史研究應透過交叉（　）檢查史料。"],"查證",["比對"],"交叉查證可發現差異並提升判斷可靠度。"]
-]});})();
+],
+metadata:{
+single:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"extend"},{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":4,"tag":"extend"},{"level":5,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":4,"tag":"extend"}],
+multi:[{"level":2,"tag":"basic"},{"level":3,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":4,"tag":"extend"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":5,"tag":"extend"}],
+tf:[{"level":1,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":3,"tag":"basic"},{"level":3,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":5,"tag":"extend"},{"level":2,"tag":"basic"},{"level":4,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":3,"tag":"extend"},{"level":2,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":4,"tag":"basic"}],
+fill:[{"level":1,"tag":"basic"},{"level":2,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":4,"tag":"basic"},{"level":3,"tag":"basic"},{"level":2,"tag":"extend"},{"level":4,"tag":"basic"},{"level":5,"tag":"trap","trapNote":"歷史敘述要注意時間、勢力與史料來源，避免把不同時期混為一談。"},{"level":3,"tag":"extend"}]
+}
+});})();
