@@ -24,7 +24,7 @@ for(let n=2;n<=12;n++){
   }
  }
  findings.push({lesson:n,safe,blocked,bestUnresolvedLeakCount:best});
- const adaptive=adaptiveGuardedBuildExam(cfg,bank,opts,{maxPrunes:18});
+ const adaptive=adaptiveGuardedBuildExam(cfg,bank,opts,{maxPrunes:36});
  adaptiveFindings.push({lesson:n,ok:adaptive.ok,reason:adaptive.reason||null,bestUnresolvedLeakCount:adaptive.best??0,prunes:adaptive.prunes,attempts:adaptive.attempts});
 }
 const report={guardMode:"isolated-nonproduction-feasibility",attemptsPerPaper:4,samplesPerLesson:3,safeCount,findings,adaptiveFindings};
