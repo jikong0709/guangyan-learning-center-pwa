@@ -9,7 +9,7 @@ for(const rel of ["exam-engine/kit.js","exam-engine/engine.js","courses/grade6-c
 for(let n=1;n<=12;n++){let num=String(n).padStart(2,"0");load("courses/grade6-chinese-v2/banks/bank-kx-6a-"+num+".js");if(n>1)load("courses/grade6-chinese-v2/banks/bank-kx-6a-"+num+"-skills.js");}
 const {adaptiveGuardedBuildExam,collisions}=require("./candidate-cross-item-guard");
 const bank=globalThis.ExamBank,config=globalThis.ExamConfig;
-let passed=0,blocked=0;const evidence=[];const samplesPerLesson=8;
+let passed=0,blocked=0;const evidence=[];const samplesPerLesson=40;
 for(let n=2;n<=12;n++){
  const unit=config.versions.kanghsuan.units.find(u=>u.unitId==="六上-"+n);
  assert.ok(unit,"lesson unit exists");
