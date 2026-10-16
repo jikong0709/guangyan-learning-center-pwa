@@ -40,4 +40,42 @@ function guardedBuildExam(engine,bank,opts,attempts=16){
  const err=new Error("CANDIDATE_LEAK_GUARD_BLOCKED: no safe paper within "+attempts+" attempts; best="+best);
  err.best=best;err.example=example;throw err;
 }
-module.exports={collisions,guardedBuildExam};
+
+/* Isolated experiment: prune high-conflict specs without touching the
+ * shared engine, score plan, fixed lesson, or original leakage verifier.
+ * This is intentionally fail closed and not wired to the student UI.
+ */
+function adaptiveGuardedBuildExam(config,bank,opts,{maxPrunes=18}={}){
+ const excluded=new Set(),topics=(opts.units||[]).flatMap(u=>u.topics||[]);
+ const original=new Map(topics.flatMap(t=>bank.specsOf(t)).map(s=>[s.id,s]));
+ const sizes={};for(const s of original.values())sizes[s.type]=(sizes[s.type]||0)+1;
+ const proxy={
+  specsOf:t=>bank.specsOf(t).filter(s=>!excluded.has(s.id)),
+  byId:id=>bank.byId(id),
+  topics:()=>bank.topics()
+ };
+ const engine=globalThis.ExamEngine.create(config,proxy);
+ let best=Infinity,example=null,attempts=0;
+ for(let step=0;step<=maxPrunes;step++){
+  let exam;
+  try{exam=engine.buildExam(opts);attempts++;}
+  catch(e){return {ok:false,reason:"POOL_OR_PLAN_BLOCKED",prunes:excluded.size,attempts,best,example,message:e.message};}
+  const hits=collisions(exam,bank);
+  if(!hits.length)return {ok:true,paper:exam,prunes:excluded.size,attempts};
+  if(hits.length<best){best=hits.length;example=hits[0];}
+  const degrees=new Map();
+  for(const h of hits){degrees.set(h.source,(degrees.get(h.source)||0)+1);degrees.set(h.target,(degrees.get(h.target)||0)+1);}
+  const candidates=[...degrees].filter(([id])=>{
+   const sp=original.get(id);if(!sp||excluded.has(id)||sp.type==="reading")return false;
+   const t=config.types.find(x=>x.key===sp.type);
+   const min=Math.max(2,Math.min(t?.stdCount||2,t?.maxCount||2));
+   return (sizes[sp.type]-1)>min;
+  });
+  if(!candidates.length)return {ok:false,reason:"NO_SAFE_PRUNE",prunes:excluded.size,attempts,best,example};
+  candidates.sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  const victim=candidates[0][0];excluded.add(victim);sizes[original.get(victim).type]--;
+ }
+ return {ok:false,reason:"PRUNE_BUDGET_EXHAUSTED",prunes:excluded.size,attempts,best,example};
+}
+
+module.exports={collisions,guardedBuildExam,adaptiveGuardedBuildExam};
