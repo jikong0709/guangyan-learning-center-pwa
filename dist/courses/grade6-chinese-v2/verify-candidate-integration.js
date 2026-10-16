@@ -24,7 +24,7 @@ for(let n=2;n<=12;n++){
   assert.ok(["ORIGINAL_EXAM_CONSTRAINT_FAILED","NO_SAFE_PRUNE","PRUNE_BUDGET_EXHAUSTED","POOL_OR_PLAN_BLOCKED"].includes(result.reason),"known fail-closed reason");
   blocked++;
  }
- evidence.push({lesson:n,ok:result.ok,reason:result.reason||null,prunes:result.prunes,attempts:result.attempts,best:result.best??0});
+ evidence.push({lesson:n,ok:result.ok,reason:result.reason||null,prunes:result.prunes,attempts:result.attempts,best:result.best??0,duplicatePoolKeys:result.duplicatePoolKeys||0,ratioFailures:result.ratioFailures||0,scoreInvalid:!!result.scoreInvalid,sections:result.sections||null,example:result.example||null});
 }
 assert.equal(passed+blocked,11,"all eleven lessons checked");
 console.log("CANDIDATE_INTEGRATION_PASS",JSON.stringify({passed,blocked,evidence}));
