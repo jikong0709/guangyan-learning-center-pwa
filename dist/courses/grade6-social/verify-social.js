@@ -67,7 +67,23 @@ for (const topic of cfg.allTopics) {
   check(trapCount >= 10, topic + " trap 標籤不足：" + trapCount + "/10");
   check(extendCount >= 8, topic + " extend 標籤不足：" + extendCount + "/8");
   check(trapTypes.size >= 3, topic + " trap 只分布於 " + trapTypes.size + " 種題型（需至少 3 種）");
+  const rawBankPath = path.join(bankDir, "bank-" + topic + ".js");
+  const rawBankText = fs.readFileSync(rawBankPath, "utf8");
+  const metadataCounts = {};
+  for (const type of ["single", "multi", "tf", "fill"]) {
+    const matches = rawBankText.match(new RegExp("\\b" + type + "\\s*:\\s*\\[", "g")) || [];
+    check(matches.length >= 1, topic + " 缺少 " + type + " 題型資料");
+    const metadataMatch = rawBankText.match(new RegExp(type + "\\s*:\\s*\\[([\\s\\S]*?)\\](?=\\s*,?\\s*(?:single|multi|tf|fill|metadata)\\s*:|\\s*}\\s*\\)\\s*;)", "m"));
+    if (metadataMatch) {
+      const declaredCount = (metadataMatch[1].match(/\\{\\s*level\\s*:/g) || []).length;
+      const actualCount = topicSpecs.filter(s => s.type === type).length;
+      check(declaredCount === actualCount, topic + " " + type + " metadata 數量與題目數不符：" + declaredCount + "/" + actualCount);
+    }
+  }
   for (const s of topicSpecs) {
+    check(Number.isInteger(s.level) && s.level >= 1 && s.level <= 5, topic + " 難度標籤無效：" + s.id + " level=" + s.level);
+    check(["basic", "trap", "extend"].includes(s.tag), topic + " 分類標籤無效：" + s.id + " tag=" + s.tag);
+    check(typeof s.factKey === "string" && s.factKey.trim().length > 0, topic + " 缺少答案／解析依據欄位：" + s.id);
     check(!allIds.has(s.id), "spec id 重複：" + s.id);
     allIds.add(s.id);
     check(["tf", "single", "fill", "multi"].includes(s.type), "不支援題型：" + s.id + " " + s.type);
@@ -81,7 +97,16 @@ for (const topic of cfg.allTopics) {
         check(Array.isArray(q.options) && new Set(q.options).size === q.options.length, s.id + " 單選選項重複");
         check(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length, s.id + " 單選答案索引無效");
       } else if (s.type === "tf") check(typeof q.answer === "boolean", s.id + " 是非題答案不是布林值");
-      else if (s.type === "fill") check(typeof q.answer === "string" && q.answer.trim().length > 0, s.id + " 填空答案為空");
+      else if (s.type === "multi") {
+        check(Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5, s.id + " 複選題選項數應為 4～5 個");
+        check(Array.isArray(q.options) && new Set(q.options).size === q.options.length, s.id + " 複選題選項重複");
+        check(Array.isArray(q.answer) && q.answer.length >= 2 && q.answer.length <= 3, s.id + " 複選題正確答案數應為 2～3 個");
+        check(Array.isArray(q.answer) && q.answer.every(i => Number.isInteger(i) && i >= 0 && i < q.options.length), s.id + " 複選題答案索引無效");
+        check(Array.isArray(q.answer) && new Set(q.answer).size === q.answer.length, s.id + " 複選題答案索引重複");
+      } else if (s.type === "fill") {
+        check(typeof q.answer === "string" && q.answer.trim().length > 0, s.id + " 填空答案為空");
+        check(Array.isArray(q.accepted) && q.accepted.every(a => typeof a === "string" && a.trim().length > 0), s.id + " 填空接受答案格式無效");
+      }
       if (s.tag === "trap") check(typeof q.trapNote === "string" && q.trapNote.trim().length > 0, s.id + " 易錯題缺 trapNote");
     }
   }
