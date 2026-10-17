@@ -1,0 +1,33 @@
+name: Validate Social Course
+
+on:
+  push:
+    branches:
+      - feat/kanghsuan-grade6-social-learning
+    paths:
+      - "dist/courses/grade6-social/**"
+      - ".github/workflows/validate-social-course.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "dist/courses/grade6-social/**"
+      - ".github/workflows/validate-social-course.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-social-course:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run social course quality gate
+        run: node dist/courses/grade6-social/verify-social.js
