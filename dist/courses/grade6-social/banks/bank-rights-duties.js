@@ -74,7 +74,7 @@ metadata:{
       "level": 3,
       "tag": "trap",
       "trapNote": "網路內容仍有著作權與隱私限制，不能因為公開可見就任意使用。",
-      "sourceLabel": "全國法規資料庫：著作權法、個人資料保護法",
+      "sourceLabel": "全國法規資料庫：著作權法",
       "sourceUrl": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=J0070017"
     },
     {
