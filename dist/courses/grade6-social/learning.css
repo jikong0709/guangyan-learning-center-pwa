@@ -37,3 +37,13 @@
 .social-learning .sl-review-answer strong,.social-learning .sl-review-why strong,.social-learning .sl-example strong,.social-learning .sl-recap strong{display:block}
 .social-learning .sl-review-why{background:#f5f7f2;border-left:4px solid #91a87e}
 @media(max-width:600px){.social-learning .sl-key-term{grid-template-columns:1fr;gap:.25rem}}
+
+/* 第一單元歷史時間軸與官方來源 */
+.social-learning .sl-timeline ol{list-style:none;padding:0;margin:1rem 0 0;display:grid;gap:.85rem}
+.social-learning .sl-timeline-item{display:grid;grid-template-columns:6.5rem minmax(0,1fr);gap:.85rem;align-items:start;padding:.9rem 1rem;border:1px solid #eadde5;border-radius:14px;background:#fff}
+.social-learning .sl-timeline-year{font-weight:800;color:#75435f;white-space:nowrap}
+.social-learning .sl-timeline-item strong{display:block}
+.social-learning .sl-timeline-item p{margin:.3rem 0 0;line-height:1.8}
+.social-learning .sl-sources ul{padding-left:1.25rem;line-height:2}
+.social-learning .sl-sources a{overflow-wrap:anywhere}
+@media(max-width:600px){.social-learning .sl-timeline-item{grid-template-columns:1fr;gap:.3rem}}
