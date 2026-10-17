@@ -33,6 +33,8 @@ for (const u of (ver ? ver.units : [])) {
   check(!!data.units[u.unitId], "缺少單元學習內容：" + u.unitId);
   for (const topic of u.topics) check(cfg.allTopics.includes(topic), "單元引用未知 topic：" + u.unitId + " → " + topic);
 }
+const auditIssues = globalThis.SocialBankAudit || [];
+auditIssues.forEach(issue => check(false, issue));
 const specsByTopic = {};
 for (const topic of cfg.allTopics) specsByTopic[topic] = ExamBank.specsOf(topic);
 function unitSpecs(unit) {
@@ -67,19 +69,6 @@ for (const topic of cfg.allTopics) {
   check(trapCount >= 10, topic + " trap 標籤不足：" + trapCount + "/10");
   check(extendCount >= 8, topic + " extend 標籤不足：" + extendCount + "/8");
   check(trapTypes.size >= 3, topic + " trap 只分布於 " + trapTypes.size + " 種題型（需至少 3 種）");
-  const rawBankPath = path.join(bankDir, "bank-" + topic + ".js");
-  const rawBankText = fs.readFileSync(rawBankPath, "utf8");
-  const metadataCounts = {};
-  for (const type of ["single", "multi", "tf", "fill"]) {
-    const matches = rawBankText.match(new RegExp("\\b" + type + "\\s*:\\s*\\[", "g")) || [];
-    check(matches.length >= 1, topic + " 缺少 " + type + " 題型資料");
-    const metadataMatch = rawBankText.match(new RegExp(type + "\\s*:\\s*\\[([\\s\\S]*?)\\](?=\\s*,?\\s*(?:single|multi|tf|fill|metadata)\\s*:|\\s*}\\s*\\)\\s*;)", "m"));
-    if (metadataMatch) {
-      const declaredCount = (metadataMatch[1].match(/\\{\\s*level\\s*:/g) || []).length;
-      const actualCount = topicSpecs.filter(s => s.type === type).length;
-      check(declaredCount === actualCount, topic + " " + type + " metadata 數量與題目數不符：" + declaredCount + "/" + actualCount);
-    }
-  }
   for (const s of topicSpecs) {
     check(Number.isInteger(s.level) && s.level >= 1 && s.level <= 5, topic + " 難度標籤無效：" + s.id + " level=" + s.level);
     check(["basic", "trap", "extend"].includes(s.tag), topic + " 分類標籤無效：" + s.id + " tag=" + s.tag);
