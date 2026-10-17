@@ -22,3 +22,18 @@
 .social-learning .sl-progress{display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0}
 .social-learning .sl-progress span{border:1px solid #eadfe8;border-radius:999px;padding:.35rem .7rem;font-size:.88rem}
 @media(max-width:600px){.social-learning .sl-unit-grid{grid-template-columns:1fr}.social-learning .sl-actions .sl-btn{flex:1 1 100%;width:100%}}
+
+/* 詳細自學內容與複習答案 */
+.social-learning .sl-lesson-card{scroll-margin-top:1rem}
+.social-learning .sl-lesson-intro{font-size:1rem;line-height:1.95;margin:.25rem 0 1rem}
+.social-learning .sl-key-terms{display:grid;gap:.65rem;margin:.5rem 0 1rem}
+.social-learning .sl-key-term{display:grid;grid-template-columns:minmax(7rem, .32fr) 1fr;gap:.75rem;padding:.75rem;background:#fbf7fa;border-radius:12px}
+.social-learning .sl-key-term dt{font-weight:800;color:#75435f}
+.social-learning .sl-key-term dd{margin:0;line-height:1.8}
+.social-learning .sl-example,.social-learning .sl-recap,.social-learning .sl-review-answer,.social-learning .sl-review-why{padding:.8rem 1rem;margin:.75rem 0 0;border-radius:12px;background:#f8f4f7}
+.social-learning .sl-example{border-left:4px solid #8aa7c4;background:#f3f7fb}
+.social-learning .sl-recap{border-left:4px solid #9a5d7c;background:#fbf3f7}
+.social-learning .sl-example p,.social-learning .sl-recap p,.social-learning .sl-review-answer p,.social-learning .sl-review-why p{margin:.25rem 0 0}
+.social-learning .sl-review-answer strong,.social-learning .sl-review-why strong,.social-learning .sl-example strong,.social-learning .sl-recap strong{display:block}
+.social-learning .sl-review-why{background:#f5f7f2;border-left:4px solid #91a87e}
+@media(max-width:600px){.social-learning .sl-key-term{grid-template-columns:1fr;gap:.25rem}}
