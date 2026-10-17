@@ -10,18 +10,20 @@
     if (kind === "single") return kit.pick([base, "想一想，" + base]);
     return base;
   }
-  /* 未經逐題審核前，不可依陣列位置把題目任意標成陷阱／延伸或虛構難度。
-     完成題目審核後，可在該 topic 資料加入 metadata: { single:[{level:1,tag:"basic"}, ...] }。 */
+  /* 難度／basic、trap、extend 必須逐題審核後才生效。
+     未標記 reviewed:true 的舊 metadata 僅保留來源覆寫，教學標籤採保守預設 level 2 / basic。
+     單題完成審核後，才可在該題 metadata 加 reviewed:true 並指定 level、tag、必要的 trapNote。 */
   function meta(topic, type, i, data) {
     const list = data.metadata && data.metadata[type];
     const declared = list && list[i] && typeof list[i] === "object" ? list[i] : null;
-    const level = declared && Number.isInteger(declared.level) && declared.level >= 1 && declared.level <= 5 ? declared.level : 2;
-    const tag = declared && ["basic", "trap", "extend"].includes(declared.tag) ? declared.tag : "basic";
+    const reviewed = !!(declared && declared.reviewed === true);
+    const level = reviewed && Number.isInteger(declared.level) && declared.level >= 1 && declared.level <= 5 ? declared.level : 2;
+    const tag = reviewed && ["basic", "trap", "extend"].includes(declared.tag) ? declared.tag : "basic";
     const topicSource = global.ExamConfig && global.ExamConfig.factSources && global.ExamConfig.factSources[topic] || {};
     return {
       level: level,
       tag: tag,
-      trapNote: declared && typeof declared.trapNote === "string" ? declared.trapNote : "",
+      trapNote: reviewed && typeof declared.trapNote === "string" ? declared.trapNote : "",
       sourceUrl: declared && typeof declared.sourceUrl === "string" ? declared.sourceUrl : (topicSource.url || ""),
       sourceLabel: declared && typeof declared.sourceLabel === "string" ? declared.sourceLabel : (topicSource.name || "")
     };
