@@ -129,10 +129,18 @@
       step = "review";
       const d = unitData(selectedId), unit = ver.units.find(function (u) { return u.unitId === selectedId; });
       const items = d.review.map(function (item, i) {
-        return el("details", { className: "sl-review" }, [
+        const children = [
           el("summary", { text: "自我檢核 " + (i + 1) + "｜" + item.q }),
-          el("p", { text: item.a })
-        ]);
+          el("div", { className: "sl-review-answer" }, [
+            el("strong", { text: "參考答案" }),
+            el("p", { text: item.a })
+          ])
+        ];
+        if (item.why) children.push(el("div", { className: "sl-review-why" }, [
+          el("strong", { text: "為什麼？" }),
+          el("p", { text: item.why })
+        ]));
+        return el("details", { className: "sl-review" }, children);
       });
       mount(el("div", { className: "social-learning" }, [
         header("重點複習", unit.title, "先試著自己回答，再展開查看參考答案。"),
