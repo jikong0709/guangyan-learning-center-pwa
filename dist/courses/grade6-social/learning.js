@@ -109,10 +109,33 @@
         el("p", { text: "完成本單元後，試著確認自己能做到以下幾件事：" }),
         el("ul", { className: "sl-points" }, (d.goals || []).map(function (goal) { return el("li", { text: goal }); }))
       ]);
+      const timeline = d.timeline && d.timeline.length ? el("section", { className: "sl-card sl-timeline" }, [
+        el("h2", { text: "🗓️ 歷史時間軸" }),
+        el("p", { text: "先掌握事件的先後，再理解每個事件如何改變制度與人民參與的機會。" }),
+        el("ol", {}, d.timeline.map(function (item) {
+          return el("li", { className: "sl-timeline-item" }, [
+            el("span", { className: "sl-timeline-year", text: item.year }),
+            el("div", {}, [
+              el("strong", { text: item.title }),
+              el("p", { text: item.detail })
+            ])
+          ]);
+        }))
+      ]) : null;
+      const sources = d.sources && d.sources.length ? el("section", { className: "sl-card sl-sources" }, [
+        el("h2", { text: "🔎 延伸查證資料" }),
+        el("p", { text: "歷史事件與制度資訊可由以下官方資料交叉確認。" }),
+        el("ul", {}, d.sources.map(function (source) {
+          return el("li", {}, [
+            el("a", { href: source.url, target: "_blank", rel: "noopener noreferrer" }, [source.label])
+          ]);
+        }))
+      ]) : null;
       mount(el("div", { className: "social-learning" }, [
         header("完整學習內容", unit.title, d.summary),
         el("div", { className: "sl-progress" }, [el("span", { text: "① 學習內容・目前" }), el("span", { text: "② 單元複習" }), el("span", { text: "③ 單元測驗" })]),
         goals,
+        timeline,
         ...sections,
         el("section", { className: "sl-card" }, [
           el("h2", { text: "📌 全單元重點整理" }),
@@ -122,6 +145,7 @@
             button("進入單元複習 →", renderReview, true)
           ])
         ]),
+        sources,
         el("p", { className: "sl-note", text: "教材為原創自學內容，依公開課程計畫整理；出版社實際課本目錄與逐課範圍仍待核對。涉及具體史實或制度細節的正式題目須另行查證。" })
       ]));
     }
