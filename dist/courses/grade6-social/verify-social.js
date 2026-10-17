@@ -49,6 +49,7 @@ check(counts.tf >= 10, "第一單元是非題 spec 不足：" + counts.tf + "/10
 check(counts.single >= 20, "第一單元單選題 spec 不足：" + counts.single + "/20");
 check(counts.fill >= 5, "第一單元填空題 spec 不足：" + counts.fill + "/5");
 const allIds = new Set();
+const sourceCoverage = { item: 0, topic: 0 };
 for (const topic of cfg.allTopics) {
   const topicSpecs = specsByTopic[topic];
   const perType = { single: [], multi: [], tf: [], fill: [] };
@@ -66,6 +67,8 @@ for (const topic of cfg.allTopics) {
     check(typeof s.factKey === "string" && s.factKey.trim().length > 0, topic + " 缺少答案／解析依據欄位：" + s.id);
     check(typeof s.sourceUrl === "string" && (s.sourceUrl.startsWith("https://") || s.sourceUrl.startsWith("http://")), topic + " 缺少有效來源 URL：" + s.id);
     check(typeof s.sourceLabel === "string" && s.sourceLabel.trim().length > 0, topic + " 缺少來源標籤：" + s.id);
+    check(["item", "topic"].includes(s.sourceScope), topic + " 來源層級欄位無效：" + s.id);
+    if (sourceCoverage[s.sourceScope] !== undefined) sourceCoverage[s.sourceScope]++;
     check(!allIds.has(s.id), "spec id 重複：" + s.id);
     allIds.add(s.id);
     check(["tf", "single", "fill", "multi"].includes(s.type), "不支援題型：" + s.id + " " + s.type);
@@ -126,6 +129,7 @@ try {
   check(exam.items.reduce((n, it) => n + it.points, 0) === 100, "實際題目配分合計不是 100");
 } catch (e) { check(false, "實際組卷丟錯：" + e.stack); }
 console.log("第一單元題庫量：", JSON.stringify(counts));
+console.log("來源追溯層級（item=題目個別來源，topic=沿用主題來源；不代表已完成內容查核）：", JSON.stringify(sourceCoverage));
 console.log("組卷實測：", exam ? JSON.stringify({ count: exam.items.length, total: exam.total, types: exam.items.reduce((a, it) => (a[it.type] = (a[it.type] || 0) + 1, a), {}) }) : "FAIL");
 issues.slice(0, 100).forEach(x => console.log("FAIL", x));
 if (issues.length > 100) console.log("…另有 " + (issues.length - 100) + " 項失敗");
