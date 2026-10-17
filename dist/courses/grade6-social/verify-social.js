@@ -73,7 +73,7 @@ for (const topic of cfg.allTopics) {
     check(Number.isInteger(s.level) && s.level >= 1 && s.level <= 5, topic + " 難度標籤無效：" + s.id + " level=" + s.level);
     check(["basic", "trap", "extend"].includes(s.tag), topic + " 分類標籤無效：" + s.id + " tag=" + s.tag);
     check(typeof s.factKey === "string" && s.factKey.trim().length > 0, topic + " 缺少答案／解析依據欄位：" + s.id);
-    check(typeof s.sourceUrl === "string" && /^https?:\\/\\//.test(s.sourceUrl), topic + " 缺少有效來源 URL：" + s.id);
+    check(typeof s.sourceUrl === "string" && (s.sourceUrl.startsWith("https://") || s.sourceUrl.startsWith("http://")), topic + " 缺少有效來源 URL：" + s.id);
     check(typeof s.sourceLabel === "string" && s.sourceLabel.trim().length > 0, topic + " 缺少來源標籤：" + s.id);
     check(!allIds.has(s.id), "spec id 重複：" + s.id);
     allIds.add(s.id);
