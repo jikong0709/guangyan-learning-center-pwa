@@ -10,20 +10,56 @@
     if (kind === "single") return kit.pick([base, "想一想，" + base]);
     return base;
   }
-  function meta(type, i) {
-    const level = i % 5 + 1; let tag = "basic";
-    if ((type === "single" && i < 4) || (type === "multi" && i < 2) || (type === "tf" && i < 3) || (type === "fill" && i < 2)) tag = "trap";
-    else if ((type === "single" && i < 7) || (type === "multi" && i < 4) || (type === "tf" && i < 5) || (type === "fill" && i < 3)) tag = "extend";
-    return { level: level, tag: tag };
+  /* 難度／basic、trap、extend 必須逐題審核後才生效。
+     未標記 reviewed:true 的舊 metadata 僅保留來源覆寫，教學標籤採保守預設 level 2 / basic。
+     單題完成審核後，才可在該題 metadata 加 reviewed:true 並指定 level、tag、必要的 trapNote。 */
+  function meta(topic, type, i, data) {
+    const list = data.metadata && data.metadata[type];
+    const declared = list && list[i] && typeof list[i] === "object" ? list[i] : null;
+    const reviewed = !!(declared && declared.reviewed === true);
+    const level = reviewed && Number.isInteger(declared.level) && declared.level >= 1 && declared.level <= 5 ? declared.level : 2;
+    const tag = reviewed && ["basic", "trap", "extend"].includes(declared.tag) ? declared.tag : "basic";
+    const topicSource = global.ExamConfig && global.ExamConfig.factSources && global.ExamConfig.factSources[topic] || {};
+    return {
+      level: level,
+      tag: tag,
+      trapNote: reviewed && typeof declared.trapNote === "string" ? declared.trapNote : "",
+      sourceUrl: declared && typeof declared.sourceUrl === "string" ? declared.sourceUrl : (topicSource.url || ""),
+      sourceLabel: declared && typeof declared.sourceLabel === "string" ? declared.sourceLabel : (topicSource.name || ""),
+      sourceScope: declared && typeof declared.sourceUrl === "string" && declared.sourceUrl.trim() ? "item" : "topic"
+    };
   }
   function trapNote(answer) { return "常見錯誤是只憑印象作答；應回到題目的關鍵線索，確認正確答案是「" + answer + "」。"; }
   function id(topic, type, level, i) { return topic + "-" + type + "-L" + level + "-" + String(i + 1).padStart(2, "0"); }
   function register(topic, data) {
     const specs = [];
-    (data.single || []).forEach(function (r, i) { const m = meta("single", i); specs.push({ id: id(topic,"single",m.level,i), type:"single", level:m.level, tag:m.tag, factKey:r[3], gen:function(kit){ const correct=String(r[1]); const wrongs=kit.shuffle(r[2].map(String)).filter(function(x){return x!==correct;}).slice(0,3); const c=kit.choices(correct,wrongs); return {stem:stem(kit,r[0],"single"),options:c.options,answer:c.answer,explain:r[3],trapNote:m.tag==="trap"?(r[4]||trapNote(correct)):undefined}; }}); });
-    (data.multi || []).forEach(function (r, i) { const m = meta("multi", i); specs.push({ id:id(topic,"multi",m.level,i), type:"multi", level:m.level, tag:m.tag, factKey:r[3], gen:function(kit){ const pool=kit.shuffle(r[1].map(String)); const n=pool.length>2&&Math.random()<0.4?3:2; const correct=pool.slice(0,n); const wrong=kit.shuffle(r[2].map(String)).filter(function(x){return correct.indexOf(x)<0;}).slice(0,Math.min(2,5-correct.length)); return {stem:stem(kit,r[0],"multi").replace(/[。？]?$/,"")+"，選出所有正確的（複選）。",options:correct.concat(wrong),answer:correct.map(function(_,j){return j;}),explain:r[3],trapNote:m.tag==="trap"?(r[4]||trapNote(correct.join("、"))):undefined}; }}); });
-    (data.tf || []).forEach(function (r, i) { const m=meta("tf",i); specs.push({id:id(topic,"tf",m.level,i),type:"tf",level:m.level,tag:m.tag,factKey:r[2],gen:function(kit){const truth=Math.random()<0.5;return {stem:truth?stem(kit,r[0],"tf"):stem(kit,r[1],"tf"),answer:truth,explain:r[2],trapNote:m.tag==="trap"?(r[3]||trapNote(truth?"正確":"錯誤")):undefined};}}); });
-    (data.fill || []).forEach(function (r, i) { const m=meta("fill",i); specs.push({id:id(topic,"fill",m.level,i),type:"fill",level:m.level,tag:m.tag,factKey:r[3],gen:function(kit){const answer=String(r[1]);return {stem:stem(kit,r[0],"fill"),answer:answer,accepted:(r[2]||[]).map(String),explain:r[3],trapNote:m.tag==="trap"?(r[4]||trapNote(answer)):undefined};}}); });
+    global.SocialBankAudit = global.SocialBankAudit || [];
+    ["single", "multi", "tf", "fill"].forEach(function (type) {
+      const rows = data[type] || [];
+      const declared = data.metadata && data.metadata[type];
+      if (!Array.isArray(declared) || declared.length !== rows.length) {
+        global.SocialBankAudit.push(topic + " metadata " + type + " 數量不符：" + (Array.isArray(declared) ? declared.length : 0) + "/" + rows.length);
+      }
+      rows.forEach(function (row, index) {
+        const m = Array.isArray(declared) ? declared[index] : null;
+        if (!m || !Number.isInteger(m.level) || m.level < 1 || m.level > 5) {
+          global.SocialBankAudit.push(topic + " " + type + " 第 " + (index + 1) + " 題缺少有效 level metadata");
+        }
+        if (!m || !["basic", "trap", "extend"].includes(m.tag)) {
+          global.SocialBankAudit.push(topic + " " + type + " 第 " + (index + 1) + " 題缺少有效 tag metadata");
+        }
+        if (m && m.tag === "trap" && !(typeof m.trapNote === "string" && m.trapNote.trim())) {
+          global.SocialBankAudit.push(topic + " " + type + " 第 " + (index + 1) + " 題 trap 缺少明確 trapNote");
+        }
+        if (!Array.isArray(row) || typeof row[row.length - 1] !== "string" || !row[row.length - 1].trim()) {
+          global.SocialBankAudit.push(topic + " " + type + " 第 " + (index + 1) + " 題資料格式／解析依據可能缺漏");
+        }
+      });
+    });
+    (data.single || []).forEach(function (r, i) { const m = meta(topic, "single", i, data); specs.push({ id: id(topic,"single",m.level,i), type:"single", level:m.level, tag:m.tag, factKey:r[3], sourceUrl:m.sourceUrl, sourceLabel:m.sourceLabel, sourceScope:m.sourceScope, gen:function(kit){ const correct=String(r[1]); const wrongs=kit.shuffle(r[2].map(String)).filter(function(x){return x!==correct;}).slice(0,3); const c=kit.choices(correct,wrongs); return {stem:stem(kit,r[0],"single"),options:c.options,answer:c.answer,explain:r[3],trapNote:m.tag==="trap"?(m.trapNote||r[4]||trapNote(correct)):undefined}; }}); });
+    (data.multi || []).forEach(function (r, i) { const m = meta(topic, "multi", i, data); specs.push({ id:id(topic,"multi",m.level,i), type:"multi", level:m.level, tag:m.tag, factKey:r[3], sourceUrl:m.sourceUrl, sourceLabel:m.sourceLabel, sourceScope:m.sourceScope, gen:function(kit){ const pool=kit.shuffle(r[1].map(String)); const n=pool.length>2&&Math.random()<0.4?3:2; const correct=pool.slice(0,n); const wrong=kit.shuffle(r[2].map(String)).filter(function(x){return correct.indexOf(x)<0;}).slice(0,Math.min(2,5-correct.length)); return {stem:stem(kit,r[0],"multi").replace(/[。？]?$/,"")+"，選出所有正確的（複選）。",options:correct.concat(wrong),answer:correct.map(function(_,j){return j;}),explain:r[3],trapNote:m.tag==="trap"?(m.trapNote||r[4]||trapNote(correct.join("、"))):undefined}; }}); });
+    (data.tf || []).forEach(function (r, i) { const m=meta(topic, "tf",i,data); specs.push({id:id(topic,"tf",m.level,i),type:"tf",level:m.level,tag:m.tag,factKey:r[2],sourceUrl:m.sourceUrl,sourceLabel:m.sourceLabel,sourceScope:m.sourceScope,gen:function(kit){const truth=Math.random()<0.5;return {stem:truth?stem(kit,r[0],"tf"):stem(kit,r[1],"tf"),answer:truth,explain:r[2],trapNote:m.tag==="trap"?(m.trapNote||r[3]||trapNote(truth?"正確":"錯誤")):undefined};}}); });
+    (data.fill || []).forEach(function (r, i) { const m=meta(topic, "fill",i,data); specs.push({id:id(topic,"fill",m.level,i),type:"fill",level:m.level,tag:m.tag,factKey:r[3],sourceUrl:m.sourceUrl,sourceLabel:m.sourceLabel,sourceScope:m.sourceScope,gen:function(kit){const answer=String(r[1]);return {stem:stem(kit,r[0],"fill"),answer:answer,accepted:(r[2]||[]).map(String),explain:r[3],trapNote:m.tag==="trap"?(m.trapNote||r[4]||trapNote(answer)):undefined};}}); });
     global.ExamBank.register(topic,topic+"-facts",specs);
   }
   global.ExamBankFactory={register:register};

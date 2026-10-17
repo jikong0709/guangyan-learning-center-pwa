@@ -1,0 +1,49 @@
+/* 社會科單元學習介面；只作用於 .social-learning。 */
+.social-learning{display:grid;gap:1rem;color:var(--text,#342b34)}
+.social-learning .sl-hero,.social-learning .sl-card{background:#fff;border:1px solid #eadfe8;border-radius:18px;padding:clamp(1rem,3vw,1.5rem);box-shadow:0 5px 18px rgba(60,35,55,.05)}
+.social-learning .sl-eyebrow{font-size:.82rem;letter-spacing:.06em;color:#8a5873;font-weight:700}
+.social-learning h1,.social-learning h2,.social-learning h3{line-height:1.45;margin:.25rem 0 .75rem}
+.social-learning p,.social-learning li{line-height:1.8}
+.social-learning .sl-unit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+.social-learning .sl-unit{display:flex;flex-direction:column;align-items:flex-start;gap:.5rem;text-align:left;background:#fff;border:1px solid #e6d6e2;border-radius:16px;padding:1rem;min-width:0;color:inherit}
+.social-learning .sl-unit strong{font-size:1.05rem;line-height:1.5}
+.social-learning .sl-unit span{font-size:.9rem;line-height:1.65;color:#6d626d}
+.social-learning .sl-actions{display:flex;gap:.65rem;flex-wrap:wrap;margin-top:1rem}
+.social-learning .sl-btn{border:1px solid #cfa8c0;border-radius:12px;padding:.8rem 1rem;min-height:44px;background:#fff;color:#56364a;font:inherit;font-weight:700;cursor:pointer}
+.social-learning .sl-btn-primary{background:#9a5d7c;border-color:#9a5d7c;color:#fff}
+.social-learning .sl-btn:focus-visible,.social-learning .sl-unit:focus-visible{outline:3px solid #c98bb0;outline-offset:2px}
+.social-learning .sl-points{padding-left:1.3rem}
+.social-learning .sl-points li{margin:.35rem 0}
+.social-learning .sl-step{display:inline-flex;align-items:center;justify-content:center;min-width:2rem;height:2rem;border-radius:999px;background:#f5e7ef;color:#7b4564;font-weight:700;margin-right:.4rem}
+.social-learning .sl-review{border-top:1px solid #eee2eb;padding:.8rem 0}
+.social-learning .sl-review summary{font-weight:700;cursor:pointer;line-height:1.7}
+.social-learning .sl-review p{margin:.5rem 0 0}
+.social-learning .sl-note{background:#fbf4f8;border-left:4px solid #bd8aa7;border-radius:8px;padding:.8rem 1rem}
+.social-learning .sl-progress{display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0}
+.social-learning .sl-progress span{border:1px solid #eadfe8;border-radius:999px;padding:.35rem .7rem;font-size:.88rem}
+@media(max-width:600px){.social-learning .sl-unit-grid{grid-template-columns:1fr}.social-learning .sl-actions .sl-btn{flex:1 1 100%;width:100%}}
+
+/* 詳細自學內容與複習答案 */
+.social-learning .sl-lesson-card{scroll-margin-top:1rem}
+.social-learning .sl-lesson-intro{font-size:1rem;line-height:1.95;margin:.25rem 0 1rem}
+.social-learning .sl-key-terms{display:grid;gap:.65rem;margin:.5rem 0 1rem}
+.social-learning .sl-key-term{display:grid;grid-template-columns:minmax(7rem, .32fr) 1fr;gap:.75rem;padding:.75rem;background:#fbf7fa;border-radius:12px}
+.social-learning .sl-key-term dt{font-weight:800;color:#75435f}
+.social-learning .sl-key-term dd{margin:0;line-height:1.8}
+.social-learning .sl-example,.social-learning .sl-recap,.social-learning .sl-review-answer,.social-learning .sl-review-why{padding:.8rem 1rem;margin:.75rem 0 0;border-radius:12px;background:#f8f4f7}
+.social-learning .sl-example{border-left:4px solid #8aa7c4;background:#f3f7fb}
+.social-learning .sl-recap{border-left:4px solid #9a5d7c;background:#fbf3f7}
+.social-learning .sl-example p,.social-learning .sl-recap p,.social-learning .sl-review-answer p,.social-learning .sl-review-why p{margin:.25rem 0 0}
+.social-learning .sl-review-answer strong,.social-learning .sl-review-why strong,.social-learning .sl-example strong,.social-learning .sl-recap strong{display:block}
+.social-learning .sl-review-why{background:#f5f7f2;border-left:4px solid #91a87e}
+@media(max-width:600px){.social-learning .sl-key-term{grid-template-columns:1fr;gap:.25rem}}
+
+/* 第一單元歷史時間軸與官方來源 */
+.social-learning .sl-timeline ol{list-style:none;padding:0;margin:1rem 0 0;display:grid;gap:.85rem}
+.social-learning .sl-timeline-item{display:grid;grid-template-columns:6.5rem minmax(0,1fr);gap:.85rem;align-items:start;padding:.9rem 1rem;border:1px solid #eadde5;border-radius:14px;background:#fff}
+.social-learning .sl-timeline-year{font-weight:800;color:#75435f;white-space:nowrap}
+.social-learning .sl-timeline-item strong{display:block}
+.social-learning .sl-timeline-item p{margin:.3rem 0 0;line-height:1.8}
+.social-learning .sl-sources ul{padding-left:1.25rem;line-height:2}
+.social-learning .sl-sources a{overflow-wrap:anywhere}
+@media(max-width:600px){.social-learning .sl-timeline-item{grid-template-columns:1fr;gap:.3rem}}
