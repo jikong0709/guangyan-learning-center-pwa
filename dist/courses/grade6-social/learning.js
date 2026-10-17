@@ -72,24 +72,57 @@
       step = "learning";
       const d = unitData(selectedId), unit = ver.units.find(function (u) { return u.unitId === selectedId; });
       const sections = d.sections.map(function (s, i) {
-        return el("section", { className: "sl-card" }, [
+        const blocks = [
+          el("p", { className: "sl-lesson-intro", text: s.introduction || "" }),
+          el("h3", { text: "學習重點" }),
+          el("ul", { className: "sl-points" }, (s.points || []).map(function (p) { return el("li", { text: p }); }))
+        ];
+        if (s.keyTerms && s.keyTerms.length) {
+          blocks.push(el("h3", { text: "關鍵詞理解" }));
+          blocks.push(el("dl", { className: "sl-key-terms" }, s.keyTerms.map(function (item) {
+            return el("div", { className: "sl-key-term" }, [
+              el("dt", { text: item.term }),
+              el("dd", { text: item.definition })
+            ]);
+          })));
+        }
+        if (s.example) {
+          blocks.push(el("div", { className: "sl-example" }, [
+            el("strong", { text: "生活情境" }),
+            el("p", { text: s.example })
+          ]));
+        }
+        if (s.recap) {
+          blocks.push(el("div", { className: "sl-recap" }, [
+            el("strong", { text: "本節小結" }),
+            el("p", { text: s.recap })
+          ]));
+        }
+        return el("section", { className: "sl-card sl-lesson-card" }, [
+          el("div", { className: "sl-eyebrow", text: "第 " + (i + 1) + " 節" }),
           el("h2", {}, [el("span", { className: "sl-step", text: String(i + 1) }), s.title]),
-          el("ul", { className: "sl-points" }, s.points.map(function (p) { return el("li", { text: p }); }))
+          ...blocks
         ]);
       });
+      const goals = el("section", { className: "sl-card sl-goals" }, [
+        el("h2", { text: "🎯 本單元學習目標" }),
+        el("p", { text: "完成本單元後，試著確認自己能做到以下幾件事：" }),
+        el("ul", { className: "sl-points" }, (d.goals || []).map(function (goal) { return el("li", { text: goal }); }))
+      ]);
       mount(el("div", { className: "social-learning" }, [
-        header("學習重點", unit.title, d.summary),
-        el("div", { className: "sl-progress" }, [el("span", { text: "① 學習重點・目前" }), el("span", { text: "② 重點複習" }), el("span", { text: "③ 單元測驗" })]),
+        header("完整學習內容", unit.title, d.summary),
+        el("div", { className: "sl-progress" }, [el("span", { text: "① 學習內容・目前" }), el("span", { text: "② 單元複習" }), el("span", { text: "③ 單元測驗" })]),
+        goals,
         ...sections,
         el("section", { className: "sl-card" }, [
-          el("h2", { text: "這個單元先記住" }),
+          el("h2", { text: "📌 全單元重點整理" }),
           el("ul", { className: "sl-points" }, d.misconceptions.map(function (p) { return el("li", { text: p }); })),
           el("div", { className: "sl-actions" }, [
             button("回單元列表", renderHome, false),
-            button("進入重點複習 →", renderReview, true)
+            button("進入單元複習 →", renderReview, true)
           ])
         ]),
-        el("p", { className: "sl-note", text: "單元對照來源：" + (ver.sourceLabel || "公開課程計畫") + "。這是學習摘要，不是出版社課文。" })
+        el("p", { className: "sl-note", text: "教材為原創自學內容，依公開課程計畫整理；出版社實際課本目錄與逐課範圍仍待核對。涉及具體史實或制度細節的正式題目須另行查證。" })
       ]));
     }
     function renderReview() {
