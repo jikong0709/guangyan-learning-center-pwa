@@ -102,6 +102,27 @@ for (const topic of cfg.allTopics) {
     }
   }
 }
+/* 實際批改回歸：用引擎 realize() 洗牌後的 item 測試答案索引與填空 accepted。
+   只驗證生成／批改一致性，不替代題目內容與史實審核。 */
+const gradingEngine = ExamEngine.create(cfg, ExamBank);
+for (const topic of cfg.allTopics) {
+  for (const spec of specsByTopic[topic]) {
+    if (spec.type !== "multi" && spec.type !== "fill") continue;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      try {
+        const item = gradingEngine.realize(spec);
+        const grade = gradingEngine.gradeItem(item, item.type === "multi" ? item.answer.slice() : item.answer);
+        check(grade.correct === true, spec.id + " 洗牌／填空正解批改不一致（第 " + (attempt + 1) + " 次）");
+        if (item.type === "fill") {
+          for (const accepted of (item.accepted || [])) {
+            check(gradingEngine.gradeItem(item, accepted).correct === true, spec.id + " accepted 答案無法通過批改：" + accepted);
+          }
+        }
+      } catch (e) { check(false, spec.id + " 實際批改回歸丟錯：" + e.message); break; }
+    }
+  }
+}
+
 let exam = null;
 try {
   const engine = ExamEngine.create(cfg, ExamBank);
