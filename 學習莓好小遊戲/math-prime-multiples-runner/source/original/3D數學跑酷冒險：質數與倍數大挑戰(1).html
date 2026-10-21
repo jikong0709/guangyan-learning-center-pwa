@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D數學跑酷冒險：質數與倍數大挑戰</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Tone.js for sound effects and synthesized sound -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <!-- Font Family -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Fredoka One', 'Noto Sans TC', sans-serif;
+            touch-action: none;
+            overflow: hidden;
+            background-color: #fce7f3;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .btn-bounce {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .btn-bounce:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .animate-slide-down {
+            animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-pink-100">
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container" class="absolute inset-0"></div>
+
+    <!-- Top Floating HUD -->
+    <div id="game-hud" class="hidden absolute top-0 left-0 w-full p-4 pointer-events-none z-10 flex justify-between items-start">
+        
+        <!-- Target Info & Score -->
+        <div class="glass-panel rounded-2xl p-3 md:p-4 shadow-lg flex flex-col space-y-1 border border-pink-200 min-w-[150px] md:min-w-[200px]">
+            <div class="flex items-center justify-between">
+                <span id="level-badge" class="bg-pink-500 text-white text-xs font-black px-2 py-0.5 rounded-full">第 1 關</span>
+                <span class="text-xs font-bold text-gray-500">當前任務</span>
+            </div>
+            <div id="target-title" class="text-sm md:text-base font-black text-pink-600">尋找：質數</div>
+            
+            <div class="flex items-center justify-between pt-1 border-t border-pink-100">
+                <span class="text-xs font-bold text-gray-500">得分:</span>
+                <span id="score-text" class="text-lg md:text-xl font-black text-indigo-600">0</span>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-gray-500">過關進度:</span>
+                <span id="combo-text" class="text-xs md:text-sm font-black text-amber-500">0 / 0</span>
+            </div>
+        </div>
+
+        <!-- Top Right Control Buttons -->
+        <div class="pointer-events-auto flex space-x-2">
+            <button id="sound-btn" onclick="toggleAudio()" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-xl shadow-md btn-bounce">
+                🔊
+            </button>
+            <button onclick="pauseGame()" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-xl shadow-md btn-bounce">
+                ⏸️
+            </button>
+            <button onclick="returnToMenu()" class="glass-panel w-11 h-11 rounded-2xl flex items-center justify-center text-xl shadow-md btn-bounce">
+                🏠
+            </button>
+        </div>
+    </div>
+
+    <!-- Top Feedback Banner (Positioned high to not block runner view) -->
+    <div id="feedback-banner" class="hidden absolute top-20 left-1/2 -translate-x-1/2 z-20 w-11/12 max-w-md pointer-events-none">
+        <div id="feedback-card" class="glass-panel rounded-2xl p-3 shadow-xl border-2 text-center animate-slide-down">
+            <div id="feedback-title" class="text-base font-black">答對了！</div>
+            <div id="feedback-explanation" class="text-xs md:text-sm font-bold text-gray-700 mt-1">51 = 3 × 17 不是質數！</div>
+        </div>
+    </div>
+
+    <!-- Start Menu Overlay -->
+    <div id="start-menu" class="absolute inset-0 z-30 flex items-center justify-center bg-pink-500/30 backdrop-blur-md p-4">
+        <div class="glass-panel rounded-3xl p-6 md:p-8 shadow-2xl max-w-md w-full text-center border-4 border-white space-y-5">
+            <div class="inline-block bg-pink-500 text-white font-black text-2xl md:text-3xl px-6 py-2 rounded-2xl shadow-md transform -rotate-2">
+                🎮 3D 數學跑酷
+            </div>
+            <h1 class="text-xl md:text-2xl font-black text-gray-800">質數與倍數大挑戰</h1>
+
+            <div class="bg-pink-50/80 rounded-2xl p-4 text-left border-2 border-pink-200 space-y-2 text-xs md:text-sm text-gray-700">
+                <div class="font-black text-pink-700 text-base mb-1">💡 完整題庫一輪大考驗：</div>
+                <div class="flex items-start space-x-2">
+                    <span>🎯</span>
+                    <span><b>必須連續答對題庫中的「所有數字」</b>（例如 32 題質數與易錯合數全對）才算通關！</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                    <span>⚠️</span>
+                    <span><b>只要錯一次就會立刻歸零重來</b>，鍛鍊直覺反應與完美記憶！</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                    <span>📱</span>
+                    <span>支援<b>左右滑動切換跑道</b>、<b>向上滑動跳躍</b>。</span>
+                </div>
+            </div>
+
+            <!-- Mode Selection -->
+            <div class="space-y-2 text-left">
+                <label class="block text-xs font-black text-gray-600">選擇學習主題：</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="selectMode('prime')" id="mode-prime" class="mode-btn bg-pink-500 text-white font-bold p-3 rounded-xl border-2 border-pink-600 shadow-sm text-xs md:text-sm">
+                        質數 vs 易錯合數
+                    </button>
+                    <button onclick="selectMode('mult13')" id="mode-mult13" class="mode-btn bg-white text-gray-700 font-bold p-3 rounded-xl border-2 border-gray-200 shadow-sm text-xs md:text-sm">
+                        13 的倍數判斷
+                    </button>
+                    <button onclick="selectMode('mult19')" id="mode-mult19" class="mode-btn bg-white text-gray-700 font-bold p-3 rounded-xl border-2 border-gray-200 shadow-sm text-xs md:text-sm">
+                        19 的倍數判斷
+                    </button>
+                    <button onclick="selectMode('mixed')" id="mode-mixed" class="mode-btn bg-white text-gray-700 font-bold p-3 rounded-xl border-2 border-gray-200 shadow-sm text-xs md:text-sm">
+                        綜合大魔王考驗
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="w-full bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-black text-lg py-3.5 rounded-2xl shadow-lg border-2 border-emerald-300 btn-bounce">
+                🚀 開始挑戰關卡
+            </button>
+        </div>
+    </div>
+
+    <!-- Pause Menu Modal -->
+    <div id="pause-modal" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div class="glass-panel rounded-3xl p-6 shadow-2xl max-w-xs w-full text-center space-y-4 border-2 border-white">
+            <h2 class="text-2xl font-black text-gray-800">遊戲暫停</h2>
+            <div class="space-y-2">
+                <button onclick="resumeGame()" class="w-full bg-pink-500 text-white font-bold py-3 rounded-xl shadow btn-bounce">
+                    ▶️ 繼續遊戲
+                </button>
+                <button onclick="restartLevel()" class="w-full bg-amber-500 text-white font-bold py-3 rounded-xl shadow btn-bounce">
+                    🔄 重新開始本關
+                </button>
+                <button onclick="returnToMenu()" class="w-full bg-gray-400 text-white font-bold py-3 rounded-xl shadow btn-bounce">
+                    🏠 返回主選單
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Clear Modal -->
+    <div id="level-clear-modal" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-emerald-500/30 backdrop-blur-md p-4">
+        <div class="glass-panel rounded-3xl p-6 md:p-8 shadow-2xl max-w-sm w-full text-center space-y-4 border-4 border-white">
+            <div class="text-4xl">🎉</div>
+            <h2 class="text-2xl font-black text-emerald-700" id="clear-title">第 1 關 完美通關！</h2>
+            <p class="text-xs md:text-sm font-bold text-gray-600" id="clear-desc">太厲害了！你完美連續答對整組題庫！準備迎接下一關的高速考驗！</p>
+            <button onclick="nextLevel()" class="w-full bg-emerald-500 text-white font-black py-3.5 rounded-2xl shadow-lg btn-bounce">
+                進入下一關 ➔
+            </button>
+        </div>
+    </div>
+
+    <!-- Victory Grand Finale Modal -->
+    <div id="victory-modal" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-purple-600/40 backdrop-blur-md p-4">
+        <div class="glass-panel rounded-3xl p-6 md:p-8 shadow-2xl max-w-md w-full text-center space-y-5 border-4 border-amber-300">
+            <div class="text-5xl animate-bounce">🏆</div>
+            <h2 class="text-2xl md:text-3xl font-black text-purple-800">全關卡完美破關！</h2>
+            <p class="text-sm font-bold text-gray-700">恭喜你！你已經具備神級的質數與倍數直覺反應！再也沒有數字能難倒你了！</p>
+            <button onclick="returnToMenu()" class="w-full bg-gradient-to-r from-amber-400 to-orange-500 text-white font-black text-lg py-3.5 rounded-2xl shadow-lg border-2 border-amber-200 btn-bounce">
+                返回主選單
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Touch Controls overlay -->
+    <div class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center space-x-6 pointer-events-auto">
+        <button onclick="moveLane(-1)" class="glass-panel w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg btn-bounce">
+            ⬅️
+        </button>
+        <button onclick="playerJump()" class="glass-panel w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg btn-bounce">
+            ⬆️
+        </button>
+        <button onclick="moveLane(1)" class="glass-panel w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg btn-bounce">
+            ➡️
+        </button>
+    </div>
+
+    <script>
+        /* ==========================================
+           1. GAME CONFIG, LEVEL CONFIG & AUDIO
+           ========================================== */
+        
+        // Tricky math knowledge database
+        const MATH_DATA = {
+            primes: [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97],
+            trickyComposites: [
+                { num: 51, explanation: "51 不是質數，因為 51 = 3 × 17！" },
+                { num: 57, explanation: "57 不是質數，因為 57 = 3 × 19！" },
+                { num: 87, explanation: "87 不是質數，因為 87 = 3 × 29！" },
+                { num: 91, explanation: "91 是常見的大陷阱，91 = 7 × 13！" },
+                { num: 119, explanation: "119 不是質數，因為 119 = 7 × 17！" },
+                { num: 133, explanation: "133 不是質數，因為 133 = 7 × 19！" },
+                { num: 143, explanation: "143 不是質數，因為 143 = 11 × 13！" }
+            ],
+            multiples13: [13, 26, 39, 52, 65, 78, 91, 104, 117, 130, 143],
+            multiples19: [19, 38, 57, 76, 95, 114, 133, 152, 171]
+        };
+
+        // Sequential pool queue for complete mastery test
+        let questionSequence = [];
+        let totalSequenceCount = 0;
+
+        // Level Configuration based on speed progression
+        const LEVEL_CONFIG = {
+            1: { baseSpeed: 0.32, name: "第 1 關 (基礎速度 循環磨練)" },
+            2: { baseSpeed: 0.42, name: "第 2 關 (中速考驗 快速直覺)" },
+            3: { baseSpeed: 0.52, name: "第 3 關 (極速挑戰 完美反射)" }
+        };
+
+        let currentLevel = 1;
+        let streakCount = 0;
+        let gameMode = 'prime'; // 'prime', 'mult13', 'mult19', 'mixed'
+
+        // Audio System (Tone.js)
+        let soundEnabled = true;
+        let bgmSynth, bgmBass, bgmLoop;
+        let synthCorrect, synthWrong, synthJump, synthWin;
+
+        function initAudio() {
+            try {
+                synthCorrect = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 }
+                }).toDestination();
+
+                synthWrong = new Tone.MembraneSynth().toDestination();
+                
+                synthJump = new Tone.Synth({
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 }
+                }).toDestination();
+
+                synthWin = new Tone.PolySynth(Tone.Synth).toDestination();
+
+                // Cute Upbeat Melody Synth
+            bgmSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 0.4 }
+            }).toDestination();
+            bgmSynth.volume.value = -18; // 降低主音量，不刺耳
+
+            // Warm Bouncy Bass Synth
+            bgmBass = new Tone.MonoSynth({
+                oscillator: { type: "triangle" }, // 使用柔和的三角波取代刺耳方波
+                envelope: { attack: 0.02, decay: 0.2, sustain: 0.1, release: 0.2 }
+            }).toDestination();
+            bgmBass.volume.value = -15; // 柔和重低音節奏
+
+            // Soft & Tense Upbeat Melody Notes (Lower Octave for smooth warm feel)
+            const melodyNotes = [
+                "C4", "E4", "G4", "C5", "B4", "G4", "E4", "G4",
+                "A4", "C5", "E5", "A4", "G4", "E4", "C4", "D4",
+                "F4", "A4", "C5", "B4", "A4", "G4", "E4", "C4",
+                "D4", "F4", "G4", "B4", "C5", "G4", "E4", "C4"
+            ];
+
+            const bassNotes = [
+                "C2", "C2", "G2", "C2", "A1", "A1", "E2", "A1",
+                "F1", "F1", "C2", "F1", "G1", "G1", "D2", "G1"
+            ];
+
+            let noteIdx = 0;
+            let bassIdx = 0;
+
+            bgmLoop = new Tone.Loop(time => {
+                if (soundEnabled && isPlaying && !isPaused) {
+                    // Play tense smooth melody note
+                    const note = melodyNotes[noteIdx % melodyNotes.length];
+                    bgmSynth.triggerAttackRelease(note, "16n", time);
+                    noteIdx++;
+
+                    // Play rhythmic pulse bass line
+                    if (noteIdx % 2 === 0) {
+                        const bNote = bassNotes[bassIdx % bassNotes.length];
+                        bgmBass.triggerAttackRelease(bNote, "8n", time);
+                        bassIdx++;
+                    }
+                }
+            }, "16n");
+
+            // Dynamic BPM increase based on current level for tension
+            Tone.Transport.bpm.value = 125 + (currentLevel - 1) * 12;
+            } catch (e) {
+                console.warn("Audio Context Init deferred", e);
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                Tone.start();
+                if (type === 'correct') {
+                    synthCorrect.triggerAttackRelease(["C5", "E5", "G5"], "8n");
+                } else if (type === 'wrong') {
+                    synthWrong.triggerAttackRelease("C2", "8n");
+                } else if (type === 'jump') {
+                    synthJump.triggerAttackRelease("A4", "16n");
+                } else if (type === 'win') {
+                    synthWin.triggerAttackRelease(["C4", "E4", "G4", "C5"], "4n");
+                }
+            } catch (e) {}
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-btn').innerText = soundEnabled ? '🔊' : '🔇';
+            if (soundEnabled) {
+                Tone.start();
+                Tone.Transport.start();
+                if (bgmLoop) bgmLoop.start(0);
+            } else {
+                Tone.Transport.stop();
+            }
+        }
+
+        /* ==========================================
+           2. QUESTION GENERATION & SEQUENCE POOL
+           ========================================== */
+
+        function buildFullQuestionPool() {
+            questionSequence = [];
+            let targetType = gameMode;
+            if (gameMode === 'mixed') {
+                const modes = ['prime', 'mult13', 'mult19'];
+                targetType = modes[Math.floor(Math.random() * modes.length)];
+            }
+
+            if (targetType === 'prime') {
+                let pool = [];
+                MATH_DATA.primes.forEach(p => pool.push({ num: p, isPrime: true }));
+                MATH_DATA.trickyComposites.forEach(c => pool.push({ num: c.num, isPrime: false }));
+                
+                pool.sort(() => 0.5 - Math.random());
+
+                pool.forEach(item => {
+                    let wrongNums = [];
+                    if (item.isPrime) {
+                        const tricky = [...MATH_DATA.trickyComposites].sort(() => 0.5 - Math.random());
+                        wrongNums = [tricky[0].num, tricky[1].num];
+                    } else {
+                        const primes = [...MATH_DATA.primes].sort(() => 0.5 - Math.random());
+                        wrongNums = [primes[0], primes[1]];
+                    }
+                    
+                    questionSequence.push({
+                        targetType: 'prime',
+                        targetText: "尋找：質數 (Prime)",
+                        correctNum: item.isPrime ? item.num : wrongNums[0],
+                        options: item.isPrime ? [item.num, wrongNums[0], wrongNums[1]].sort(() => Math.random() - 0.5) : [wrongNums[0], item.num, wrongNums[1]].sort(() => Math.random() - 0.5)
+                    });
+                });
+            } else if (targetType === 'mult13') {
+                let pool = [...MATH_DATA.multiples13].sort(() => 0.5 - Math.random());
+                pool.forEach(num => {
+                    questionSequence.push({
+                        targetType: 'mult13',
+                        targetText: "尋找：13 的倍數",
+                        correctNum: num,
+                        options: [num, num + 2, Math.max(1, num - 3)].sort(() => Math.random() - 0.5)
+                    });
+                });
+            } else if (targetType === 'mult19') {
+                let pool = [...MATH_DATA.multiples19].sort(() => 0.5 - Math.random());
+                pool.forEach(num => {
+                    questionSequence.push({
+                        targetType: 'mult19',
+                        targetText: "尋找：19 的倍數",
+                        correctNum: num,
+                        options: [num, num + 3, Math.max(1, num - 4)].sort(() => Math.random() - 0.5)
+                    });
+                });
+            }
+
+            totalSequenceCount = questionSequence.length;
+        }
+
+        function generateGateQuestion() {
+            if (questionSequence.length === 0) {
+                buildFullQuestionPool();
+            }
+            return questionSequence.shift();
+        }
+
+        function getExplanation(num, type) {
+            if (type === 'prime') {
+                const tricky = MATH_DATA.trickyComposites.find(t => t.num === num);
+                if (tricky) return tricky.explanation;
+                if (MATH_DATA.primes.includes(num)) return `${num} 是正確的質數！只有 1 和本身能整除。`;
+                return `${num} 不是質數！`;
+            } else if (type === 'mult13') {
+                if (num % 13 === 0) return `${num} 是 13 的倍數 (${num} = 13 × ${num / 13})！`;
+                return `${num} 不能被 13 整除！`;
+            } else if (type === 'mult19') {
+                if (num % 19 === 0) return `${num} 是 19 的倍數 (${num} = 19 × ${num / 19})！`;
+                return `${num} 不能被 19 整除！`;
+            }
+            return "";
+        }
+
+        /* ==========================================
+           3. THREE.JS 3D SCENE & RENDERER SETUP
+           ========================================== */
+
+        let scene, camera, renderer;
+        let playerMesh;
+        let lanes = [-2.2, 0, 2.2];
+        let currentLane = 1; // 0: left, 1: center, 2: right
+        let targetX = 0;
+        
+        let isJumping = false;
+        let jumpVelocity = 0;
+        const gravity = -0.018;
+
+        let gates = [];
+        let fireworks = [];
+        let speed = 0.35;
+        let isPlaying = false;
+        let isPaused = false;
+        let score = 0;
+        let combo = 0;
+        let maxCombo = 0;
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xfbcfe8); // Cute pink theme
+            scene.fog = new THREE.FogExp2(0xfbcfe8, 0.025);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 3.5, 6);
+            camera.lookAt(0, 1, -2);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 12, 8);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            // Track Ground
+            createTrack();
+
+            // Player Setup
+            createPlayer();
+
+            // Resize Event
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function createTrack() {
+            // Main Road
+            const roadGeo = new THREE.PlaneGeometry(7.5, 120);
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            road.rotation.x = -Math.PI / 2;
+            road.position.z = -50;
+            road.receiveShadow = true;
+            scene.add(road);
+
+            // Lane Dividers
+            for (let i of [-1.1, 1.1]) {
+                const lineGeo = new THREE.PlaneGeometry(0.1, 120);
+                const lineMat = new THREE.MeshBasicMaterial({ color: 0xf472b6 });
+                const line = new THREE.Mesh(lineGeo, lineMat);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(i, 0.01, -50);
+                scene.add(line);
+            }
+        }
+
+        function createPlayer() {
+            const group = new THREE.Group();
+
+            // Cute Ball Body
+            const bodyGeo = new THREE.SphereGeometry(0.7, 32, 32);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.castShadow = true;
+            group.add(body);
+
+            // Eyes
+            const eyeGeo = new THREE.SphereGeometry(0.1, 16, 16);
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+            
+            const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+            leftEye.position.set(-0.25, 0.2, 0.6);
+            
+            const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+            rightEye.position.set(0.25, 0.2, 0.6);
+
+            group.add(leftEye);
+            group.add(rightEye);
+
+            group.position.set(0, 0.7, 0);
+            scene.add(group);
+            playerMesh = group;
+        }
+
+        /* ==========================================
+           4. GATE & NUMBER TEXTURE GENERATION
+           ========================================== */
+
+        function createNumberCanvas(number) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            // Rounded Box
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(10, 10, 236, 236, 30);
+            ctx.fill();
+
+            // Border
+            ctx.lineWidth = 12;
+            ctx.strokeStyle = '#ec4899';
+            ctx.stroke();
+
+            // Number Text
+            ctx.fillStyle = '#1e293b';
+            ctx.font = '900 110px "Fredoka One", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(number.toString(), 128, 128);
+
+            return canvas;
+        }
+
+        function spawnGate(zPos) {
+            const questionData = generateGateQuestion();
+            document.getElementById('target-title').innerText = questionData.targetText;
+
+            const gateGroup = new THREE.Group();
+            gateGroup.userData = {
+                questionData: questionData,
+                passed: false
+            };
+
+            questionData.options.forEach((num, index) => {
+                const optionGroup = new THREE.Group();
+
+                // Number Signboard Plane (Facing Camera Directly)
+                const canvas = createNumberCanvas(num);
+                const texture = new THREE.CanvasTexture(canvas);
+                const planeGeo = new THREE.PlaneGeometry(1.6, 1.6);
+                const planeMat = new THREE.MeshBasicMaterial({ 
+                    map: texture, 
+                    transparent: true,
+                    side: THREE.DoubleSide
+                });
+                const signMesh = new THREE.Mesh(planeGeo, planeMat);
+                signMesh.position.y = 1.3;
+                optionGroup.add(signMesh);
+
+                // Base Pedestal
+                const baseGeo = new THREE.CylinderGeometry(0.6, 0.7, 0.3, 16);
+                const baseMat = new THREE.MeshStandardMaterial({ color: 0xf472b6 });
+                const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+                baseMesh.position.y = 0.15;
+                optionGroup.add(baseMesh);
+
+                optionGroup.position.x = lanes[index];
+                gateGroup.add(optionGroup);
+            });
+
+            gateGroup.position.z = zPos;
+            scene.add(gateGroup);
+            gates.push(gateGroup);
+        }
+
+        /* ==========================================
+           5. GAME LOOP, LOGIC & COLLISION
+           ========================================== */
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!isPlaying || isPaused) return;
+
+            // Player Horizontal Interpolation
+            playerMesh.position.x += (targetX - playerMesh.position.x) * 0.2;
+
+            // Player Jump Physics
+            if (isJumping) {
+                playerMesh.position.y += jumpVelocity;
+                jumpVelocity += gravity;
+
+                if (playerMesh.position.y <= 0.7) {
+                    playerMesh.position.y = 0.7;
+                    isJumping = false;
+                }
+            } else {
+                // Subtle rolling animation
+                playerMesh.children[0].rotation.x -= speed * 0.2;
+            }
+
+            // Move Gates Towards Player
+            for (let i = gates.length - 1; i >= 0; i--) {
+                const gate = gates[i];
+                gate.position.z += speed;
+
+                // Collision Check
+                checkGateCollision(gate);
+
+                // Remove gates that moved past camera
+                if (gate.position.z > 5) {
+                    scene.remove(gate);
+                    gates.splice(i, 1);
+                }
+            }
+
+            // Maintain Gate Queue Distance
+            if (gates.length < 3) {
+                const lastZ = gates.length > 0 ? gates[gates.length - 1].position.z : -20;
+                spawnGate(lastZ - 25);
+            }
+
+            // Fireworks Animation
+            updateFireworks();
+
+            renderer.render(scene, camera);
+        }
+
+        function checkGateCollision(gate) {
+            if (gate.userData.passed) return;
+
+            if (gate.position.z > -1.5 && gate.position.z < 1.0) {
+                gate.userData.passed = true;
+                const questionData = gate.userData.questionData;
+                const chosenNumber = questionData.options[currentLane];
+                const isCorrect = chosenNumber === questionData.correctNum;
+
+                if (isCorrect) {
+                    streakCount++;
+                    combo++;
+                    if (combo > maxCombo) maxCombo = combo;
+                    score += 100 + streakCount * 20;
+
+                    playSound('correct');
+                    showFeedback(true, "答對了！", getExplanation(chosenNumber, questionData.targetType));
+
+                    // Check full cycle complete condition
+                    if (streakCount >= totalSequenceCount) {
+                        triggerLevelClear();
+                        return;
+                    }
+                } else {
+                    // One single mistake resets entire sequence back to start!
+                    streakCount = 0;
+                    combo = 0;
+                    score = Math.max(0, score - 50);
+                    buildFullQuestionPool(); // Re-shuffle complete dataset
+                    playSound('wrong');
+                    showFeedback(false, "踩到陷阱！全題庫重新循環試煉", getExplanation(chosenNumber, questionData.targetType));
+                }
+
+                document.getElementById('score-text').innerText = score;
+                document.getElementById('combo-text').innerText = `${streakCount} / ${totalSequenceCount}`;
+            }
+        }
+
+        function showFeedback(isCorrect, title, desc) {
+            const banner = document.getElementById('feedback-banner');
+            const card = document.getElementById('feedback-card');
+            const titleEl = document.getElementById('feedback-title');
+            const descEl = document.getElementById('feedback-explanation');
+
+            titleEl.innerText = title;
+            descEl.innerText = desc;
+
+            if (isCorrect) {
+                card.className = "glass-panel rounded-2xl p-3 shadow-xl border-2 border-emerald-400 bg-emerald-50/90 text-center animate-slide-down text-emerald-800";
+            } else {
+                card.className = "glass-panel rounded-2xl p-3 shadow-xl border-2 border-rose-400 bg-rose-50/90 text-center animate-slide-down text-rose-800";
+            }
+
+            banner.classList.remove('hidden');
+
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3500);
+        }
+
+        /* ==========================================
+           6. CONTROLS (KEYBOARD & SWIPE)
+           ========================================== */
+
+        function moveLane(direction) {
+            if (!isPlaying || isPaused) return;
+            currentLane = Math.max(0, Math.min(2, currentLane + direction));
+            targetX = lanes[currentLane];
+        }
+
+        function playerJump() {
+            if (!isPlaying || isPaused || isJumping) return;
+            isJumping = true;
+            jumpVelocity = 0.38;
+            playSound('jump');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moveLane(-1);
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveLane(1);
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') playerJump();
+            if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') pauseGame();
+        });
+
+        // Touch Swipe Logic
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        window.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        window.addEventListener('touchend', (e) => {
+            if (!isPlaying || isPaused) return;
+            const diffX = e.changedTouches[0].clientX - touchStartX;
+            const diffY = e.changedTouches[0].clientY - touchStartY;
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX > 30) moveLane(1);
+                else if (diffX < -30) moveLane(-1);
+            } else {
+                if (diffY < -30) playerJump();
+            }
+        });
+
+        /* ==========================================
+           7. LEVEL FLOW & FIREWORKS
+           ========================================== */
+
+        function setupLevelUI() {
+            const config = LEVEL_CONFIG[currentLevel];
+            speed = config.baseSpeed;
+            streakCount = 0;
+
+            buildFullQuestionPool();
+
+            document.getElementById('level-badge').innerText = `第 ${currentLevel} 關`;
+            document.getElementById('combo-text').innerText = `0 / ${totalSequenceCount}`;
+        }
+
+        function triggerLevelClear() {
+            isPlaying = false;
+            playSound('win');
+
+            if (currentLevel < 3) {
+                document.getElementById('clear-title').innerText = `第 ${currentLevel} 關 完美通關！`;
+                document.getElementById('level-clear-modal').classList.remove('hidden');
+            } else {
+                triggerFireworks();
+                document.getElementById('victory-modal').classList.remove('hidden');
+            }
+        }
+
+        function nextLevel() {
+            document.getElementById('level-clear-modal').classList.add('hidden');
+            currentLevel++;
+            setupLevelUI();
+            resetTrack();
+            isPlaying = true;
+        }
+
+        function triggerFireworks() {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => createFireworkCluster(), i * 300);
+            }
+        }
+
+        function createFireworkCluster() {
+            const color = new THREE.Color().setHSL(Math.random(), 1, 0.5);
+            const x = (Math.random() - 0.5) * 6;
+            const y = 3 + Math.random() * 3;
+            const z = -5 - Math.random() * 5;
+
+            for (let i = 0; i < 40; i++) {
+                const particleGeo = new THREE.SphereGeometry(0.08, 8, 8);
+                const particleMat = new THREE.MeshBasicMaterial({ color: color });
+                const particle = new THREE.Mesh(particleGeo, particleMat);
+                
+                particle.position.set(x, y, z);
+                particle.userData = {
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: (Math.random() - 0.5) * 0.2,
+                    vz: (Math.random() - 0.5) * 0.2,
+                    life: 1.0
+                };
+                
+                scene.add(particle);
+                fireworks.push(particle);
+            }
+        }
+
+        function updateFireworks() {
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                const p = fireworks[i];
+                p.position.x += p.userData.vx;
+                p.position.y += p.userData.vy;
+                p.position.z += p.userData.vz;
+                p.userData.life -= 0.02;
+
+                p.scale.setScalar(p.userData.life);
+
+                if (p.userData.life <= 0) {
+                    scene.remove(p);
+                    fireworks.splice(i, 1);
+                }
+            }
+        }
+
+        function resetTrack() {
+            gates.forEach(g => scene.remove(g));
+            gates = [];
+            currentLane = 1;
+            targetX = 0;
+            if (playerMesh) playerMesh.position.set(0, 0.7, 0);
+        }
+
+        function selectMode(mode) {
+            gameMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.className = "mode-btn bg-white text-gray-700 font-bold p-3 rounded-xl border-2 border-gray-200 shadow-sm text-xs md:text-sm";
+            });
+            document.getElementById(`mode-${mode}`).className = "mode-btn bg-pink-500 text-white font-bold p-3 rounded-xl border-2 border-pink-600 shadow-sm text-xs md:text-sm";
+        }
+
+        function startGame() {
+            initAudio();
+            Tone.start();
+            Tone.Transport.start();
+            if (bgmLoop) bgmLoop.start(0);
+
+            document.getElementById('start-menu').classList.add('hidden');
+            document.getElementById('game-hud').classList.remove('hidden');
+
+            currentLevel = 1;
+            score = 0;
+            document.getElementById('score-text').innerText = '0';
+
+            setupLevelUI();
+            resetTrack();
+            isPlaying = true;
+            isPaused = false;
+        }
+
+        function pauseGame() {
+            if (!isPlaying) return;
+            isPaused = true;
+            document.getElementById('pause-modal').classList.remove('hidden');
+        }
+
+        function resumeGame() {
+            isPaused = false;
+            document.getElementById('pause-modal').classList.add('hidden');
+        }
+
+        function restartLevel() {
+            document.getElementById('pause-modal').classList.add('hidden');
+            setupLevelUI();
+            resetTrack();
+            isPlaying = true;
+            isPaused = false;
+        }
+
+        function returnToMenu() {
+            isPlaying = false;
+            isPaused = false;
+            document.getElementById('pause-modal').classList.add('hidden');
+            document.getElementById('level-clear-modal').classList.add('hidden');
+            document.getElementById('victory-modal').classList.add('hidden');
+            document.getElementById('game-hud').classList.add('hidden');
+            document.getElementById('start-menu').classList.remove('hidden');
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Initialize on window load
+        window.onload = () => {
+            init3D();
+            animate();
+        };
+    </script>
+</body>
+</html>
