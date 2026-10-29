@@ -359,6 +359,8 @@
         // Audio System (Tone.js)
         let soundEnabled = true;
         let synthCorrect, synthWrong, synthJump, synthWin;
+        let musicKick, musicBass, musicLead, musicLoop = null;
+        let musicStep = 0;
 
         function initAudio() {
             try {
@@ -370,6 +372,10 @@
                 synthWrong = new Tone.MembraneSynth().toDestination();
                 synthJump = new Tone.Synth().toDestination();
                 synthWin = new Tone.PolySynth(Tone.Synth).toDestination();
+                musicKick = new Tone.MembraneSynth({pitchDecay:0.02,octaves:5,envelope:{attack:0.001,decay:0.18,sustain:0}}).toDestination();
+                musicBass = new Tone.MonoSynth({oscillator:{type:"sawtooth"},filter:{Q:2,type:"lowpass",rolloff:-24},envelope:{attack:0.01,decay:0.12,sustain:0.15,release:0.08},filterEnvelope:{attack:0.01,decay:0.1,sustain:0.2,release:0.1,baseFrequency:90,octaves:2}}).toDestination();
+                musicLead = new Tone.Synth({oscillator:{type:"square"},envelope:{attack:0.005,decay:0.06,sustain:0,release:0.03}}).toDestination();
+                musicBass.volume.value=-14; musicLead.volume.value=-20; musicKick.volume.value=-8;
             } catch (e) {}
         }
 
@@ -383,6 +389,25 @@
                 else if (type === 'win') synthWin.triggerAttackRelease(["C4", "E4", "G4", "C5"], "4n");
             } catch (e) {}
         }
+
+        async function startBackgroundMusic() {
+            if(!soundEnabled || !window.Tone) return;
+            try {
+                await Tone.start();
+                if(musicLoop){musicLoop.stop();musicLoop.dispose();musicLoop=null;}
+                Tone.Transport.stop(); Tone.Transport.cancel(); Tone.Transport.bpm.value=136; musicStep=0;
+                // 原創合成緊張節奏：低音鼓、脈衝低音與短促高音，不使用現成商業歌曲。
+                musicLoop=new Tone.Loop((time)=>{
+                    const step=musicStep%16;
+                    if(step%4===0 || step===10) musicKick.triggerAttackRelease(step===0?"C1":"G1","8n",time,0.8);
+                    if(step%2===0) musicBass.triggerAttackRelease(["C2","C2","Eb2","G1","C2","Bb1","Ab1","G1"][Math.floor(step/2)],"16n",time,0.65);
+                    if([3,7,11,15].includes(step)) musicLead.triggerAttackRelease(["G4","Eb4","Bb4","G4"][Math.floor(step/4)],"32n",time,0.35);
+                    musicStep++;
+                },"8n");
+                musicLoop.start(0); Tone.Transport.start();
+            } catch(e){}
+        }
+        function stopBackgroundMusic(){try{if(musicLoop)musicLoop.stop();if(window.Tone)Tone.Transport.stop();}catch(e){}}
 
         function toggleAudio() {
             soundEnabled = !soundEnabled;
@@ -452,7 +477,9 @@
             setupLevelUI();
             resetTrack();
             isPlaying = true;
+            startBackgroundMusic();
             isPaused = false;
+            startBackgroundMusic();
         }
 
         function retryStudy() {
@@ -874,6 +901,7 @@
         }
 
         function triggerGameOver(reason) {
+            stopBackgroundMusic();
             saveGameResult(false);
             isPlaying = false;
             clearInterval(timerInterval);
@@ -946,6 +974,7 @@
         }
 
         function triggerLevelClear() {
+            stopBackgroundMusic();
             saveGameResult(true);
             isPlaying = false;
             clearInterval(timerInterval); // 通關時停止計時器
@@ -999,11 +1028,13 @@
 
         function pauseGame() {
             if (!isPlaying) return;
+            stopBackgroundMusic();
             isPaused = true;
             document.getElementById('pause-modal').classList.remove('hidden');
         }
 
         function resumeGame() {
+            startBackgroundMusic();
             isPaused = false;
             document.getElementById('pause-modal').classList.add('hidden');
         }
@@ -1014,6 +1045,7 @@
         }
 
         function returnToMenu() {
+            stopBackgroundMusic();
             isPlaying = false;
             isPaused = false;
             clearInterval(timerInterval);
