@@ -520,8 +520,11 @@
                 multipliers.forEach(multiplier => {
                     const products = Array.from({length: 10}, (_, i) => multiplier * (i + 1)).sort(() => 0.5 - Math.random());
                     products.forEach(num => {
-                        const options = new Set([num, num + 1, Math.max(1, num - 2)]);
-                        while (options.size < 3) options.add(num + 3 + Math.floor(Math.random() * 8));
+                        const options = new Set([num]);
+                        while (options.size < 3) {
+                            const candidate = num + 1 + Math.floor(Math.random() * 12);
+                            if (candidate % multiplier !== 0) options.add(candidate);
+                        }
                         questionSequence.push({targetType:'multAll',targetText:"尋找："+multiplier+" 的倍數",correctNum:num,options:[...options].sort(()=>Math.random()-0.5),multiplier:multiplier});
                     });
                 });
