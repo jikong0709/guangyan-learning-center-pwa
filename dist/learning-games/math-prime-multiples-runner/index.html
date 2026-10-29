@@ -13,6 +13,8 @@
     
     <!-- Tone.js for sound effects -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- 莓好學習中心所有闖關遊戲共用原創背景音樂 -->
+    <script src="../shared-game-audio.js"></script>
 
     <!-- Font Family -->
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
@@ -391,27 +393,20 @@
         }
 
         async function startBackgroundMusic() {
-            if(!soundEnabled || !window.Tone) return;
-            try {
-                await Tone.start();
-                if(musicLoop){musicLoop.stop();musicLoop.dispose();musicLoop=null;}
-                Tone.Transport.stop(); Tone.Transport.cancel(); Tone.Transport.bpm.value=136; musicStep=0;
-                // 原創合成緊張節奏：低音鼓、脈衝低音與短促高音，不使用現成商業歌曲。
-                musicLoop=new Tone.Loop((time)=>{
-                    const step=musicStep%16;
-                    if(step%4===0 || step===10) musicKick.triggerAttackRelease(step===0?"C1":"G1","8n",time,0.8);
-                    if(step%2===0) musicBass.triggerAttackRelease(["C2","C2","Eb2","G1","C2","Bb1","Ab1","G1"][Math.floor(step/2)],"16n",time,0.65);
-                    if([3,7,11,15].includes(step)) musicLead.triggerAttackRelease(["G4","Eb4","Bb4","G4"][Math.floor(step/4)],"32n",time,0.35);
-                    musicStep++;
-                },"8n");
-                musicLoop.start(0); Tone.Transport.start();
-            } catch(e){}
+            if (!soundEnabled) return;
+            if (window.MeihaoGameAudio) await window.MeihaoGameAudio.start();
         }
-        function stopBackgroundMusic(){try{if(musicLoop)musicLoop.stop();if(window.Tone)Tone.Transport.stop();}catch(e){}}
+        function stopBackgroundMusic() {
+            if (window.MeihaoGameAudio) window.MeihaoGameAudio.stop();
+        }
 
         function toggleAudio() {
             soundEnabled = !soundEnabled;
             document.getElementById('sound-btn').innerText = soundEnabled ? '🔊' : '🔇';
+            if (window.MeihaoGameAudio) {
+                window.MeihaoGameAudio.setEnabled(soundEnabled);
+                if (soundEnabled && isPlaying && !isPaused) startBackgroundMusic();
+            }
         }
 
         /* ==========================================
