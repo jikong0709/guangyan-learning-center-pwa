@@ -421,6 +421,12 @@
                 MATH_DATA.multiples19.forEach((num, idx) => {
                     list.innerHTML += `<div class="p-1.5 bg-white rounded-lg shadow-sm flex justify-between border border-amber-200"><span>19 × ${idx + 1}</span><span class="text-indigo-600 font-black">= ${num}</span></div>`;
                 });
+            } else if (gameMode === 'multAll') {
+                title.innerText = "2～9 的綜合乘法記憶卡";
+                list.innerHTML += '<div class="p-2 bg-indigo-100 rounded-xl text-indigo-900 font-black text-xs">每組對應 2～9 的其中一個倍數；組別與題目順序會隨機變化。</div>';
+                [2,3,4,5,6,7,8,9].forEach(m => {
+                    list.innerHTML += '<div class="p-2 bg-white rounded-lg border mb-1"><b>'+m+' 的倍數：</b>'+Array.from({length:10},(_,i)=>m*(i+1)).join(', ')+'</div>';
+                });
             } else if (gameMode === 'mixed') {
                 title.innerText = "🔥 綜合大魔王全範圍記憶卡";
                 list.innerHTML += `<div class="p-2 bg-indigo-100 rounded-xl text-indigo-900 font-black text-xs">包含了 13、17、19 倍數與質數拆解算式，請全面溫習！</div>`;
@@ -438,6 +444,7 @@
             document.getElementById('game-hud').classList.remove('hidden');
 
             currentLevel = 1;
+            gameStartedAt = Date.now();
             score = 10; // Start with 10 initial points
             document.getElementById('score-text').innerText = score;
 
@@ -860,6 +867,7 @@
         }
 
         function triggerGameOver(reason) {
+            saveGameResult(false);
             isPlaying = false;
             clearInterval(timerInterval);
             document.getElementById('gameover-reason').innerText = reason;
@@ -931,6 +939,7 @@
         }
 
         function triggerLevelClear() {
+            saveGameResult(true);
             isPlaying = false;
             clearInterval(timerInterval); // 通關時停止計時器
             playSound('win');
@@ -1009,6 +1018,14 @@
             if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(report).then(()=>{alert("回報文字已複製，請貼到 Notion 紀錄頁新增紀錄。");openNotion();}).catch(()=>{prompt("請複製以下回報內容，再貼到 Notion：",report);openNotion();});}
             else{prompt("請複製以下回報內容，再貼到 Notion：",report);openNotion();}
             closeIssueReport();
+        }
+        function saveGameResult(cleared) {
+            const rows = (() => { try { return JSON.parse(localStorage.getItem("meihao_game_leaderboard") || "[]"); } catch(e) { return []; } })();
+            const elapsed = Math.max(1, Math.round((Date.now() - (gameStartedAt || Date.now())) / 1000));
+            const row = {name: localStorage.getItem("meihao_player_name") || "玩家", mode: gameMode, level: currentLevel, score: score, seconds: elapsed, cleared: cleared, date: new Date().toISOString()};
+            rows.push(row);
+            try { localStorage.setItem("meihao_game_leaderboard", JSON.stringify(rows.slice(-100))); } catch(e) {}
+            gameStartedAt = Date.now();
         }
         function openLeaderboard(){document.getElementById("leaderboard-modal").classList.remove("hidden");renderLeaderboard("speed");}
         function closeLeaderboard(){document.getElementById("leaderboard-modal").classList.add("hidden");}
