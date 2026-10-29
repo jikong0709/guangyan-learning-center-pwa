@@ -321,6 +321,7 @@
         let currentLevel = 1;
         let streakCount = 0;
         let gameMode = 'prime';
+        let multStage = 1;
 
         // Timing & Speed Controls
         let timeLeft = 600; // 10 minutes
@@ -422,11 +423,9 @@
                     list.innerHTML += `<div class="p-1.5 bg-white rounded-lg shadow-sm flex justify-between border border-amber-200"><span>19 × ${idx + 1}</span><span class="text-indigo-600 font-black">= ${num}</span></div>`;
                 });
             } else if (gameMode === 'multAll') {
-                title.innerText = "2～9 的綜合乘法記憶卡";
-                list.innerHTML += '<div class="p-2 bg-indigo-100 rounded-xl text-indigo-900 font-black text-xs">每組對應 2～9 的其中一個倍數；組別與題目順序會隨機變化。</div>';
-                [2,3,4,5,6,7,8,9].forEach(m => {
-                    list.innerHTML += '<div class="p-2 bg-white rounded-lg border mb-1"><b>'+m+' 的倍數：</b>'+Array.from({length:10},(_,i)=>m*(i+1)).join(', ')+'</div>';
-                });
+                title.innerText = multStage <= 8 ? "第 "+multStage+" 關｜"+(multStage+1)+" 的倍數" : "第 9 關｜綜合乘法";
+                list.innerHTML += '<div class="p-2 bg-indigo-100 rounded-xl text-indigo-900 font-black text-xs">共 9 關，每關連續答對 10 題。'+(multStage<=8?"本關為 "+(multStage+1)+" 的倍數。":"本關隨機混合 2～9 的倍數。")+'</div>';
+                (multStage<=8?[multStage+1]:[2,3,4,5,6,7,8,9]).forEach(m=>{list.innerHTML+='<div class="p-2 bg-white rounded-lg border mb-1"><b>'+m+' 的倍數：</b>'+Array.from({length:10},(_,i)=>m*(i+1)).join(', ')+'</div>';});
             } else if (gameMode === 'mixed') {
                 title.innerText = "🔥 綜合大魔王全範圍記憶卡";
                 list.innerHTML += `<div class="p-2 bg-indigo-100 rounded-xl text-indigo-900 font-black text-xs">包含了 13、17、19 倍數與質數拆解算式，請全面溫習！</div>`;
@@ -444,6 +443,7 @@
             document.getElementById('game-hud').classList.remove('hidden');
 
             currentLevel = 1;
+            multStage = 1;
             gameStartedAt = Date.now();
             score = 10; // Start with 10 initial points
             document.getElementById('score-text').innerText = score;
@@ -516,18 +516,24 @@
                     });
                 });
             } else if (targetType === 'multAll') {
-                const multipliers = [2,3,4,5,6,7,8,9].sort(() => 0.5 - Math.random());
-                multipliers.forEach(multiplier => {
-                    const products = Array.from({length: 10}, (_, i) => multiplier * (i + 1)).sort(() => 0.5 - Math.random());
-                    products.forEach(num => {
-                        const options = new Set([num]);
-                        while (options.size < 3) {
-                            const candidate = num + 1 + Math.floor(Math.random() * 12);
-                            if (candidate % multiplier !== 0) options.add(candidate);
-                        }
-                        questionSequence.push({targetType:'multAll',targetText:"尋找："+multiplier+" 的倍數",correctNum:num,options:[...options].sort(()=>Math.random()-0.5),multiplier:multiplier});
+                const multiplierForStage = multStage <= 8 ? multStage + 1 : null;
+                const multipliers = multiplierForStage ? [multiplierForStage] : [];
+                if (multiplierForStage) {
+                    const products = Array.from({length:10},(_,i)=>multiplierForStage*(i+1)).sort(()=>0.5-Math.random());
+                    products.forEach(num=>{
+                        const options=new Set([num]);
+                        while(options.size<3){const candidate=num+1+Math.floor(Math.random()*12);if(candidate%multiplierForStage!==0)options.add(candidate);}
+                        questionSequence.push({targetType:'multAll',targetText:"尋找："+multiplierForStage+" 的倍數",correctNum:num,options:[...options].sort(()=>Math.random()-0.5),multiplier:multiplierForStage});
                     });
-                });
+                } else {
+                    for(let i=0;i<10;i++){
+                        const multiplier=2+Math.floor(Math.random()*8), num=multiplier*(1+Math.floor(Math.random()*10));
+                        const options=new Set([num]);
+                        while(options.size<3){const candidate=num+1+Math.floor(Math.random()*12);if(candidate%multiplier!==0)options.add(candidate);}
+                        questionSequence.push({targetType:'multAll',targetText:"綜合乘法：尋找 "+multiplier+" 的倍數",correctNum:num,options:[...options].sort(()=>Math.random()-0.5),multiplier});
+                    }
+                    questionSequence.sort(()=>0.5-Math.random());
+                }
             }
             totalSequenceCount = questionSequence.length;
         }
@@ -935,7 +941,7 @@
 
             startTimer(); // 每關重新開始獨立計時 (10分鐘)
 
-            document.getElementById('level-badge').innerText = `第 ${currentLevel} 關`;
+            document.getElementById('level-badge').innerText = gameMode === 'multAll' ? `第 ${multStage} / 9 關` : `第 ${currentLevel} 關`;
             document.getElementById('combo-text').innerText = `0 / ${totalSequenceCount}`;
         }
 
@@ -945,7 +951,20 @@
             clearInterval(timerInterval); // 通關時停止計時器
             playSound('win');
 
-            if (currentLevel < 3) {
+            if (gameMode === 'multAll') {
+                if (multStage < 9) {
+                    const next = multStage + 1;
+                    const nextName = next <= 8 ? next + " 的倍數" : "綜合乘法（2～9 倍數）";
+                    document.getElementById('clear-title').innerText = "第 "+multStage+" 關恭喜通過！";
+                    document.querySelector('#level-clear-modal p').innerText = "下一關："+nextName+"。連續答對 10 題即可晉級。";
+                    document.querySelector('#level-clear-modal button').innerText = "前往下一關："+nextName+" ➔";
+                    document.getElementById('level-clear-modal').classList.remove('hidden');
+                } else {
+                    document.querySelector('#victory-modal h2').innerText = "🏆 九關全部通關！";
+                    document.querySelector('#victory-modal p').innerText = "恭喜完成 2～9 倍數八關與最後的綜合乘法挑戰。";
+                    document.getElementById('victory-modal').classList.remove('hidden');
+                }
+            } else if (currentLevel < 3) {
                 document.getElementById('clear-title').innerText = `第 ${currentLevel} 關 完美通關！`;
                 document.getElementById('level-clear-modal').classList.remove('hidden');
             } else {
@@ -955,7 +974,8 @@
 
         function nextLevel() {
             document.getElementById('level-clear-modal').classList.add('hidden');
-            currentLevel++;
+            if (gameMode === 'multAll') { multStage++; currentLevel = Math.min(3, Math.ceil(multStage/3)); }
+            else currentLevel++;
             setupLevelUI();
             resetTrack();
             isPlaying = true;
