@@ -252,6 +252,8 @@
         </div>
     </div>
 
+    <button onclick="openIssueReport()" title="問題回報" aria-label="問題回報" class="fixed right-3 bottom-24 md:bottom-5 z-30 rounded-full w-12 h-12 bg-white border-2 border-amber-300 shadow-xl text-2xl">🪛</button>
+    <button onclick="openLeaderboard()" title="排行榜" aria-label="排行榜" class="fixed right-3 bottom-40 md:bottom-20 z-30 rounded-full w-12 h-12 bg-white border-2 border-purple-300 shadow-xl text-2xl">🏆</button>
     <!-- Mobile Touch Controls overlay -->
     <div class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center space-x-2 pointer-events-auto">
         <button onclick="moveLane(-1)" class="glass-panel w-11 h-11 rounded-full flex items-center justify-center text-lg shadow-lg btn-bounce">
@@ -271,6 +273,20 @@
         </button>
     </div>
 
+    <div id="issue-report-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 p-4"><div class="glass-panel w-full max-w-lg rounded-3xl p-5 shadow-2xl space-y-3">
+      <div class="flex justify-between items-center"><h2 class="text-xl font-black">🪛 遊戲問題回報</h2><button onclick="closeIssueReport()" class="text-2xl">×</button></div>
+      <p class="text-sm">將自動附上回報時間、遊戲模式與目前關卡。</p>
+      <label class="block text-sm font-bold">問題分類</label><select id="issue-category" class="w-full rounded-xl border p-3"><option>答案／出題錯誤</option><option>操作／跳躍問題</option><option>畫面／音效問題</option><option>計分／通關問題</option><option>其他問題</option></select>
+      <label class="block text-sm font-bold" for="issue-description">問題描述</label><textarea id="issue-description" rows="4" maxlength="2000" class="w-full rounded-xl border p-3" placeholder="請描述遇到的問題……"></textarea>
+      <label class="block text-sm font-bold" for="issue-name">暱稱（選填）</label><input id="issue-name" maxlength="40" class="w-full rounded-xl border p-3" placeholder="暱稱">
+      <p class="text-xs text-gray-500">目前尚未設定可由瀏覽器安全寫入 Notion 的後端；送出會複製回報文字並開啟 Notion 紀錄頁。</p>
+      <button onclick="submitIssueReport()" class="w-full rounded-xl bg-orange-500 p-3 text-white font-black">複製回報並前往 Notion</button><button onclick="closeIssueReport()" class="w-full rounded-xl border bg-white p-3">取消</button>
+    </div></div>
+    <div id="leaderboard-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 p-4"><div class="glass-panel w-full max-w-lg rounded-3xl p-5 shadow-2xl space-y-3">
+      <div class="flex justify-between items-center"><h2 class="text-xl font-black">🏆 遊戲排行榜</h2><button onclick="closeLeaderboard()" class="text-2xl">×</button></div>
+      <div class="grid grid-cols-2 gap-2"><button onclick="renderLeaderboard('speed')" class="rounded-xl bg-purple-100 p-3 font-black">⚡ 速通榜</button><button onclick="renderLeaderboard('score')" class="rounded-xl bg-amber-100 p-3 font-black">🌟 高分實力榜</button></div>
+      <div id="leaderboard-content" class="space-y-2 text-sm"></div><p class="text-xs text-gray-500">目前是本裝置排行榜；跨使用者排名需串接共用資料庫。</p>
+    </div></div>
     <script>
         /* ==========================================
            1. GAME CONFIG, MATH DATA & AUDIO
@@ -980,6 +996,30 @@
             document.getElementById('start-menu').classList.remove('hidden');
         }
 
+        const ISSUE_NOTION_URL = "https://app.notion.com/p/4082df8d000e803c97abca54ca1b40f8?source=copy_link";
+        function openIssueReport(){document.getElementById("issue-report-modal").classList.remove("hidden");}
+        function closeIssueReport(){document.getElementById("issue-report-modal").classList.add("hidden");}
+        function submitIssueReport(){
+            const desc=document.getElementById("issue-description").value.trim();
+            if(!desc){alert("請先填寫問題描述。");return;}
+            const names={prime:"質數",mult13:"13 的倍數",mult17:"17 的倍數",mult19:"19 的倍數",mixed:"綜合大魔王",multAll:"綜合乘法 2～9 倍數"};
+            const report=["遊戲問題回報","回報時間："+new Date().toLocaleString("zh-TW",{hour12:false}),"遊戲：3D 數學跑酷","模式："+(names[gameMode]||gameMode),"關卡：第 "+currentLevel+" 關","分類："+document.getElementById("issue-category").value,"暱稱："+(document.getElementById("issue-name").value.trim()||"未填寫"),"問題："+desc].join("\n");
+            try{localStorage.setItem("meihao_last_issue_report",report);}catch(e){}
+            const openNotion=()=>window.open(ISSUE_NOTION_URL,"_blank","noopener");
+            if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(report).then(()=>{alert("回報文字已複製，請貼到 Notion 紀錄頁新增紀錄。");openNotion();}).catch(()=>{prompt("請複製以下回報內容，再貼到 Notion：",report);openNotion();});}
+            else{prompt("請複製以下回報內容，再貼到 Notion：",report);openNotion();}
+            closeIssueReport();
+        }
+        function openLeaderboard(){document.getElementById("leaderboard-modal").classList.remove("hidden");renderLeaderboard("speed");}
+        function closeLeaderboard(){document.getElementById("leaderboard-modal").classList.add("hidden");}
+        function getLocalLeaderboard(){try{return JSON.parse(localStorage.getItem("meihao_game_leaderboard")||"[]");}catch(e){return [];}}
+        function renderLeaderboard(type){
+            const rows=getLocalLeaderboard().sort((a,b)=>type==="speed"?(a.seconds-b.seconds):(b.score-a.score)).slice(0,10);
+            const el=document.getElementById("leaderboard-content");
+            if(!rows.length){el.innerHTML='<p class="rounded-xl bg-white p-4">完成遊戲後，紀錄會顯示在這裡。</p>';return;}
+            el.innerHTML=rows.map((r,i)=>'<div class="flex justify-between gap-2 rounded-xl bg-white p-3"><b>#'+(i+1)+' '+safeRankText(r.name)+'</b><span>'+(type==="speed"?(r.seconds+" 秒"):(r.score+" 分"))+'</span><span>第 '+r.level+' 關</span></div>').join("");
+        }
+        function safeRankText(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
