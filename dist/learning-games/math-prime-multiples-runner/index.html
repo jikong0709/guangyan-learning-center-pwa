@@ -15,6 +15,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <!-- 莓好學習中心所有闖關遊戲共用原創背景音樂 -->
     <script src="../shared-game-audio.js"></script>
+    <script src="../../supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
 
     <!-- Font Family -->
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
@@ -297,6 +299,7 @@
     <div id="leaderboard-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/60 p-4"><div class="glass-panel w-full max-w-lg rounded-3xl p-5 shadow-2xl space-y-3">
       <div class="flex justify-between items-center"><h2 class="text-xl font-black">🏆 個人最佳成績</h2><button onclick="closeLeaderboard()" class="text-2xl">×</button></div>
       <p class="text-xs text-gray-500">速通榜保留個人最快時間；高分榜保留個人最高分。名稱會記錄在本機。</p>
+      <div id="leaderboard-auth-status" class="rounded-xl bg-slate-50 p-3 text-xs text-gray-600">正在連線共用排行榜…</div><button id="leaderboard-login-btn" onclick="loginForSharedLeaderboard()" class="hidden w-full rounded-xl bg-blue-600 text-white p-3 font-bold">Google 登入，參與跨帳號排行榜</button>
       <div class="grid grid-cols-2 gap-2"><button id="leaderboard-speed-tab" onclick="renderLeaderboard('speed')" class="rounded-xl bg-purple-600 text-white p-3 font-black">⚡ 個人速通榜</button><button id="leaderboard-score-tab" onclick="renderLeaderboard('score')" class="rounded-xl bg-amber-100 text-amber-900 p-3 font-black">🌟 個人高分榜</button></div>
       <div id="leaderboard-content" class="space-y-2 text-sm"></div>
       <button onclick="editPlayerName()" class="w-full rounded-xl border bg-white p-3 font-bold">✏️ 編輯挑戰者名稱</button>
@@ -1122,15 +1125,46 @@
         function getActivePlayer(){const profiles=migrateLegacyPlayers();let id=localStorage.getItem(ACTIVE_PLAYER_KEY);let p=profiles.find(x=>x.id===id);if(!p){const name=(localStorage.getItem("meihao_player_name")||"").trim();p=profiles.find(x=>x.name===name);if(!p){p={id:makePlayerId(),name:name||"玩家"};profiles.push(p);savePlayerProfiles(profiles);}try{localStorage.setItem(ACTIVE_PLAYER_KEY,p.id);}catch(e){}}return p;}
         function getPlayerName(){return getActivePlayer().name;}
         function saveGameResult(cleared){const p=getActivePlayer();const elapsed=Math.max(1,Math.round((Date.now()-(gameStartedAt||Date.now()))/1000));const base={playerId:p.id,name:p.name,mode:gameMode,level:currentLevel,score:score,seconds:elapsed,cleared:cleared,date:new Date().toISOString()};const rows=getLocalLeaderboard();["speed","score"].forEach(type=>{const row={...base,boardType:type};const i=rows.findIndex(r=>r.playerId===p.id&&r.mode===row.mode&&r.boardType===type);const better=i<0||(type==="speed"?Number(row.seconds)<Number(rows[i].seconds):Number(row.score)>Number(rows[i].score));if(better){if(i<0)rows.push(row);else rows[i]=row;}});try{localStorage.setItem("meihao_game_leaderboard",JSON.stringify(rows));}catch(e){}gameStartedAt=Date.now();}
-        function showPlayerNameModal(cleared){const savedName=(getPlayerName()||"").trim();if(savedName&&savedName!=="玩家"){document.getElementById("victory-modal").classList.add("hidden");openLeaderboard();return;}const input=document.getElementById("player-name-input");input.value="";document.getElementById("player-name-result").innerText="恭喜通關！🏆 第一次使用請設定挑戰者名稱；下次會自動沿用，不會重複詢問。";document.getElementById("player-name-modal").classList.remove("hidden");setTimeout(()=>input.focus(),50);}
-        function savePlayerName(){const input=document.getElementById("player-name-input");const name=input.value.trim();if(!name){alert("請輸入挑戰者名稱。");input.focus();return;}const p=getActivePlayer();p.name=name.slice(0,20);const profiles=loadPlayerProfiles();const i=profiles.findIndex(x=>x.id===p.id);if(i>=0)profiles[i]=p;else profiles.push(p);savePlayerProfiles(profiles);const rows=getLocalLeaderboard();rows.forEach(r=>{if(r.playerId===p.id)r.name=p.name;});try{localStorage.setItem("meihao_game_leaderboard",JSON.stringify(rows));localStorage.setItem("meihao_player_name",p.name);}catch(e){}closePlayerNameModal();document.getElementById("victory-modal").classList.add("hidden");openLeaderboard();}
+        function showPlayerNameModal(cleared){const savedName=(localStorage.getItem("meihao_player_name")||getPlayerName()||"").trim();if(savedName&&savedName!=="玩家"){const p=getActivePlayer();if(p.name!==savedName){p.name=savedName;const ps=loadPlayerProfiles();const pi=ps.findIndex(x=>x.id===p.id);if(pi>=0)ps[pi]=p;else ps.push(p);savePlayerProfiles(ps);}document.getElementById("victory-modal").classList.add("hidden");submitAllLocalBestToCloud().finally(()=>openLeaderboard());return;}const input=document.getElementById("player-name-input");input.value="";document.getElementById("player-name-result").innerText="恭喜通關！🏆 請設定一次挑戰者名稱；之後自動沿用，不再重複詢問。";document.getElementById("player-name-modal").classList.remove("hidden");setTimeout(()=>input.focus(),50);}
+        function savePlayerName(){const input=document.getElementById("player-name-input");const name=input.value.trim();if(!name){alert("請輸入挑戰者名稱。");input.focus();return;}const p=getActivePlayer();p.name=name.slice(0,20);const profiles=loadPlayerProfiles();const i=profiles.findIndex(x=>x.id===p.id);if(i>=0)profiles[i]=p;else profiles.push(p);savePlayerProfiles(profiles);const rows=getLocalLeaderboard();rows.forEach(r=>{if(r.playerId===p.id)r.name=p.name;});try{localStorage.setItem("meihao_game_leaderboard",JSON.stringify(rows));localStorage.setItem("meihao_player_name",p.name);}catch(e){}closePlayerNameModal();document.getElementById("victory-modal").classList.add("hidden");submitAllLocalBestToCloud().finally(()=>openLeaderboard());}
         function closePlayerNameModal(){document.getElementById("player-name-modal").classList.add("hidden");}
         function editPlayerName(){closeLeaderboard();showPlayerNameModal(true);document.getElementById("player-name-result").innerText="只會修改目前玩家名稱，不會合併其他玩家的成績。";}
         function switchOrAddPlayer(){const profiles=migrateLegacyPlayers();const menu=profiles.map((p,i)=>(i+1)+". "+p.name).join("\n");const choice=prompt("輸入玩家編號切換；輸入 0 新增玩家。\n"+menu+"\n目前玩家："+getPlayerName());if(choice===null)return;if(choice.trim()==="0"){const name=prompt("輸入新玩家名稱：");if(!name||!name.trim())return;const p={id:makePlayerId(),name:name.trim().slice(0,20)};profiles.push(p);savePlayerProfiles(profiles);try{localStorage.setItem(ACTIVE_PLAYER_KEY,p.id);localStorage.setItem("meihao_player_name",p.name);}catch(e){}}else{const n=Number(choice);if(!Number.isInteger(n)||n<1||n>profiles.length){alert("玩家編號無效。");return;}const p=profiles[n-1];try{localStorage.setItem(ACTIVE_PLAYER_KEY,p.id);localStorage.setItem("meihao_player_name",p.name);}catch(e){}}renderLeaderboard(window.meihaoLeaderboardType||"speed");}
         function openLeaderboard(){document.getElementById("leaderboard-modal").classList.remove("hidden");renderLeaderboard("speed");}
         function closeLeaderboard(){document.getElementById("leaderboard-modal").classList.add("hidden");}
+        let gameSupabaseClient=null, gameSupabaseUser=null, gameAuthReady=false;
+        function initSharedLeaderboard(){
+            const cfg=window.MeihaoSupabaseConfig;
+            if(!cfg||!window.supabase||!cfg.url||!cfg.publishableKey){setLeaderboardAuthStatus("共用排行榜連線設定未載入。");return;}
+            gameSupabaseClient=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+            gameSupabaseClient.auth.getSession().then(({data,error})=>{if(error)throw error;gameSupabaseUser=data.session&&data.session.user||null;gameAuthReady=true;updateLeaderboardAuthUI();}).catch(e=>{console.warn("排行榜登入狀態讀取失敗",e);setLeaderboardAuthStatus("登入狀態讀取失敗；仍可查看公開榜單。");});
+            gameSupabaseClient.auth.onAuthStateChange((_event,session)=>{gameSupabaseUser=session&&session.user||null;gameAuthReady=true;updateLeaderboardAuthUI();if(!document.getElementById("leaderboard-modal").classList.contains("hidden"))renderLeaderboard(window.meihaoLeaderboardType||"speed");});
+        }
+        function setLeaderboardAuthStatus(t){const el=document.getElementById("leaderboard-auth-status");if(el)el.textContent=t;}
+        function updateLeaderboardAuthUI(){const btn=document.getElementById("leaderboard-login-btn");if(gameSupabaseUser){setLeaderboardAuthStatus("已登入｜成績會依帳號同步，所有玩家都能查看共同排行榜。");if(btn)btn.classList.add("hidden");}else{setLeaderboardAuthStatus("目前未登入：可查看共同榜單，但需登入才能上傳個人最佳成績。");if(btn)btn.classList.remove("hidden");}}
+        async function loginForSharedLeaderboard(){if(!gameSupabaseClient){alert("登入服務尚未載入，請重新整理頁面。");return;}const cfg=window.MeihaoSupabaseConfig;const {error}=await gameSupabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:cfg.redirectTo}});if(error)alert("登入啟動失敗："+error.message);}
         function getLocalLeaderboard(){let raw=[];try{raw=JSON.parse(localStorage.getItem("meihao_game_leaderboard")||"[]");}catch(e){}if(!Array.isArray(raw))raw=[];const best=new Map();raw.forEach(r=>{if(!r||!r.mode||!r.playerId)return;const key=r.playerId+"::"+r.mode+"::"+r.boardType;const prev=best.get(key);const better=!prev||(r.boardType==="speed"?Number(r.seconds||Infinity)<Number(prev.seconds||Infinity):Number(r.score||0)>Number(prev.score||0));if(better)best.set(key,r);});const result=Array.from(best.values());try{localStorage.setItem("meihao_game_leaderboard",JSON.stringify(result));}catch(e){}return result;}
-        function renderLeaderboard(type="speed"){window.meihaoLeaderboardType=type;const rows=getLocalLeaderboard().filter(r=>r.boardType===type).sort((a,b)=>type==="speed"?Number(a.seconds)-Number(b.seconds):Number(b.score)-Number(a.score)).slice(0,10);const st=document.getElementById("leaderboard-speed-tab"),ct=document.getElementById("leaderboard-score-tab");st.className=type==="speed"?"rounded-xl bg-purple-600 text-white p-3 font-black":"rounded-xl bg-purple-100 text-purple-900 p-3 font-black";ct.className=type==="score"?"rounded-xl bg-amber-500 text-white p-3 font-black":"rounded-xl bg-amber-100 text-amber-900 p-3 font-black";const el=document.getElementById("leaderboard-content");if(!rows.length){el.innerHTML='<p class="rounded-xl bg-white p-4">目前還沒有符合條件的最佳紀錄。</p>';return;}const names={prime:"質數挑戰",mult13:"13 的倍數",mult17:"17 的倍數",mult19:"19 的倍數",multAll:"綜合乘法",mixed:"綜合大魔王"};el.innerHTML=rows.map((r,i)=>'<div class="flex justify-between items-center gap-2 rounded-xl bg-white p-3"><div><b>#'+(i+1)+" "+safeRankText(names[r.mode]||r.mode)+'</b><div class="text-xs text-gray-500">'+safeRankText(r.name||p.name)+"・第 "+r.level+' 關</div></div><strong class="text-indigo-700">'+(type==="speed"?Number(r.seconds||0)+" 秒":Number(r.score||0)+" 分")+'</strong></div>').join("");}
+        async function submitAllLocalBestToCloud(){
+            if(!gameSupabaseClient||!gameSupabaseUser)return {skipped:true};
+            const p=getActivePlayer();const rows=getLocalLeaderboard().filter(r=>r.playerId===p.id);
+            for(const r of rows){const {error}=await gameSupabaseClient.rpc("submit_game_best",{p_game_key:"math-prime-multiples-runner",p_game_mode:r.mode,p_board_type:r.boardType,p_display_name:p.name,p_best_seconds:Number(r.seconds||0),p_best_score:Number(r.score||0),p_best_level:Number(r.level||1),p_cleared:!!r.cleared});if(error){console.error("排行榜上傳失敗",error);setLeaderboardAuthStatus("排行榜同步失敗："+error.message);return {error};}}
+            return {success:true};
+        }
+        async function renderLeaderboard(type="speed"){
+            window.meihaoLeaderboardType=type;
+            const st=document.getElementById("leaderboard-speed-tab"),ct=document.getElementById("leaderboard-score-tab");
+            st.className=type==="speed"?"rounded-xl bg-purple-600 text-white p-3 font-black":"rounded-xl bg-purple-100 text-purple-900 p-3 font-black";
+            ct.className=type==="score"?"rounded-xl bg-amber-500 text-white p-3 font-black":"rounded-xl bg-amber-100 text-amber-900 p-3 font-black";
+            const el=document.getElementById("leaderboard-content");el.innerHTML='<p class="rounded-xl bg-white p-4">正在載入所有玩家的最佳成績…</p>';
+            if(!gameSupabaseClient){el.innerHTML='<p class="rounded-xl bg-white p-4">共用排行榜尚未連線。</p>';return;}
+            const {data,error}=await gameSupabaseClient.from("game_leaderboard").select("display_name,game_mode,board_type,best_seconds,best_score,best_level,updated_at").eq("game_key","math-prime-multiples-runner").eq("board_type",type).order(type==="speed"?"best_seconds":"best_score",{ascending:type==="speed"}).limit(20);
+            if(error){console.error("讀取共用排行榜失敗",error);el.innerHTML='<p class="rounded-xl bg-rose-50 p-4">排行榜讀取失敗：'+safeRankText(error.message)+'</p>';return;}
+            if(!data||!data.length){el.innerHTML='<p class="rounded-xl bg-white p-4">目前還沒有玩家上傳成績。登入並完成挑戰後即可登上榜單。</p>';return;}
+            const names={prime:"質數挑戰",mult13:"13 的倍數",mult17:"17 的倍數",mult19:"19 的倍數",multAll:"綜合乘法",mixed:"綜合大魔王"};
+            el.innerHTML=data.map((r,i)=>'<div class="flex justify-between items-center gap-2 rounded-xl bg-white p-3"><div class="min-w-0"><b>#'+(i+1)+' '+safeRankText(names[r.game_mode]||r.game_mode)+'</b><div class="text-xs text-gray-500">'+safeRankText(r.display_name)+'・第 '+Number(r.best_level||1)+' 關</div></div><strong class="text-indigo-700 whitespace-nowrap">'+(type==="speed"?Number(r.best_seconds||0)+" 秒":Number(r.best_score||0)+" 分")+"</strong></div>").join("");
+        }
+        function openLeaderboard(){document.getElementById("leaderboard-modal").classList.remove("hidden");updateLeaderboardAuthUI();renderLeaderboard("speed");}
+        function closeLeaderboard(){document.getElementById("leaderboard-modal").classList.add("hidden");}
         function safeRankText(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -1139,6 +1173,7 @@
         }
 
         window.onload = () => {
+            initSharedLeaderboard();
             init3D();
             initAudio();
             animate();
