@@ -989,6 +989,31 @@
                 document.getElementById('clear-title').innerText = `第 ${currentLevel} 關 完美通關！`;
                 document.getElementById('level-clear-modal').classList.remove('hidden');
             } else {
+                const victoryCopy = {
+                    prime: {
+                        title: "🏆 質數三關全部通關！",
+                        description: "恭喜完成質數與易錯合數的三關挑戰！你已能辨別質數與合數。"
+                    },
+                    mult13: {
+                        title: "🏆 13 的倍數三關全部通關！",
+                        description: "恭喜完成 13 的倍數三關挑戰！"
+                    },
+                    mult17: {
+                        title: "🏆 17 的倍數三關全部通關！",
+                        description: "恭喜完成 17 的倍數三關挑戰！"
+                    },
+                    mult19: {
+                        title: "🏆 19 的倍數三關全部通關！",
+                        description: "恭喜完成 19 的倍數三關挑戰！"
+                    },
+                    mixed: {
+                        title: "🏆 綜合大魔王三關全部通關！",
+                        description: "恭喜完成質數與倍數的綜合三關挑戰！"
+                    }
+                };
+                const copy = victoryCopy[gameMode] || victoryCopy.prime;
+                document.querySelector('#victory-modal h2').innerText = copy.title;
+                document.querySelector('#victory-modal p').innerText = copy.description;
                 document.getElementById('victory-modal').classList.remove('hidden');
             }
         }
