@@ -567,7 +567,7 @@
         }
 
         let currentTargetMultiplier = 2;
-        function getExplanation(num, type) {
+        function getExplanation(num, type, multiplier = currentTargetMultiplier) {
             if (type === 'prime') {
                 const tricky = MATH_DATA.trickyComposites.find(t => t.num === num);
                 if (tricky) return tricky.explanation;
@@ -583,7 +583,7 @@
                 if (num % 19 === 0) return `${num} 是 19 的倍數 (${num} = 19 × ${num / 19})！`;
                 return `${num} 不能被 19 整除！`;
             } else if (type === 'multAll') {
-                return num % currentTargetMultiplier === 0 ? `${num} 是 ${currentTargetMultiplier} 的倍數！` : `${num} 不是 ${currentTargetMultiplier} 的倍數。`;
+                return num % multiplier === 0 ? `${num} 是 ${multiplier} 的倍數！` : `${num} 不是 ${multiplier} 的倍數。`;
             }
             return "";
         }
@@ -792,10 +792,8 @@
             if (gate.position.z > -1.5 && gate.position.z < 1.0) {
                 // 跳躍越過題門即略過並標記已處理，落地後不再補判錯。
                 if (isJumping && playerMesh.position.y > 1.8) {
+                    // 跳過只代表略過本題：不加分、不計入連勝，也不重置既有連勝。
                     gate.userData.passed = true;
-                    streakCount++;
-                    document.getElementById('combo-text').innerText = `${streakCount} / ${totalSequenceCount}`;
-                    if (streakCount >= totalSequenceCount) triggerLevelClear();
                     return;
                 }
 
@@ -808,7 +806,7 @@
                     streakCount++;
                     score += 5; // +5 points for correct answer
                     playSound('correct');
-                    showFeedback(true, "答對了！ (+5分)", getExplanation(chosenNumber, questionData.targetType));
+                    showFeedback(true, "答對了！ (+5分)", getExplanation(chosenNumber, questionData.targetType, questionData.multiplier));
 
                     if (streakCount >= totalSequenceCount) {
                         triggerLevelClear();
@@ -1014,6 +1012,11 @@
 
         function selectMode(mode) {
             gameMode = mode;
+            // 切換題型時重置專屬關卡狀態，避免上一次的綜合乘法關卡殘留。
+            currentLevel = 1;
+            multStage = 1;
+            streakCount = 0;
+            currentTargetMultiplier = 2;
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.className = "mode-btn bg-white text-gray-700 font-bold p-2.5 rounded-xl border-2 border-gray-200 shadow-sm text-xs md:text-sm";
             });
