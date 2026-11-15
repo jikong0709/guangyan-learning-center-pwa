@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ff4b7d"><meta name="description" content="莓好學習區周計分板：每週加扣分、50分與100分結算、長期累計與獎勵兌換。">
+<title>周計分板｜莓好學習區</title>
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./styles.css?v=25"><link rel="stylesheet" href="./learning-navigation.css"><link rel="stylesheet" href="./score-board.css">
+</head>
+<body>
+<header class="topbar"><div class="shell topbar-inner">
+<a class="brand" href="./index.html"><span aria-hidden="true">🍓</span><span>莓好學習區</span></a>
+<nav class="berry-progress-nav" aria-label="學習區分頁">
+<a href="./index.html">教材中心</a><a href="./self-progress.html">自學進度</a><a href="./school-progress.html">學校進度</a><a href="./score-board.html" aria-current="page">周計分板</a><a href="./school-progress.html#add">新增進度</a>
+</nav><div class="score-auth" id="syncStatus" role="status">本機儲存</div>
+</div></header>
+<main class="score-shell">
+<section class="hero"><div><span class="eyebrow">莓好學習區｜家庭獎懲制度</span><h1>周計分板</h1><p>週五至週四為一個計分週期，記錄每日表現並於期限內完成結算。</p></div><div class="hero-icon" aria-hidden="true">🏆</div></section>
+<section class="toolbar panel">
+<div class="view-switch"><button id="weekMode" class="active" type="button">週視圖</button><button id="monthMode" type="button">月視圖</button></div>
+<div class="date-nav"><button class="icon-btn" id="prevPeriod" type="button" aria-label="上一期">‹</button><div><strong id="periodTitle"></strong><small id="periodRange"></small></div><button class="icon-btn" id="nextPeriod" type="button" aria-label="下一期">›</button><button class="today-btn" id="todayBtn" type="button">回到今天</button></div>
+<div class="balance-mini"><small>長期累計可用積分</small><strong id="headerBalance">0 分</strong><button class="deduct-btn" data-action="deduct" type="button">－ 扣除積分</button></div>
+</section>
+<section class="panel calendar-panel"><div class="calendar-heading"><h2 id="calendarHeading">每週紀錄</h2><span id="selectedDateLabel"></span></div><div class="week-head" id="weekHead"><span>週五</span><span>週六</span><span>週日</span><span>週一</span><span>週二</span><span>週三</span><span>週四</span><span>本週結算</span></div><div id="calendarGrid" class="calendar-grid"></div></section>
+<section class="panel shortcuts">
+<div class="section-heading"><div><h2>快捷登記分數</h2><p>登記日期：<strong id="entryDate"></strong></p></div><div class="shortcut-actions"><button class="soft-btn" data-action="custom-add" type="button">自訂加分</button><button class="soft-btn danger" data-action="custom-sub" type="button">自訂扣分</button></div></div>
+<div class="shortcut-groups">
+<div><h3 class="positive-title">＋ 加分項目</h3><div class="shortcut-grid">
+<button data-points="5" data-reason="當週評量進度完成">當週評量進度完成 <b>+5</b></button>
+<button data-points="5" data-reason="學校：數學作業全對">學校：數學作業全對 <b>+5</b></button>
+<button data-points="5" data-reason="學校：國語作業全對">學校：國語作業全對 <b>+5</b></button>
+<button data-points="5" data-reason="學校：考卷全對">學校：考卷全對 <b>+5</b></button>
+<button data-points="10" data-reason="學校：期中／期末100分">期中／期末100分 <b>+10</b></button>
+<button data-points="5" data-reason="安親班：小考全對">安親班：小考全對 <b>+5</b></button>
+<button data-points="5" data-reason="安親班：考卷全對">安親班：考卷全對 <b>+5</b></button>
+<button data-points="5" data-reason="安親班：國語評量全對">安親班：國語評量全對 <b>+5</b></button>
+<button data-points="5" data-reason="安親班：數學評量全對">安親班：數學評量全對 <b>+5</b></button>
+<button data-points="5" data-reason="安親班：社會評量全對">安親班：社會評量全對 <b>+5</b></button>
+<button data-points="5" data-reason="安親班：自然評量全對">安親班：自然評量全對 <b>+5</b></button>
+<button data-points="5" data-reason="家長表現隨機加分">家長表現隨機加分 <b>+5</b></button>
+</div></div>
+<div><h3 class="negative-title">－ 扣分項目</h3><div class="shortcut-grid negative-grid">
+<button data-points="-5" data-reason="學校：數學作業有錯">學校：數學作業有錯 <b>−5</b></button>
+<button data-points="-5" data-reason="學校：國語作業有錯">學校：國語作業有錯 <b>−5</b></button>
+<button data-points="-5" data-reason="安親班：小考有錯">安親班：小考有錯 <b>−5</b></button>
+<button data-points="-5" data-reason="安親班：考卷有錯">安親班：考卷有錯 <b>−5</b></button>
+<button data-points="0" data-reason="安親班：國語評量有錯（不扣分，僅紀錄）">安親班：國語評量有錯 <b>0</b></button>
+<button data-points="0" data-reason="安親班：數學評量有錯（不扣分，僅紀錄）">安親班：數學評量有錯 <b>0</b></button>
+<button data-points="0" data-reason="安親班：社會評量有錯（不扣分，僅紀錄）">安親班：社會評量有錯 <b>0</b></button>
+<button data-points="0" data-reason="安親班：自然評量有錯（不扣分，僅紀錄）">安親班：自然評量有錯 <b>0</b></button>
+<button data-points="-5" data-reason="家長表現隨機扣分">家長表現隨機扣分 <b>−5</b></button>
+</div></div></div>
+</section>
+<section class="panel cumulative" id="cumulativePanel">
+<div class="section-heading"><div><span class="eyebrow">LONG-TERM POINTS</span><h2>長期累計積分</h2><p>三種來源分開記帳，扣除時選擇積分來源。</p></div><button class="reward-btn" data-action="reward" type="button">＋ 家長額外獎勵</button></div>
+<div class="total-balance"><small>累計可用總額</small><strong id="totalBalance">0</strong><span>分</span></div>
+<div class="category-grid">
+<article class="category-card"><span class="category-index">01</span><h3>剛好50分轉入</h3><strong id="balanceExact">0 分</strong><p>每週結算剛好50分，整週50分轉入累計。</p><button type="button" data-action="deduct" data-category="exact50">扣除此類積分</button></article>
+<article class="category-card"><span class="category-index">02</span><h3>超過100分超額</h3><strong id="balanceExcess">0 分</strong><p>每週超過100分的超額部分轉入累計。</p><button type="button" data-action="deduct" data-category="excess100">扣除此類積分</button></article>
+<article class="category-card"><span class="category-index">03</span><h3>家長額外獎勵</h3><strong id="balanceBonus">0 分</strong><p>家長手動新增的獎勵、補發積分。</p><button type="button" data-action="deduct" data-category="parentBonus">扣除此類積分</button></article>
+</div>
+<div class="ledger-heading"><h3>積分異動明細</h3><span id="ledgerCount">0 筆紀錄</span></div><div id="ledgerList" class="ledger-list"></div>
+</section>
+<section class="panel rules-panel"><div class="section-heading"><div><h2>計分規則</h2><p>依原始計分本設定，逾期結算自動扣20分。</p></div><div class="shortcut-actions"><button class="soft-btn" data-action="edit-rules" type="button">編輯規則</button><button class="soft-btn danger" data-action="reset" type="button">重置全部資料</button></div></div><ol id="rulesList"></ol></section>
+</main>
+<div id="modalRoot"></div><div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="./supabase-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script><script src="./score-board.js"></script>
+</body></html>
