@@ -144,6 +144,8 @@ declare
   v_refund_snapshot jsonb;
 begin
   if v_user_id is null then raise exception 'authentication required' using errcode='42501'; end if;
+  -- 與一般交易及重置共用同一使用者層級鎖。
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_user_id::text || '|wallet-global', 0));
   if p_idempotency_key is null then raise exception 'idempotency key required'; end if;
   if p_original_transaction_id is null then raise exception 'original transaction required'; end if;
   if p_amount is null or p_amount <= 0 then raise exception 'refund amount must be positive'; end if;
