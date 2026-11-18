@@ -125,8 +125,8 @@
     const byKey = new Map(), bySource = new Map();
     let initialDone = false;
     function summary() {
-      const income = transactions.filter(x => ['income','initial_funding','scoreboard_snack'].includes(x.type)).reduce((n,x)=>n+x.amount,0)
-        + transactions.filter(x=>x.type==='refund').reduce((n,x)=>n+effectiveTransaction(x.id).amount,0);
+      const income = transactions.filter(x => ['income','initial_funding','scoreboard_snack','refund'].includes(x.type))
+        .reduce((n,x)=>n+effectiveTransaction(x.id).amount,0);
       const expense = transactions.filter(x=>x.type==='expense').reduce((n,x)=>n+effectiveTransaction(x.id).amount,0);
       const totalAssets = FUND_TYPES.reduce((n,k)=>n+accounts[k],0);
       return Object.freeze({ userId, totalAssets, income, expense, cumulativeSavings: totalAssets,
