@@ -50,7 +50,7 @@
       validateExpenseAllocation(category,allocation);
       assert(rows.length>0&&positive.length===0,'INVALID_ALLOCATION','支出分配必須全部為負數。');
     } else if(type==='refund'){
-      assert(rows.length>0&&negative.length===0,'INVALID_ALLOCATION','退款分配必須全部為正數。');
+      assert(category===null&&rows.length>0&&negative.length===0,'INVALID_ALLOCATION','退款分類必須為空，且分配必須全部為正數。');
     } else if(type==='initial_funding'||type==='income'){
       assert(category===null&&rows.length===1&&positive.length===1&&rows[0][0]==='allowance'&&rows[0][1]===amount,
         'INVALID_ALLOCATION','初始建帳及現金收入只能全額入零用金。');
