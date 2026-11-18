@@ -337,7 +337,10 @@ begin
       end if;
     end loop;
     if v_after->>'note' is null or btrim(v_after->>'note')='' then raise exception 'note required'; end if;
-    if v_after ? 'occurred_at' then perform (v_after->>'occurred_at')::timestamptz; end if;
+    if v_after ? 'occurred_at' then
+      if v_after->>'occurred_at' is null then raise exception 'correction date cannot be null'; end if;
+      perform (v_after->>'occurred_at')::timestamptz;
+    end if;
   else
     if v_target.transaction_type not in ('expense','refund') then
       raise exception 'financial/classification correction currently supports expense and refund transactions only';
