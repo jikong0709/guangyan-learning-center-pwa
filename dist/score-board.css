@@ -115,3 +115,6 @@ button:disabled { cursor:not-allowed; opacity:.72; }
 }
 @media(max-width:380px) { .date-nav { grid-template-columns:44px minmax(0,1fr) 44px; } .date-nav .today-btn { grid-column:1 / -1; } }
 @media(max-width:620px) { .icon-btn,.today-btn,.view-switch button { min-height:44px; } .date-nav .icon-btn { min-width:44px; } }
+
+/* P2：累計積分操作按鈕觸控尺寸統一 */
+.deduct-btn,.reward-btn { min-height:44px; }
