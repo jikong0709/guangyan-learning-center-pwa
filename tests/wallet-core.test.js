@@ -270,3 +270,28 @@ test('其他孩子帳戶的交易識別不可作為本帳戶更正目標', () =>
     reason: '跨帳戶測試', changes: { note: '不應寫入' }, idempotencyKey: 'isolation-correction' }),
     { code: 'ORIGINAL_NOT_FOUND' });
 });
+
+
+test('一般收入更正依原規則只能調整零用金，並更新有效收入摘要', () => {
+  const wallet = fundedWallet(100);
+  const result = wallet.correct({ targetTransactionId: wallet.listTransactions()[0].id, correctionType: 'financial',
+    reason: '初始建帳金額登錄錯誤', changes: { amount: 90, fundAllocations: { allowance: 90 } },
+    idempotencyKey: 'initial-financial-correction' });
+  assert.equal(result.transaction.entries[0].delta, -10);
+  assert.equal(wallet.summary().balances.allowance, 90);
+  assert.equal(wallet.summary().income, 90);
+  assert.equal(wallet.getEffectiveTransaction(wallet.listTransactions()[0].id).amount, 90);
+});
+
+test('資金轉換更正必須等額轉出轉入，且總資產不變', () => {
+  const wallet = fundedWallet(100);
+  const transferResult = transfer(wallet, 'general', 20, 'transfer-to-correct');
+  const corrected = wallet.correct({ targetTransactionId: transferResult.transaction.id, correctionType: 'financial',
+    reason: '修正轉換金額', changes: { amount: 15, fundAllocations: { allowance: -15, general: 15 } },
+    idempotencyKey: 'transfer-financial-correction' });
+  const deltas = Object.fromEntries(corrected.transaction.entries.map(e => [e.fundType, e.delta]));
+  assert.deepEqual(deltas, { general: -5, allowance: 5 });
+  assert.equal(wallet.summary().balances.allowance, 85);
+  assert.equal(wallet.summary().balances.general, 15);
+  assert.equal(wallet.summary().totalAssets, 100);
+});
