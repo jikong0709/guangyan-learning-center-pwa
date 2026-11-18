@@ -42,6 +42,29 @@
     assert(CATEGORIES.includes(category), 'INVALID_CATEGORY', '交易分類無效。');
     Object.keys(allocation).forEach(f => assert(ALLOWED_FUNDS[category].includes(f), 'FUND_NOT_ALLOWED', FUND_LABELS[f] + '不可用於此商品分類。'));
   }
+  function validateCorrectedAllocation(type, category, amount, allocation) {
+    const rows=Object.entries(allocation);
+    const positive=rows.filter(([,v])=>v>0), negative=rows.filter(([,v])=>v<0);
+    assert(allocationTotal(allocation)===amount,'ALLOCATION_TOTAL_MISMATCH','修正後資金分配總額必須等於修正後金額。');
+    if(type==='expense'){
+      validateExpenseAllocation(category,allocation);
+      assert(rows.length>0&&positive.length===0,'INVALID_ALLOCATION','支出分配必須全部為負數。');
+    } else if(type==='refund'){
+      assert(rows.length>0&&negative.length===0,'INVALID_ALLOCATION','退款分配必須全部為正數。');
+    } else if(type==='initial_funding'||type==='income'){
+      assert(category===null&&rows.length===1&&positive.length===1&&rows[0][0]==='allowance'&&rows[0][1]===amount,
+        'INVALID_ALLOCATION','初始建帳及現金收入只能全額入零用金。');
+    } else if(type==='scoreboard_snack'){
+      assert(category===null&&rows.length===1&&positive.length===1&&rows[0][0]==='snack'&&rows[0][1]===amount,
+        'INVALID_ALLOCATION','週結算 snackMoney 只能全額入零食金。');
+    } else if(type==='transfer'){
+      assert(category===null&&rows.length===2&&positive.length===1&&negative.length===1&&
+        positive[0][1]===amount&&Math.abs(negative[0][1])===amount,
+        'INVALID_ALLOCATION','資金轉換必須等額轉出及轉入。');
+    } else {
+      fail('UNSUPPORTED_FINANCIAL_CORRECTION','此交易類型不支援金額更正。');
+    }
+  }
   function validateOperation(input) {
     assert(plainObject(input), 'INVALID_OPERATION', '交易資料格式錯誤。');
     const type = String(input.type || '');
@@ -189,7 +212,7 @@
         assert(!hasRefund,'PURCHASE_ALREADY_REFUNDED','原購買已有退款，不可再更正分類或資金分配。');
         Object.keys(changes).forEach(k=>assert(['category','fundAllocations'].includes(k),'INVALID_CLASSIFICATION_FIELD','分類更正只能修改分類及必要的資金分配。'));
       } else {
-        assert(['expense','refund'].includes(target.type),'UNSUPPORTED_FINANCIAL_CORRECTION','金額更正目前只支援支出及退款交易。');
+        assert(TRANSACTION_TYPES.includes(target.type)&&target.type!=='correction','UNSUPPORTED_FINANCIAL_CORRECTION','此交易類型不支援金額更正。');
         if(target.type==='expense') assert(!hasRefund,'PURCHASE_ALREADY_REFUNDED','原購買已有退款，不可再更正金額、分類或資金分配。');
         Object.keys(changes).forEach(k=>assert(['amount','category','fundAllocations'].includes(k),'INVALID_FINANCIAL_FIELD','金額更正只能修改金額、分類及資金分配。'));
       }
@@ -202,8 +225,7 @@
         after.amount=money(after.amount,'修正後金額');
         assert(after.amount>0,'INVALID_AMOUNT','修正後金額必須大於 0。');
         after.fundAllocations=normalizeAllocation(after.fundAllocations,target.type);
-        assert(allocationTotal(after.fundAllocations)===after.amount,'ALLOCATION_TOTAL_MISMATCH','修正後資金分配總額必須等於修正後金額。');
-        if(target.type==='expense') validateExpenseAllocation(after.category,after.fundAllocations);
+        validateCorrectedAllocation(target.type,after.category,after.amount,after.fundAllocations);
         if(target.type==='refund'){
           const original=transactions.find(t=>t.id===target.reversalOf);
           assert(!!original&&original.type==='expense','ORIGINAL_NOT_FOUND','找不到退款所屬原購買。');
