@@ -34,10 +34,16 @@ begin
     raise exception 'authentication required' using errcode = '42501';
   end if;
 
-  -- 與同一帳號的錢包寫入序列化，避免重置期間混入新交易。
-  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_user_id::text, 0));
+  -- 確保三種帳戶存在，並先鎖定帳戶列，與一般帳務 RPC 的資金鎖定互斥。
+  insert into public.wallet_accounts(user_id, fund_type, balance)
+    values (v_user_id, 'snack', 0), (v_user_id, 'general', 0), (v_user_id, 'allowance', 0)
+    on conflict (user_id, fund_type) do nothing;
+  perform 1 from public.wallet_accounts
+    where user_id = v_user_id
+    order by fund_type
+    for update;
 
-  -- 僅允許本 RPC 在本交易內刪除本人 append-only 更正事件。
+  -- 僅允許本 RPC 在本交易內刪除本人 append-only 更正事件.
   perform pg_catalog.set_config('app.wallet_reset', 'on', true);
 
   -- 自最新更正版本往前刪除，先解除 previous_correction_event_id 自我參照。
@@ -54,12 +60,16 @@ begin
   delete from public.wallet_entries where user_id = v_user_id;
   get diagnostics v_entries_deleted = row_count;
 
-  delete from public.wallet_transactions where user_id = v_user_id;
-  get diagnostics v_transactions_deleted = row_count;
-
-  insert into public.wallet_accounts(user_id, fund_type, balance)
-    values (v_user_id, 'snack', 0), (v_user_id, 'general', 0), (v_user_id, 'allowance', 0)
-    on conflict (user_id, fund_type) do nothing;
+  -- 先刪除退款／更正等 reversal 子交易，再刪除被其引用的原交易。
+  for v_event in
+    select id
+    from public.wallet_transactions
+    where user_id = v_user_id
+    order by (reversal_of is null), created_at desc
+  loop
+    delete from public.wallet_transactions where id = v_event.id and user_id = v_user_id;
+    v_transactions_deleted := v_transactions_deleted + 1;
+  end loop;
 
   update public.wallet_accounts
     set balance = 0, updated_at = now()
