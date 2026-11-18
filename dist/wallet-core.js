@@ -209,7 +209,11 @@
           const refundedElsewhere=transactions.filter(t=>t.type==='refund'&&t.reversalOf===original.id&&t.id!==target.id).reduce((n,t)=>n+effectiveTransaction(t.id).amount,0);
           assert(refundedElsewhere+after.amount<=effectivePurchase.amount,'REFUND_EXCEEDS_ORIGINAL','更正後退款總額超過原購買有效金額。');
           const originalAlloc=effectivePurchase.fundAllocations;
-          Object.keys(after.fundAllocations).forEach(f=>assert(Number(after.fundAllocations[f])<=Math.abs(Number(originalAlloc[f]||0)),'REFUND_FUND_MISMATCH','退款更正不可超過原購買該資金分類的扣款額。'));
+          const refundOriginalAlloc=before.fundAllocations||{};
+          Object.keys(after.fundAllocations).forEach(f=>{
+            assert(Number(refundOriginalAlloc[f]||0)>0,'REFUND_FUND_MISMATCH','退款更正只能調整該筆退款原本入帳的資金分類。');
+            assert(Number(after.fundAllocations[f])<=Math.abs(Number(originalAlloc[f]||0)),'REFUND_FUND_MISMATCH','退款更正不可超過原購買該資金分類的扣款額。');
+          });
           const others=effectiveRefundAllocations(original.id);
           Object.keys(after.fundAllocations).forEach(f=>assert(Number(others[f]||0)-Number(effectiveTransaction(target.id).fundAllocations[f]||0)+Number(after.fundAllocations[f])<=Math.abs(Number(originalAlloc[f]||0)),'REFUND_FUND_MISMATCH','退款更正後超過原購買該資金分類可退上限。'));
         }
