@@ -261,7 +261,37 @@
       async getAccounts() { const r=await supabase.from('wallet_accounts').select('fund_type,balance,updated_at').order('fund_type'); if(r.error)throw r.error; return r.data||[]; },
       async getTransactions(limit) { const r=await supabase.from('wallet_transactions').select('id,transaction_type,amount,category,note,source_type,source_id,reversal_of,occurred_at,created_at,metadata').order('occurred_at',{ascending:false}).limit(Math.min(Math.max(Number(limit)||50,1),200)); if(r.error)throw r.error; return r.data||[]; },
       async getEntries(ids) { const keys=Array.isArray(ids)?ids.filter(Boolean):[]; if(!keys.length)return []; const r=await supabase.from('wallet_entries').select('transaction_id,fund_type,amount_delta,balance_before,balance_after,created_at').in('transaction_id',keys); if(r.error)throw r.error; return r.data||[]; },
-      async getCorrectionEvents(ids) { const keys=Array.isArray(ids)?ids.filter(Boolean):[]; let q=supabase.from('wallet_correction_events').select('*').order('correction_no',{ascending:true}); if(keys.length)q=q.in('target_transaction_id',keys); const r=await q; if(r.error)throw r.error; return r.data||[]; },
+      async getCorrectionEvents(ids) {
+        const keys=Array.isArray(ids)?ids.filter(Boolean):[];
+        let q=supabase.from('wallet_correction_events').select('*').order('correction_no',{ascending:true});
+        if(keys.length)q=q.in('target_transaction_id',keys);
+        const r=await q; if(r.error)throw r.error;
+        const normalizeSnapshot=s=>{
+          const out=Object.assign({},s||{});
+          if(Object.prototype.hasOwnProperty.call(out,'occurred_at')){out.occurredAt=out.occurred_at;delete out.occurred_at;}
+          if(Object.prototype.hasOwnProperty.call(out,'fund_allocations')){out.fundAllocations=out.fund_allocations;delete out.fund_allocations;}
+          return out;
+        };
+        return (r.data||[]).map(row=>({
+          id:row.id,userId:row.user_id,targetTransactionId:row.target_transaction_id,correctionNo:row.correction_no,
+          correctionType:row.correction_type,reason:row.reason,beforeSnapshot:normalizeSnapshot(row.before_snapshot),
+          afterSnapshot:normalizeSnapshot(row.after_snapshot),fieldChanges:row.field_changes,
+          correctionTransactionId:row.correction_transaction_id,idempotencyKey:row.idempotency_key,
+          createdBy:row.created_by,createdAt:row.created_at,previousCorrectionEventId:row.previous_correction_event_id
+        }));
+      },
+      async getEffectiveTransaction(id) {
+        const r=await supabase.from('wallet_transactions').select('*').eq('id',id).single();
+        if(r.error)throw r.error;
+        const entries=await this.getEntries([id]);
+        const allocations={};
+        entries.forEach(e=>{allocations[e.fund_type]=Number(e.amount_delta);});
+        const effective={amount:Number(r.data.amount),category:r.data.category,note:r.data.note,
+          occurredAt:r.data.occurred_at,fundAllocations:allocations};
+        const events=await this.getCorrectionEvents([id]);
+        events.forEach(e=>Object.assign(effective,e.afterSnapshot));
+        return {transaction:r.data,effective,correctionEvents:events};
+      },
       async post(input) {
         const op=validateOperation(input);
         assert(op.type!=='refund'&&op.type!=='correction','USE_SPECIALIZED_RPC','退款與更正必須使用專用原子 RPC。');
