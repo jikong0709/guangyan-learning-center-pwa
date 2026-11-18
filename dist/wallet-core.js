@@ -231,7 +231,7 @@
         entries.forEach(e=>{accounts[e.fundType]=e.balanceAfter;});
         const gross=entries.reduce((n,e)=>n+Math.abs(e.delta),0);
         correctionTx=Object.freeze({id:'wallet-tx-'+(transactions.length+1),userId,type:'correction',amount:gross,category:null,note:reason,
-          sourceType:null,sourceId:null,reversalOf:target.id,occurredAt:new Date().toISOString(),entries:Object.freeze(entries.map(Object.freeze)),
+          sourceType:null,sourceId:null,reversalOf:target.id,correctionEventId:eventId,occurredAt:new Date().toISOString(),entries:Object.freeze(entries.map(Object.freeze)),
           metadata:Object.freeze({correctionEventId:eventId,revisionNo:correctionNo,beforeAllocation:oldAlloc,afterAllocation:newAlloc})});
         transactions.push(correctionTx);
       }
