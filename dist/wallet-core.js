@@ -315,6 +315,7 @@
         events.forEach(e=>Object.assign(effective,e.afterSnapshot));
         return {transaction:r.data,effective,correctionEvents:events};
       },
+      async reset() { const r=await supabase.rpc('wallet_reset_account'); if(r.error)throw r.error; return r.data||{}; },
       async post(input) {
         const op=validateOperation(input);
         assert(op.type!=='refund'&&op.type!=='correction','USE_SPECIALIZED_RPC','退款與更正必須使用專用原子 RPC。');
