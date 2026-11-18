@@ -78,7 +78,14 @@ test('每筆交易必須有備註，且更正必須關聯原交易並保留分�
   assert.throws(() => Wallet.validateOperation(op({ type: 'correction', amount: 10, entries: [{ fundType: 'snack', delta: -10 }] })), { code: 'INVALID_CORRECTION' });
   const wallet = Wallet.createWalletEngine({ userId: 'u1' });
   const original = wallet.apply(op({ type: 'initial_funding', amount: 100, entries: [{ fundType: 'allowance', delta: 100 }], idempotencyKey: 'initial-1' }));
-  const correction = wallet.apply(op({ type: 'correction', amount: 10, entries: [{ fundType: 'allowance', delta: -10 }], reversalOf: original.transaction.id, idempotencyKey: 'correction-1' }));
+  assert.throws(() => wallet.apply(op({ type: 'correction', amount: 10, entries: [{ fundType: 'allowance', delta: -10 }], reversalOf: original.transaction.id, idempotencyKey: 'correction-legacy' })), { code: 'USE_CORRECTION_EVENT' });
+  const correction = wallet.correct({
+    targetTransactionId: original.transaction.id,
+    correctionType: 'financial',
+    reason: '初始建帳金額修正',
+    changes: { amount: 90, fundAllocations: { allowance: 90 } },
+    idempotencyKey: 'correction-1'
+  });
   assert.equal(correction.summary.balances.allowance, 90);
   assert.equal(correction.transaction.reversalOf, original.transaction.id);
 });

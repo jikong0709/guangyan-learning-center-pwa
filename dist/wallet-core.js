@@ -40,7 +40,7 @@
   function allocationTotal(allocation) { return Object.values(allocation).reduce((n, v) => n + Math.abs(v), 0); }
   function validateExpenseAllocation(category, allocation) {
     assert(CATEGORIES.includes(category), 'INVALID_CATEGORY', '交易分類無效。');
-    Object.keys(allocation).forEach(f => assert(ALLOWED_FUNDS[category].includes(f), 'FUND_NOT_ALLOWED', FUND_LABELS[f] + '不可用於此商品分類。'));
+    Object.keys(allocation).forEach(f => { if (Number(allocation[f] || 0) !== 0) assert(ALLOWED_FUNDS[category].includes(f), 'FUND_NOT_ALLOWED', FUND_LABELS[f] + '不可用於此商品分類。'); });
   }
   function validateCorrectedAllocation(type, category, amount, allocation) {
     const rows=Object.entries(allocation);
