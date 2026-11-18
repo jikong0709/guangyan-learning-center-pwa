@@ -34,6 +34,9 @@ begin
     raise exception 'authentication required' using errcode = '42501';
   end if;
 
+  -- 與收入、支出、轉換、退款及更正 RPC 共用鎖，避免重置期間新增或殘留交易。
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_user_id::text || '|wallet-global', 0));
+
   -- 確保三種帳戶存在，並先鎖定帳戶列，與一般帳務 RPC 的資金鎖定互斥。
   insert into public.wallet_accounts(user_id, fund_type, balance)
     values (v_user_id, 'snack', 0), (v_user_id, 'general', 0), (v_user_id, 'allowance', 0)
