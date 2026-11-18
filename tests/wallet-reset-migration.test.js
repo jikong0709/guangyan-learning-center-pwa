@@ -48,11 +48,11 @@ test('重置 RPC 僅授權 authenticated 呼叫', () => {
 });
 
 test('更正事件 Migration 必須只有一份完整更正 RPC，且不得殘留截斷 SQL', () => {
-  assert.equal((corrections.match(/create or replace function public\\.wallet_apply_correction\\(/g) || []).length, 1);
-  assert.equal((corrections.match(/create or replace function public\\.wallet_apply_refund\\(/g) || []).length, 1);
-  assert.match(corrections, /!~ '\\^-\\?\\[0-9\\]\\+\\$' then raise exception 'fund allocation must be integer'; end if;/);
+  assert.equal(corrections.split('create or replace function public.wallet_apply_correction(').length - 1, 1);
+  assert.equal(corrections.split('create or replace function public.wallet_apply_refund(').length - 1, 1);
+  assert.ok(corrections.includes("if coalesce(v_after->'fund_allocations'->>v_key,'') !~ '^-?[0-9]+$' then raise exception 'fund allocation must be integer'; end if;"));
   assert.doesNotMatch(corrections, /^\\s*then raise exception/m);
-  assert.equal((corrections.match(/grant execute on function public\\.wallet_apply_correction/g) || []).length, 1);
-  assert.equal((corrections.match(/grant execute on function public\\.wallet_apply_refund/g) || []).length, 1);
-  assert.equal((corrections.match(/\\$\\$/g) || []).length % 2, 0);
+  assert.equal(corrections.split('grant execute on function public.wallet_apply_correction').length - 1, 1);
+  assert.equal(corrections.split('grant execute on function public.wallet_apply_refund').length - 1, 1);
+  assert.equal((corrections.split('$$').length - 1) % 2, 0);
 });
