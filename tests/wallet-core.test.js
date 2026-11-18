@@ -232,3 +232,41 @@ test('不存在、跨帳戶或 correction 交易不得作為更正目標', () =>
   assert.throws(() => wallet.correct({ targetTransactionId: correction.transaction.id, correctionType: 'record_only',
     reason: '不允許', changes: { note: 'x' }, idempotencyKey: 'correction-target-block' }), { code: 'ORIGINAL_NOT_FOUND' });
 });
+
+
+test('退款更正不得改用原購買曾使用、但該筆退款未使用的資金分類', () => {
+  const wallet = fundedWallet(100);
+  transfer(wallet, 'snack', 20, 'refund-fund-snack');
+  const expense = wallet.apply(op({ type: 'expense', amount: 20, category: 'non_food',
+    entries: [{ fundType: 'snack', delta: -10 }, { fundType: 'allowance', delta: -10 }],
+    idempotencyKey: 'refund-fund-expense' }));
+  const refund = wallet.apply(op({ type: 'refund', amount: 5,
+    entries: [{ fundType: 'snack', delta: 5 }], reversalOf: expense.transaction.id, idempotencyKey: 'refund-fund-original' }));
+  assert.throws(() => wallet.correct({ targetTransactionId: refund.transaction.id, correctionType: 'financial',
+    reason: '不可轉換退款來源', changes: { amount: 5, fundAllocations: { allowance: 5 } },
+    idempotencyKey: 'refund-fund-invalid-correction' }), { code: 'REFUND_FUND_MISMATCH' });
+});
+
+test('更正原因、日期及修正後分配總額錯誤均拒絕且不留紀錄', () => {
+  const wallet = fundedWallet(100);
+  const expense = wallet.apply(op({ type: 'expense', amount: 20, category: 'non_food',
+    entries: [{ fundType: 'allowance', delta: -20 }], idempotencyKey: 'validation-expense' }));
+  assert.throws(() => wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'record_only',
+    reason: ' ', changes: { note: 'x' }, idempotencyKey: 'validation-blank-reason' }), { code: 'CORRECTION_REASON_REQUIRED' });
+  assert.throws(() => wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'record_only',
+    reason: '日期錯誤', changes: { occurredAt: 'not-a-date' }, idempotencyKey: 'validation-date' }), { code: 'INVALID_DATE' });
+  assert.throws(() => wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'financial',
+    reason: '分配總額錯誤', changes: { amount: 18, fundAllocations: { allowance: -17 } },
+    idempotencyKey: 'validation-total' }), { code: 'ALLOCATION_TOTAL_MISMATCH' });
+  assert.equal(wallet.listCorrectionEvents().length, 0);
+});
+
+test('其他孩子帳戶的交易識別不可作為本帳戶更正目標', () => {
+  const owner = fundedWallet(100);
+  const other = fundedWallet(100);
+  const expense = owner.apply(op({ type: 'expense', amount: 10, category: 'non_food',
+    entries: [{ fundType: 'allowance', delta: -10 }], idempotencyKey: 'isolation-expense' }));
+  assert.throws(() => other.correct({ targetTransactionId: expense.transaction.id, correctionType: 'record_only',
+    reason: '跨帳戶測試', changes: { note: '不應寫入' }, idempotencyKey: 'isolation-correction' }),
+    { code: 'ORIGINAL_NOT_FOUND' });
+});
