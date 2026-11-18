@@ -10,6 +10,15 @@ function op(overrides) {
   }, overrides || {});
 }
 
+test('重置 RPC 失敗時服務必須回傳錯誤', async () => {
+  const expected = new Error('permission denied');
+  const service = Wallet.createWalletService({
+    rpc: async () => ({ data: null, error: expected }),
+    from: () => { throw new Error('reset must not query tables directly'); }
+  });
+  await assert.rejects(service.reset(), error => error === expected);
+});
+
 test('重置服務呼叫登入者專屬重置 RPC 並回傳清除摘要', async () => {
   let call = null;
   const service = Wallet.createWalletService({
