@@ -91,3 +91,144 @@ test('退款只能退回原支出資金來源，且累計退款不可超額', ()
   assert.throws(() => wallet.apply(op({ type: 'refund', amount: 21, entries: [{ fundType: 'allowance', delta: 21 }], reversalOf: expense.transaction.id, idempotencyKey: 'refund-2' })), { code: 'REFUND_EXCEEDS_ORIGINAL' });
   assert.throws(() => wallet.apply(op({ type: 'refund', amount: 1, entries: [{ fundType: 'snack', delta: 1 }], reversalOf: expense.transaction.id, idempotencyKey: 'refund-3' })), { code: 'REFUND_FUND_MISMATCH' });
 });
+
+function fundedWallet(amount) {
+  const wallet = Wallet.createWalletEngine({ userId: 'child-1' });
+  wallet.apply(op({ type: 'initial_funding', amount, entries: [{ fundType: 'allowance', delta: amount }], idempotencyKey: 'seed-' + amount }));
+  return wallet;
+}
+function transfer(wallet, fundType, amount, key) {
+  return wallet.apply(op({ type: 'transfer', amount, entries: [
+    { fundType: 'allowance', delta: -amount }, { fundType, delta: amount }
+  ], idempotencyKey: key }));
+}
+
+test('純資料更正只新增事件與快照，不改變資金、資產或原交易', () => {
+  const wallet = fundedWallet(100);
+  const expense = wallet.apply(op({ type: 'expense', amount: 20, category: 'non_food',
+    entries: [{ fundType: 'allowance', delta: -20 }], idempotencyKey: 'meta-expense' }));
+  const before = wallet.summary();
+  const result = wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'record_only',
+    reason: '修正店家顯示名稱', changes: { storeName: '正確店名', note: '修正後備註' }, idempotencyKey: 'meta-correction' });
+  assert.equal(result.transaction, null);
+  assert.equal(result.event.correctionNo, 1);
+  assert.equal(result.event.beforeSnapshot.note, '測試收入');
+  assert.equal(result.event.afterSnapshot.storeName, '正確店名');
+  assert.deepEqual(wallet.summary(), before);
+  assert.equal(wallet.listTransactions().length, 2);
+  assert.equal(wallet.getEffectiveTransaction(expense.transaction.id).storeName, '正確店名');
+});
+
+test('純資料更正不得改動金額、分類、資金分配或來源防重識別', () => {
+  const wallet = fundedWallet(100);
+  const expense = wallet.apply(op({ type: 'expense', amount: 20, category: 'non_food',
+    entries: [{ fundType: 'allowance', delta: -20 }], idempotencyKey: 'meta-guard' }));
+  assert.throws(() => wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'record_only',
+    reason: '錯誤操作', changes: { amount: 10 }, idempotencyKey: 'meta-guard-2' }), { code: 'IMMUTABLE_OR_FINANCIAL_FIELD' });
+  assert.equal(wallet.listCorrectionEvents().length, 0);
+});
+
+test('分類更正重新驗證資金用途，並可透過淨差額重新分配', () => {
+  const wallet = fundedWallet(100);
+  transfer(wallet, 'general', 30, 'class-transfer');
+  const expense = wallet.apply(op({ type: 'expense', amount: 20, category: 'non_food',
+    entries: [{ fundType: 'general', delta: -10 }, { fundType: 'allowance', delta: -10 }], idempotencyKey: 'class-expense' }));
+  assert.throws(() => wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'classification',
+    reason: '改為零食分類', changes: { category: 'snack_food' }, idempotencyKey: 'class-invalid' }), { code: 'FUND_NOT_ALLOWED' });
+  const result = wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'classification',
+    reason: '改為零食分類並調整資金', changes: { category: 'snack_food', fundAllocations: { allowance: -20 } }, idempotencyKey: 'class-valid' });
+  assert.equal(result.transaction.entries[0].delta, 10);
+  assert.equal(result.transaction.entries[1].delta, -10);
+  assert.equal(wallet.getEffectiveTransaction(expense.transaction.id).category, 'snack_food');
+});
+
+test('混合資金金額更正可同時補回一種資金並扣除另一種資金', () => {
+  const wallet = fundedWallet(100);
+  transfer(wallet, 'general', 30, 'mix-general');
+  transfer(wallet, 'snack', 20, 'mix-snack');
+  const expense = wallet.apply(op({ type: 'expense', amount: 40, category: 'non_food',
+    entries: [{ fundType: 'snack', delta: -10 }, { fundType: 'general', delta: -20 }, { fundType: 'allowance', delta: -10 }],
+    idempotencyKey: 'mix-expense' }));
+  const result = wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'financial',
+    reason: '修正各資金實際扣款', changes: { amount: 35, fundAllocations: { snack: -15, general: -10, allowance: -10 } },
+    idempotencyKey: 'mix-financial' });
+  const deltas = Object.fromEntries(result.transaction.entries.map(e => [e.fundType, e.delta]));
+  assert.deepEqual(deltas, { snack: -5, general: 10 });
+  assert.equal(result.transaction.amount, 15);
+  assert.equal(wallet.summary().balances.snack, 5);
+  assert.equal(wallet.summary().balances.general, 20);
+  assert.equal(wallet.getEffectiveTransaction(expense.transaction.id).amount, 35);
+});
+
+test('金額更正任一資金不足時整筆回滾，不留下更正事件或部分分錄', () => {
+  const wallet = fundedWallet(50);
+  const expense = wallet.apply(op({ type: 'expense', amount: 40, category: 'non_food',
+    entries: [{ fundType: 'allowance', delta: -40 }], idempotencyKey: 'atomic-expense' }));
+  const before = wallet.summary();
+  assert.throws(() => wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'financial',
+    reason: '增加實際金額', changes: { amount: 60, fundAllocations: { allowance: -60 } },
+    idempotencyKey: 'atomic-fail' }), { code: 'INSUFFICIENT_FUNDS' });
+  assert.deepEqual(wallet.summary(), before);
+  assert.equal(wallet.listCorrectionEvents().length, 0);
+  assert.equal(wallet.listTransactions().length, 2);
+});
+
+test('混合資金購買可分次退款，退款更正保留原退款並重算可退上限', () => {
+  const wallet = fundedWallet(100);
+  transfer(wallet, 'general', 30, 'refund-general');
+  transfer(wallet, 'snack', 20, 'refund-snack');
+  const expense = wallet.apply(op({ type: 'expense', amount: 50, category: 'non_food',
+    entries: [{ fundType: 'snack', delta: -20 }, { fundType: 'general', delta: -20 }, { fundType: 'allowance', delta: -10 }],
+    idempotencyKey: 'refund-mixed-expense' }));
+  const refund = wallet.apply(op({ type: 'refund', amount: 15,
+    entries: [{ fundType: 'snack', delta: 10 }, { fundType: 'general', delta: 5 }],
+    reversalOf: expense.transaction.id, idempotencyKey: 'refund-mixed-one' }));
+  const revised = wallet.correct({ targetTransactionId: refund.transaction.id, correctionType: 'financial',
+    reason: '修正退款分配', changes: { amount: 20, fundAllocations: { snack: 5, general: 15 } },
+    idempotencyKey: 'refund-correction-one' });
+  assert.equal(revised.transaction.type, 'correction');
+  assert.equal(wallet.getEffectiveTransaction(refund.transaction.id).amount, 20);
+  assert.equal(wallet.listTransactions().find(t => t.id === refund.transaction.id).type, 'refund');
+  assert.equal(wallet.summary().balances.snack, 5);
+  assert.equal(wallet.summary().balances.general, 25);
+});
+
+test('原購買已有退款後禁止金額或分類更正，但允許純資料更正', () => {
+  const wallet = fundedWallet(100);
+  const expense = wallet.apply(op({ type: 'expense', amount: 30, category: 'non_food',
+    entries: [{ fundType: 'allowance', delta: -30 }], idempotencyKey: 'post-refund-expense' }));
+  wallet.apply(op({ type: 'refund', amount: 10, entries: [{ fundType: 'allowance', delta: 10 }],
+    reversalOf: expense.transaction.id, idempotencyKey: 'post-refund-refund' }));
+  assert.throws(() => wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'financial',
+    reason: '不允許', changes: { amount: 25, fundAllocations: { allowance: -25 } }, idempotencyKey: 'post-refund-block' }),
+    { code: 'PURCHASE_ALREADY_REFUNDED' });
+  const metadata = wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'record_only',
+    reason: '修正備註', changes: { note: '備註修正' }, idempotencyKey: 'post-refund-meta' });
+  assert.equal(metadata.event.correctionType, 'record_only');
+});
+
+test('同一更正請求重送回傳既有結果，不重複建立事件或扣款', () => {
+  const wallet = fundedWallet(100);
+  const expense = wallet.apply(op({ type: 'expense', amount: 20, category: 'non_food',
+    entries: [{ fundType: 'allowance', delta: -20 }], idempotencyKey: 'dedupe-expense' }));
+  const input = { targetTransactionId: expense.transaction.id, correctionType: 'financial', reason: '調整金額',
+    changes: { amount: 15, fundAllocations: { allowance: -15 } }, idempotencyKey: 'dedupe-correction' };
+  const first = wallet.correct(input);
+  const retry = wallet.correct(input);
+  assert.equal(first.duplicate, false);
+  assert.equal(retry.duplicate, true);
+  assert.equal(wallet.listCorrectionEvents().length, 1);
+  assert.equal(wallet.summary().balances.allowance, 85);
+});
+
+test('不存在、跨帳戶或 correction 交易不得作為更正目標', () => {
+  const wallet = fundedWallet(100);
+  assert.throws(() => wallet.correct({ targetTransactionId: 'missing', correctionType: 'record_only',
+    reason: '測試', changes: { note: 'x' }, idempotencyKey: 'wrong-target-1' }), { code: 'ORIGINAL_NOT_FOUND' });
+  const expense = wallet.apply(op({ type: 'expense', amount: 10, category: 'non_food',
+    entries: [{ fundType: 'allowance', delta: -10 }], idempotencyKey: 'wrong-target-expense' }));
+  const correction = wallet.correct({ targetTransactionId: expense.transaction.id, correctionType: 'financial',
+    reason: '修正', changes: { amount: 9, fundAllocations: { allowance: -9 } }, idempotencyKey: 'wrong-target-correction' });
+  assert.throws(() => wallet.correct({ targetTransactionId: correction.transaction.id, correctionType: 'record_only',
+    reason: '不允許', changes: { note: 'x' }, idempotencyKey: 'correction-target-block' }), { code: 'ORIGINAL_NOT_FOUND' });
+});
