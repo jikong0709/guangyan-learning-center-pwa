@@ -10,6 +10,23 @@ function op(overrides) {
   }, overrides || {});
 }
 
+test('重置服務呼叫登入者專屬重置 RPC 並回傳清除摘要', async () => {
+  let call = null;
+  const service = Wallet.createWalletService({
+    rpc: async (name, args) => {
+      call = { name, args };
+      return { data: { transactions_deleted: 2, entries_deleted: 3, correction_events_deleted: 1, balances_reset: true, auth_user_preserved: true }, error: null };
+    },
+    from: () => { throw new Error('reset must not query tables directly'); }
+  });
+  const result = await service.reset();
+  assert.equal(call.name, 'wallet_reset_account');
+  assert.equal(call.args, undefined);
+  assert.equal(result.transactions_deleted, 2);
+  assert.equal(result.balances_reset, true);
+  assert.equal(result.auth_user_preserved, true);
+});
+
 test('額外現金收入只能入零用金', () => {
   const wallet = Wallet.createWalletEngine({ userId: 'u1' });
   const result = wallet.apply(op());
