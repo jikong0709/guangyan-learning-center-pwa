@@ -342,8 +342,11 @@ begin
       perform (v_after->>'occurred_at')::timestamptz;
     end if;
   else
-    if v_target.transaction_type not in ('expense','refund') then
-      raise exception 'financial/classification correction currently supports expense and refund transactions only';
+    if v_target.transaction_type not in ('initial_funding','income','expense','transfer','refund','scoreboard_snack') then
+      raise exception 'unsupported financial correction target';
+    end if;
+    if p_correction_type='classification' and v_target.transaction_type<>'expense' then
+      raise exception 'classification correction requires expense';
     end if;
     if v_target.transaction_type='expense' and v_has_refund then
       raise exception 'purchase with refunds cannot change amount, category or allocation';
@@ -368,24 +371,150 @@ begin
     if jsonb_typeof(v_after->'fund_allocations')<>'object' then raise exception 'complete fund allocations required'; end if;
     if v_target.transaction_type='expense' then
       if v_category is null or v_category not in ('snack_food','non_food') then raise exception 'invalid expense category'; end if;
+    elsif v_category is not null then
+      raise exception 'non-expense correction category must remain null';
     end if;
     for v_key in select jsonb_object_keys(v_after->'fund_allocations')
     loop
       if v_key not in ('snack','general','allowance') then raise exception 'invalid fund type'; end if;
-      if coalesce(v_after->'fund_allocations'->>v_key,'') !~ '^-?[0-9]+$' then raise exception 'fund allocation must be integer'; end if;
+      if coalesce(v_after->'fund_allocations'->>v_key,'') !~ '^-?[0-9]+
+
+    if v_target.transaction_type='refund' then
+      v_original_id := v_target.reversal_of;
+      perform 1 from public.wallet_transactions
+        where id=v_original_id and user_id=v_user_id and transaction_type='expense'
+        for update;
+      if not found then raise exception 'refund original expense not found'; end if;
+      perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_user_id::text||'|target|'||v_original_id::text,0));
+      v_original_snapshot := public.wallet_effective_transaction_snapshot(v_user_id,v_original_id);
+      v_original_amount := (v_original_snapshot->>'amount')::bigint;
+      for v_refund in select id from public.wallet_transactions
+        where user_id=v_user_id and transaction_type='refund' and reversal_of=v_original_id and id<>p_target_transaction_id
+      loop
+        v_snap := public.wallet_effective_transaction_snapshot(v_user_id,v_refund.id);
+        v_other_refund_total := v_other_refund_total+(v_snap->>'amount')::bigint;
+      end loop;
+      if v_other_refund_total+v_amount>v_original_amount then raise exception 'corrected refunds exceed effective purchase amount'; end if;
+      for v_key in select jsonb_object_keys(v_after->'fund_allocations')
+      loop
+        v_new := (v_after->'fund_allocations'->>v_key)::bigint;
+        v_old := coalesce((v_before->'fund_allocations'->>v_key)::bigint,0);
+        if v_old<=0 then raise exception 'refund correction cannot introduce a fund not used by this refund'; end if;
+        v_old := coalesce((v_original_snapshot->'fund_allocations'->>v_key)::bigint,0);
+        if v_new>abs(v_old) then raise exception 'refund correction exceeds original fund allocation'; end if;
+        select coalesce(sum((snap->'fund_allocations'->>v_key)::bigint),0) into v_other_refund_fund
+          from (
+            select public.wallet_effective_transaction_snapshot(v_user_id,id) as snap
+            from public.wallet_transactions
+            where user_id=v_user_id and transaction_type='refund' and reversal_of=v_original_id and id<>p_target_transaction_id
+          ) q;
+        if v_other_refund_fund+v_new>abs(v_old) then raise exception 'refund correction exceeds remaining fund cap'; end if;
+      end loop;
+    end if;
+  end if;
+
+  -- 以 signed ledger delta = corrected allocation - current effective allocation 計算每個資金淨額。
+  v_gross := 0;
+  if p_correction_type<>'record_only' then
+    for v_fund in select unnest(array['snack','general','allowance'])
+    loop
+      v_old := coalesce((v_before->'fund_allocations'->>v_fund)::bigint,0);
+      v_new := coalesce((v_after->'fund_allocations'->>v_fund)::bigint,0);
+      v_delta := v_new-v_old;
+      if v_delta<>0 then v_net_count:=v_net_count+1; v_gross:=v_gross+abs(v_delta); end if;
+    end loop;
+  end if;
+
+  insert into public.wallet_accounts(user_id,fund_type,balance)
+    values(v_user_id,'snack',0),(v_user_id,'general',0),(v_user_id,'allowance',0)
+    on conflict(user_id,fund_type) do nothing;
+  perform 1 from public.wallet_accounts
+    where user_id=v_user_id and fund_type in ('snack','general','allowance')
+    order by fund_type for update;
+
+  -- 先驗證全部餘額，再寫入任何一筆分錄，確保混合資金全有或全無。
+  for v_fund in select unnest(array['snack','general','allowance'])
+  loop
+    v_old := coalesce((v_before->'fund_allocations'->>v_fund)::bigint,0);
+    v_new := coalesce((v_after->'fund_allocations'->>v_fund)::bigint,0);
+    v_delta := v_new-v_old;
+    select balance into v_balance from public.wallet_accounts where user_id=v_user_id and fund_type=v_fund;
+    if v_balance+v_delta<0 then raise exception 'insufficient funds in % for atomic correction',v_fund; end if;
+  end loop;
+
+  if v_net_count>0 then
+    perform pg_catalog.set_config('app.wallet_special_write','on',true);
+    insert into public.wallet_transactions(user_id,transaction_type,amount,category,note,idempotency_key,reversal_of,occurred_at,metadata)
+      values(v_user_id,'correction',v_gross,null,v_reason,p_idempotency_key,p_target_transaction_id,now(),
+        jsonb_build_object('correction_event_id',v_event_id,'revision_no',v_revision,
+          'before_allocation',v_before->'fund_allocations','after_allocation',v_after->'fund_allocations'))
+      returning id into v_correction_tx;
+    for v_fund in select unnest(array['snack','general','allowance'])
+    loop
+      v_old := coalesce((v_before->'fund_allocations'->>v_fund)::bigint,0);
+      v_new := coalesce((v_after->'fund_allocations'->>v_fund)::bigint,0);
+      v_delta := v_new-v_old;
+      if v_delta<>0 then
+        select balance into v_balance from public.wallet_accounts where user_id=v_user_id and fund_type=v_fund;
+        v_after_balance := v_balance+v_delta;
+        update public.wallet_accounts set balance=v_after_balance,updated_at=now()
+          where user_id=v_user_id and fund_type=v_fund;
+        insert into public.wallet_entries(transaction_id,user_id,fund_type,amount_delta,balance_before,balance_after)
+          values(v_correction_tx,v_user_id,v_fund,v_delta,v_balance,v_after_balance);
+      end if;
+    end loop;
+  end if;
+
+  insert into public.wallet_correction_events(
+    id,user_id,target_transaction_id,correction_no,correction_type,reason,before_snapshot,after_snapshot,
+    field_changes,correction_transaction_id,idempotency_key,created_by,previous_correction_event_id
+  ) values (
+    v_event_id,v_user_id,p_target_transaction_id,v_revision,p_correction_type,v_reason,v_before,v_after,
+    v_field_changes,v_correction_tx,p_idempotency_key,v_user_id,v_previous
+  );
+
+  return jsonb_build_object('correction_event_id',v_event_id,'correction_transaction_id',v_correction_tx,
+    'correction_no',v_revision,'duplicate',false);
+end;
+$$;
+
+revoke all on function public.wallet_apply_refund(uuid,uuid,bigint,jsonb,text,timestamptz,text,text) from public,anon;
+grant execute on function public.wallet_apply_refund(uuid,uuid,bigint,jsonb,text,timestamptz,text,text) to authenticated;
+revoke all on function public.wallet_apply_correction(uuid,uuid,text,text,jsonb) from public,anon;
+grant execute on function public.wallet_apply_correction(uuid,uuid,text,text,jsonb) to authenticated;
+ then raise exception 'fund allocation must be integer'; end if;
       v_new := (v_after->'fund_allocations'->>v_key)::bigint;
       if v_new=0 then raise exception 'zero fund allocations must be omitted'; end if;
       if v_target.transaction_type='expense' and v_new>=0 then raise exception 'expense allocations must be negative'; end if;
-      if v_target.transaction_type='refund' and v_new<=0 then raise exception 'refund allocations must be positive'; end if;
+      if v_target.transaction_type in ('refund','initial_funding','income','scoreboard_snack') and v_new<=0 then
+        raise exception 'credit transaction allocations must be positive';
+      end if;
+      if v_target.transaction_type in ('initial_funding','income') and v_key<>'allowance' then
+        raise exception 'initial funding and cash income must use allowance only';
+      end if;
+      if v_target.transaction_type='scoreboard_snack' and v_key<>'snack' then
+        raise exception 'weekly snackMoney must use snack fund only';
+      end if;
       if v_target.transaction_type='expense' and
         ((v_category='snack_food' and v_key not in ('snack','allowance')) or
          (v_category='non_food' and v_key not in ('snack','general','allowance'))) then
         raise exception 'fund not allowed for corrected category';
       end if;
     end loop;
-    select coalesce(sum(abs((value)::text::bigint)),0) into v_gross
-      from jsonb_each(v_after->'fund_allocations');
-    if v_gross<>v_amount then raise exception 'fund allocations do not equal corrected amount'; end if;
+    if v_target.transaction_type='transfer' then
+      select count(*),count(*) filter(where (value::text)::bigint>0),count(*) filter(where (value::text)::bigint<0),
+        coalesce(sum((value::text)::bigint) filter(where (value::text)::bigint>0),0),
+        coalesce(sum(-((value::text)::bigint)) filter(where (value::text)::bigint<0),0)
+        into v_count,v_positive_count,v_negative_count,v_positive,v_negative
+        from jsonb_each(v_after->'fund_allocations');
+      if v_count<>2 or v_positive_count<>1 or v_negative_count<>1 or v_positive<>v_amount or v_negative<>v_amount then
+        raise exception 'transfer correction must preserve equal debit and credit';
+      end if;
+    else
+      select coalesce(sum(abs((value)::text::bigint)),0) into v_gross
+        from jsonb_each(v_after->'fund_allocations');
+      if v_gross<>v_amount then raise exception 'fund allocations do not equal corrected amount'; end if;
+    end if;
 
     if v_target.transaction_type='refund' then
       v_original_id := v_target.reversal_of;
