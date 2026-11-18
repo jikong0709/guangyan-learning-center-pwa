@@ -113,4 +113,5 @@ button:disabled { cursor:not-allowed; opacity:.72; }
  .modal { width:100%; max-height:min(88dvh,720px); padding:18px 16px calc(18px + env(safe-area-inset-bottom)); border-radius:18px 18px 12px 12px; }
  .modal-actions { position:sticky; bottom:calc(-18px - env(safe-area-inset-bottom)); padding:10px 0 calc(8px + env(safe-area-inset-bottom)); background:#fff; }
 }
-@media(max-width:380px) { .date-nav { grid-template-columns:36px minmax(0,1fr) 36px; } .date-nav .today-btn { grid-column:1 / -1; } }
+@media(max-width:380px) { .date-nav { grid-template-columns:44px minmax(0,1fr) 44px; } .date-nav .today-btn { grid-column:1 / -1; } }
+@media(max-width:620px) { .icon-btn,.today-btn,.view-switch button { min-height:44px; } .date-nav .icon-btn { min-width:44px; } }
