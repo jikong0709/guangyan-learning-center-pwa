@@ -195,7 +195,9 @@
       }
       Object.assign(after,changes);
       if(after.note!=null) after.note=String(after.note).trim();
-      if(after.occurredAt!=null) assert(!Number.isNaN(Date.parse(after.occurredAt)),'INVALID_DATE','更正日期格式錯誤。');
+      if(Object.prototype.hasOwnProperty.call(changes,'occurredAt')) {
+        assert(after.occurredAt!=null && !Number.isNaN(Date.parse(after.occurredAt)),'INVALID_DATE','更正日期格式錯誤。');
+      }
       if(correctionType!=='record_only'){
         after.amount=money(after.amount,'修正後金額');
         assert(after.amount>0,'INVALID_AMOUNT','修正後金額必須大於 0。');
