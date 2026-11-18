@@ -364,7 +364,7 @@ begin
     if v_amount is null or v_amount<=0 then raise exception 'corrected amount must be positive'; end if;
     if jsonb_typeof(v_after->'fund_allocations')<>'object' then raise exception 'complete fund allocations required'; end if;
     if v_target.transaction_type='expense' then
-      if v_category not in ('snack_food','non_food') then raise exception 'invalid expense category'; end if;
+      if v_category is null or v_category not in ('snack_food','non_food') then raise exception 'invalid expense category'; end if;
     end if;
     for v_key in select jsonb_object_keys(v_after->'fund_allocations')
     loop
