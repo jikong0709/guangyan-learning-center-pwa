@@ -104,6 +104,8 @@ declare
   v_refunded bigint;
 begin
   if v_user_id is null then raise exception 'authentication required' using errcode = '42501'; end if;
+  -- 所有錢包寫入與重置共用使用者層級鎖，確保重置與交易完全序列化。
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_user_id::text || '|wallet-global', 0));
   if p_idempotency_key is null then raise exception 'idempotency key required'; end if;
   if p_transaction_type is null or p_transaction_type not in ('initial_funding','income','expense','transfer','refund','correction','scoreboard_snack') then
     raise exception 'unsupported transaction type';
