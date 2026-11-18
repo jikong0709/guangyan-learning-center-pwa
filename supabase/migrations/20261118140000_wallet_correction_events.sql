@@ -156,6 +156,12 @@ begin
   select id into v_existing from public.wallet_transactions
     where user_id=v_user_id and idempotency_key=p_idempotency_key;
   if v_existing is not null then return jsonb_build_object('transaction_id',v_existing,'duplicate',true); end if;
+  if p_source_type is not null then
+    perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_user_id::text||'|source|'||p_source_type||'|'||p_source_id,0));
+    select id into v_existing from public.wallet_transactions
+      where user_id=v_user_id and source_type=p_source_type and source_id=p_source_id;
+    if v_existing is not null then return jsonb_build_object('transaction_id',v_existing,'duplicate',true); end if;
+  end if;
 
   -- 目標交易先鎖定；與更正 RPC 共用同一把目標交易鎖。
   select * into v_original from public.wallet_transactions
@@ -380,10 +386,11 @@ begin
 
     if v_target.transaction_type='refund' then
       v_original_id := v_target.reversal_of;
-      select * into v_target from public.wallet_transactions
-        where id=p_target_transaction_id and user_id=v_user_id for update;
-      select * into v_target from public.wallet_transactions
-        where id=p_target_transaction_id and user_id=v_user_id;
+      perform 1 from public.wallet_transactions
+        where id=v_original_id and user_id=v_user_id and transaction_type='expense'
+        for update;
+      if not found then raise exception 'refund original expense not found'; end if;
+      perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_user_id::text||'|target|'||v_original_id::text,0));
       v_original_snapshot := public.wallet_effective_transaction_snapshot(v_user_id,v_original_id);
       v_original_amount := (v_original_snapshot->>'amount')::bigint;
       for v_refund in select id from public.wallet_transactions
@@ -410,6 +417,7 @@ begin
   end if;
 
   -- 以 signed ledger delta = corrected allocation - current effective allocation 計算每個資金淨額。
+  v_gross := 0;
   if p_correction_type<>'record_only' then
     for v_fund in select unnest(array['snack','general','allowance'])
     loop
