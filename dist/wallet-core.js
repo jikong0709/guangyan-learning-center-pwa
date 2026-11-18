@@ -276,8 +276,11 @@
         assert(plainObject(input)&&plainObject(input.changes),'INVALID_CORRECTION','更正資料格式錯誤。');
         const idempotencyKey=String(input.idempotencyKey||'');
         assert(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idempotencyKey),'INVALID_IDEMPOTENCY_UUID','更正請求識別碼必須使用 UUID。');
+        const keyMap={fundAllocations:'fund_allocations',occurredAt:'occurred_at'};
+        const databaseChanges={};
+        Object.keys(input.changes).forEach(k=>{databaseChanges[keyMap[k]||k]=input.changes[k];});
         const r=await supabase.rpc('wallet_apply_correction',{p_idempotency_key:idempotencyKey,p_target_transaction_id:input.targetTransactionId,
-          p_correction_type:input.correctionType,p_reason:input.reason,p_changes:input.changes});
+          p_correction_type:input.correctionType,p_reason:input.reason,p_changes:databaseChanges});
         if(r.error)throw r.error; return r.data;
       }
     });
