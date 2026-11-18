@@ -288,6 +288,11 @@ declare
   v_entry jsonb;
   v_balance bigint;
   v_after_balance bigint;
+  v_count integer;
+  v_positive_count integer;
+  v_negative_count integer;
+  v_positive bigint;
+  v_negative bigint;
 begin
   if v_user_id is null then raise exception 'authentication required' using errcode='42501'; end if;
   if p_idempotency_key is null then raise exception 'idempotency key required'; end if;
