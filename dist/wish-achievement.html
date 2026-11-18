@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>莓好學習中心 - 許願達成互動版</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Canvas Confetti for Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Custom Fonts & Tailwind Configuration -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            berry: {
+              50: '#fff1f2',
+              100: '#ffe4e6',
+              200: '#fecdd3',
+              300: '#fda4af',
+              400: '#fb7185',
+              500: '#f43f5e',
+              600: '#e11d48',
+              700: '#be123c',
+            },
+            mint: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a'
+            },
+            softYellow: '#fffbeb',
+          },
+          fontFamily: {
+            sans: ['Inter', 'PingFang TC', 'Microsoft JhengHei', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar for better UI experience */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #fbcfe8;
+      border-radius: 9999px;
+    }
+    .custom-shadow {
+      box-shadow: 0 4px 20px -2px rgba(244, 63, 94, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+    }
+    /* Hide scrollbar for browser horizontal overflow nav */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-rose-50/40 text-slate-800 font-sans min-h-screen pb-20 md:pb-8 flex flex-col items-center">
+
+  <!-- Mobile Screen Container Simulation for Desktop -->
+  <div id="app" class="w-full max-w-md md:max-w-4xl min-h-screen bg-white md:my-6 md:rounded-3xl md:shadow-2xl overflow-hidden flex flex-col relative border-0 md:border border-rose-100">
+
+    <!-- 0. Header (Berry Learning Center Design) -->
+    <header class="bg-white sticky top-0 z-30 border-b border-rose-100 px-4 py-3 flex flex-col gap-2 shadow-sm">
+      <div class="flex items-center justify-between">
+        <button class="text-slate-600 hover:text-rose-500 text-xl p-1" onclick="toggleToast('主功能選單點擊')">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="flex items-center gap-2 cursor-pointer" onclick="switchPage('page-dashboard')">
+          <span class="text-2xl">🍓</span>
+          <h1 class="font-bold text-xl text-slate-800 tracking-tight">莓好學習中心</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <button class="text-slate-600 hover:text-rose-500 text-lg" onclick="openSearchModal()">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </button>
+          <button class="text-slate-600 hover:text-rose-500 text-lg relative" onclick="toggleToast('目前沒有新通知')">
+            <i class="fa-regular fa-bell"></i>
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Top Sub Nav tabs (Learning Center Navigation Stack) -->
+      <div class="flex items-center justify-between text-sm font-medium text-slate-500 pt-1 overflow-x-auto no-scrollbar">
+        <button class="px-2.5 py-1 rounded-full whitespace-nowrap hover:text-rose-500 transition" onclick="showModuleNotice('教材中心')">
+          <i class="fa-book-open fa-regular mr-1"></i>教材中心
+        </button>
+        <button class="px-2.5 py-1 rounded-full whitespace-nowrap hover:text-rose-500 transition" onclick="showModuleNotice('自學進度')">
+          <i class="fa-chart-line fa-solid mr-1"></i>自學進度
+        </button>
+        <button class="px-2.5 py-1 rounded-full whitespace-nowrap hover:text-rose-500 transition" onclick="showModuleNotice('學校進度')">
+          <i class="fa-graduation-cap fa-solid mr-1"></i>學校進度
+        </button>
+        <button onclick="switchPage('page-dashboard')" class="px-3 py-1 rounded-full whitespace-nowrap bg-rose-100 text-rose-600 font-bold flex items-center gap-1 shadow-sm">
+          <i class="fa-star fa-regular text-rose-500"></i>許願達成
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINERS (Page views) -->
+    <main class="flex-1 overflow-y-auto p-4 space-y-5 bg-gradient-to-b from-rose-50/50 to-white">
+
+      <!-- ================= PAGE 01: DASHBOARD ================= -->
+      <section id="page-dashboard" class="page-content space-y-5">
+        <!-- Banner Title Section -->
+        <div class="flex items-start justify-between bg-gradient-to-r from-rose-100/70 via-pink-100/50 to-amber-50 p-4 rounded-2xl border border-rose-100/60">
+          <div>
+            <div class="flex items-center gap-1.5 text-rose-500 font-bold text-xl">
+              <i class="fa-regular fa-star"></i>
+              <h2>許願達成</h2>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">把想要的東西列下來，一步一步存錢實現。</p>
+          </div>
+          <div class="text-3xl animate-bounce">🍓</div>
+        </div>
+
+        <!-- Overview Stat Cards -->
+        <div class="bg-white p-4 rounded-2xl border border-rose-100 custom-shadow flex items-center justify-between divide-x divide-rose-100">
+          <!-- Total Assets -->
+          <div class="flex-1 text-center px-1 cursor-pointer hover:bg-rose-50/50 transition p-2 rounded-xl" onclick="switchPage('page-wallet')">
+            <div class="flex items-center justify-center gap-1.5 text-sky-500 text-xs font-semibold mb-1">
+              <i class="fa-solid fa-wallet text-sm"></i>
+              <span>總資產</span>
+            </div>
+            <div class="text-lg font-extrabold text-slate-800" id="dash-total-asset">$ 0</div>
+          </div>
+          <!-- Pending Wishes -->
+          <div class="flex-1 text-center px-1 cursor-pointer hover:bg-rose-50/50 transition p-2 rounded-xl" onclick="switchPage('page-wishes')">
+            <div class="flex items-center justify-center gap-1.5 text-rose-500 text-xs font-semibold mb-1">
+              <i class="fa-solid fa-bullseye text-sm"></i>
+              <span>待實現願望</span>
+            </div>
+            <div class="text-lg font-extrabold text-slate-800" id="dash-pending-wishes">0 項</div>
+          </div>
+          <!-- Achieved Month -->
+          <div class="flex-1 text-center px-1 cursor-pointer hover:bg-rose-50/50 transition p-2 rounded-xl" onclick="switchPage('page-fulfill')">
+            <div class="flex items-center justify-center gap-1.5 text-emerald-500 text-xs font-semibold mb-1">
+              <i class="fa-solid fa-trophy text-sm"></i>
+              <span>已達成願望</span>
+            </div>
+            <div class="text-lg font-extrabold text-slate-800" id="dash-achieved-wishes">0 項</div>
+          </div>
+        </div>
+
+        <!-- 4 Grid Macro Buttons Matching UI Image -->
+        <div class="grid grid-cols-2 gap-3.5">
+          <!-- My Wallet -->
+          <button onclick="switchPage('page-wallet')" class="bg-gradient-to-br from-sky-50 to-blue-50/40 p-4 rounded-2xl border border-sky-100 flex items-center justify-between hover:shadow-md transition text-left group">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-sky-400 text-white rounded-2xl flex items-center justify-center text-xl shadow-md shadow-sky-200">
+                <i class="fa-solid fa-wallet"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-800 text-sm group-hover:text-sky-600">我的錢包</h3>
+                <p class="text-[11px] text-slate-400 mt-0.5 leading-tight">管理三種資金與財務摘要</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-xs text-sky-400"></i>
+          </button>
+
+          <!-- My Wishes -->
+          <button onclick="switchPage('page-wishes')" class="bg-gradient-to-br from-rose-50 to-pink-50/40 p-4 rounded-2xl border border-rose-100 flex items-center justify-between hover:shadow-md transition text-left group">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-amber-400 text-white rounded-2xl flex items-center justify-center text-2xl shadow-md shadow-amber-200">
+                ⭐
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-800 text-sm group-hover:text-rose-600">我的願望</h3>
+                <p class="text-[11px] text-slate-400 mt-0.5 leading-tight">新增與整理想要的東西</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-xs text-rose-400"></i>
+          </button>
+
+          <!-- Wish Fulfillment -->
+          <button onclick="switchPage('page-fulfill')" class="bg-gradient-to-br from-emerald-50 to-teal-50/40 p-4 rounded-2xl border border-emerald-100 flex items-center justify-between hover:shadow-md transition text-left group">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-emerald-400 text-white rounded-2xl flex items-center justify-center text-2xl shadow-md shadow-emerald-200">
+                🏆
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-800 text-sm group-hover:text-emerald-600">願望達成表</h3>
+                <p class="text-[11px] text-slate-400 mt-0.5 leading-tight">查看已購買並完成的願望</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-xs text-emerald-400"></i>
+          </button>
+
+          <!-- Income & Expense Ledger -->
+          <button onclick="switchPage('page-ledger')" class="bg-gradient-to-br from-amber-50 to-orange-50/40 p-4 rounded-2xl border border-amber-100 flex items-center justify-between hover:shadow-md transition text-left group">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-rose-400 text-white rounded-2xl flex items-center justify-center text-xl shadow-md shadow-rose-200">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-800 text-sm group-hover:text-amber-600">收支明細</h3>
+                <p class="text-[11px] text-slate-400 mt-0.5 leading-tight">查看每一筆收入與支出</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-xs text-amber-400"></i>
+          </button>
+        </div>
+
+        <!-- Recent Wishes Section -->
+        <div class="bg-white p-4 rounded-2xl border border-rose-100 custom-shadow space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 font-bold text-slate-800">
+              <span class="text-rose-500">❤️</span>
+              <h3>最近的願望</h3>
+            </div>
+            <button onclick="openWishModal()" class="bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm transition">
+              <i class="fa-solid fa-plus"></i> 新增願望
+            </button>
+          </div>
+
+          <!-- Dynamic Dashboard Wish List Container -->
+          <div id="dash-recent-wishes" class="space-y-2.5">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Recent Transactions Quick Preview -->
+        <div class="bg-white p-4 rounded-2xl border border-rose-100 custom-shadow space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-slate-400"></i> 最近交易紀錄
+            </h3>
+            <button onclick="switchPage('page-ledger')" class="text-xs text-rose-500 font-semibold hover:underline">查看全部</button>
+          </div>
+          <div id="dash-recent-transactions" class="space-y-2 text-xs">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PAGE 02: MY WALLET ================= -->
+      <section id="page-wallet" class="page-content hidden space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-wallet text-sky-500"></i> 我的錢包
+          </h2>
+          <div class="flex gap-1.5">
+            <button id="wallet-initial-funding-button" onclick="openLedgerModal('initial_funding')" class="bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold px-2.5 py-1.5 rounded-xl shadow-sm transition" hidden>首次建帳</button>
+            <button data-wallet-write onclick="openLedgerModal('income')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm transition">+ 存入資金</button>
+          </div>
+        </div>
+        <div id="wallet-auth-bar" class="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+          <span id="wallet-status" class="min-w-0 text-[11px] text-slate-500" role="status" aria-live="polite">正在讀取登入狀態…</span>
+          <div class="flex shrink-0 gap-1.5">
+            <button id="wallet-login" type="button" class="rounded-lg bg-slate-800 px-2.5 py-1.5 text-[11px] font-semibold text-white">Google 登入</button>
+            <button id="wallet-logout" type="button" class="rounded-lg bg-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600" hidden>登出</button>
+          </div>
+        </div>
+
+        <!-- Total Wallet Asset Card -->
+        <div class="bg-gradient-to-br from-sky-500 to-blue-600 text-white p-5 rounded-2xl shadow-lg relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 text-white/10 text-8xl pointer-events-none">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+          <p class="text-xs text-sky-100 font-medium">總餘額 (Total Balance)</p>
+          <p class="text-3xl font-black mt-1" id="wallet-total-balance">$ 0</p>
+          <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-white/20 text-xs">
+            <div>
+              <span class="text-sky-100">本月累計收入:</span>
+              <span class="font-bold ml-1" id="wallet-month-income">+$0</span>
+            </div>
+            <div>
+              <span class="text-sky-100">本月累計支出:</span>
+              <span class="font-bold ml-1" id="wallet-month-expense">-$0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Fund Accounts (產品定義資金分類) -->
+        <h3 class="font-bold text-sm text-slate-700 pt-2">資金分類餘額</h3>
+        <div class="grid grid-cols-3 gap-2">
+          <!-- Fund 1 -->
+          <div class="bg-white p-3 rounded-xl border border-rose-100 text-center custom-shadow">
+            <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-500 mx-auto flex items-center justify-center text-sm mb-1">🍬</div>
+            <p class="text-[11px] font-semibold text-slate-600">零食金</p>
+            <p class="text-sm font-extrabold text-slate-800 mt-1" id="fund-snack">$ 0</p>
+          </div>
+          <!-- Fund 2 -->
+          <div class="bg-white p-3 rounded-xl border border-amber-100 text-center custom-shadow">
+            <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-500 mx-auto flex items-center justify-center text-sm mb-1">💰</div>
+            <p class="text-[11px] font-semibold text-slate-600">零用金</p>
+            <p class="text-sm font-extrabold text-slate-800 mt-1" id="fund-allowance">$ 0</p>
+          </div>
+          <!-- Fund 3 -->
+          <div class="bg-white p-3 rounded-xl border border-sky-100 text-center custom-shadow">
+            <div class="w-8 h-8 rounded-full bg-sky-100 text-sky-500 mx-auto flex items-center justify-center text-sm mb-1">✨</div>
+            <p class="text-[11px] font-semibold text-slate-600">一般累積金</p>
+            <p class="text-sm font-extrabold text-slate-800 mt-1" id="fund-general">$ 0</p>
+          </div>
+        </div>
+
+        <!-- Wallet Transaction History with Filter -->
+        <div class="bg-white p-4 rounded-2xl border border-rose-100 custom-shadow space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h3 class="font-bold text-slate-800 text-sm">資金異動與交易紀錄</h3>
+            <!-- Category Filter Buttons -->
+            <div class="flex items-center gap-1 text-xs">
+              <button onclick="filterWalletLogs('all')" id="w-filter-all" class="px-2.5 py-1 rounded-lg bg-rose-500 text-white font-medium">全部</button>
+              <button onclick="filterWalletLogs('income')" id="w-filter-income" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-medium">收入</button>
+              <button onclick="filterWalletLogs('expense')" id="w-filter-expense" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-medium">支出</button>
+            </div>
+          </div>
+
+          <div id="wallet-logs-list" class="space-y-2 text-xs divide-y divide-slate-100">
+            <!-- JS dynamic list -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PAGE 03: MY WISHES ================= -->
+      <section id="page-wishes" class="page-content hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+              ⭐ 我的願望清單
+            </h2>
+            <p class="text-xs text-slate-500">規劃夢想清單與目標累積金額</p>
+          </div>
+          <button onclick="openWishModal()" class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1 transition">
+            <i class="fa-solid fa-plus"></i> 新增願望
+          </button>
+        </div>
+
+        <!-- Wish List Container -->
+        <div id="wishes-full-list" class="space-y-3">
+          <!-- Dynamic Wishes Cards -->
+        </div>
+      </section>
+
+      <!-- ================= PAGE 04: WISH FULFILLMENT ================= -->
+      <section id="page-fulfill" class="page-content hidden space-y-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            🏆 願望達成表 (兌換實現)
+          </h2>
+          <p class="text-xs text-slate-500">當金額累積足夠即可點擊兌換解鎖！</p>
+        </div>
+
+        <!-- Available Balance Info Banner -->
+        <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-2xl shadow-md flex items-center justify-between">
+          <div>
+            <p class="text-xs text-emerald-100">目前可用總餘額</p>
+            <p class="text-2xl font-black" id="fulfill-available-balance">$ 0</p>
+          </div>
+          <div class="text-right text-xs text-emerald-100">
+            <p>錢包資金狀態</p>
+            <span class="inline-block mt-1 bg-white/20 px-2.5 py-1 rounded-full font-bold text-white">即時計算</span>
+          </div>
+        </div>
+
+        <!-- Fulfillment Tabs: Ready vs Completed -->
+        <div class="flex border-b border-rose-200 text-sm font-semibold">
+          <button onclick="switchFulfillTab('pending')" id="tab-fulfill-pending" class="flex-1 pb-2 text-rose-600 border-b-2 border-rose-500 text-center">
+            待實現願望 (<span id="fulfill-pending-count">0</span>)
+          </button>
+          <button onclick="switchFulfillTab('achieved')" id="tab-fulfill-achieved" class="flex-1 pb-2 text-slate-400 text-center">
+            已成功達成 (<span id="fulfill-achieved-count">0</span>)
+          </button>
+        </div>
+
+        <!-- Wish Cards Grid for Fulfillment -->
+        <div id="fulfill-items-container" class="space-y-3">
+          <!-- Dynamic Cards rendered by JS -->
+        </div>
+      </section>
+
+      <!-- ================= PAGE 05: INCOME & EXPENSE LEDGER ================= -->
+      <section id="page-ledger" class="page-content hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-pen-to-square text-amber-500"></i> 收支明細簿
+          </h2>
+          <div class="flex gap-1.5">
+            <button data-wallet-write onclick="openLedgerModal('income')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-sm transition">
+              + 記收入
+            </button>
+            <button data-wallet-write onclick="openLedgerModal('expense')" class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-sm transition">
+              - 記支出
+            </button>
+          </div>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div class="bg-white p-3 rounded-2xl border border-rose-100 custom-shadow space-y-2">
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="ledger-search-input" oninput="renderLedger()" placeholder="搜尋備註或交易紀錄..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-rose-400">
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <select id="ledger-filter-fund" onchange="renderLedger()" class="bg-slate-50 border border-slate-200 rounded-xl p-1.5 text-slate-700">
+              <option value="all">所有資金種類</option>
+              <option value="snack">零食金</option>
+              <option value="general">一般累積金</option>
+              <option value="allowance">零用金</option>
+            </select>
+            <select id="ledger-filter-type" onchange="renderLedger()" class="bg-slate-50 border border-slate-200 rounded-xl p-1.5 text-slate-700">
+              <option value="all">所有交易類型</option>
+              <option value="income">僅看收入</option>
+              <option value="expense">僅看支出</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ledger Table List -->
+        <div class="bg-white rounded-2xl border border-rose-100 custom-shadow overflow-hidden">
+          <div id="ledger-records-container" class="divide-y divide-slate-100 text-xs">
+            <!-- JS dynamic list -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PAGE 06: USER SETTINGS ================= -->
+      <section id="page-settings" class="page-content hidden space-y-4">
+        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-gear text-slate-600"></i> 個人設定與偏好
+        </h2>
+
+        <!-- Profile Form Card -->
+        <form id="settings-form" onsubmit="saveSettings(event)" class="bg-white p-4 rounded-2xl border border-rose-100 custom-shadow space-y-4">
+          <div class="flex items-center gap-4">
+            <div class="relative">
+              <div id="profile-avatar-preview" class="w-16 h-16 rounded-full bg-rose-100 text-3xl flex items-center justify-center border-2 border-rose-300">
+                🍓
+              </div>
+              <button type="button" onclick="cycleAvatar()" class="absolute -bottom-1 -right-1 bg-rose-500 text-white rounded-full p-1 text-[10px] shadow">
+                <i class="fa-solid fa-camera"></i>
+              </button>
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">使用者頭像風格</label>
+              <span id="avatar-label" class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">草莓圖案</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">使用者名稱 *</label>
+            <input type="text" id="setting-username" required class="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:border-rose-400 focus:outline-none">
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 space-y-2">
+            <label class="block text-xs font-semibold text-slate-700">系統通知設定</label>
+            <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+              <input type="checkbox" id="setting-notify-wish" checked class="rounded text-rose-500 focus:ring-rose-400">
+              願望累積進度達到 100% 時通知我
+            </label>
+            <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+              <input type="checkbox" id="setting-notify-asset" checked class="rounded text-rose-500 focus:ring-rose-400">
+              資產變動時發送摘要提醒
+            </label>
+          </div>
+
+          <div class="flex gap-2 pt-2">
+            <button type="submit" class="flex-1 bg-rose-500 hover:bg-rose-600 active:scale-95 text-white font-bold text-xs py-2.5 rounded-xl transition shadow">
+              儲存設定
+            </button>
+            <button type="button" onclick="switchPage('page-dashboard')" class="px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-xl">
+              取消
+            </button>
+          </div>
+        </form>
+
+        <!-- Dev Mode Reset -->
+        <div class="bg-rose-50 p-4 rounded-2xl border border-rose-200 text-xs text-slate-600 space-y-2">
+          <p class="font-bold text-rose-700">🛠️ 原型測試輔助工具</p>
+          <p>如需重置全部 Mock Data 回到初始狀態，請點擊下方按鈕：</p>
+          <button onclick="resetDataToDefault()" class="bg-rose-600 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-rose-700 transition">
+            重置為預設 Mock Data
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 0. Bottom Navigation Bar 校正對應關係 -->
+    <nav class="bg-white border-t border-rose-100 sticky bottom-0 z-30 px-3 py-2 flex items-center justify-around shadow-lg">
+      <button onclick="switchPage('page-dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-0.5 text-rose-500 font-bold">
+        <i class="fa-solid fa-house text-lg"></i>
+        <span class="text-[10px]">首頁</span>
+      </button>
+      
+      <button onclick="switchPage('page-wallet')" id="nav-wallet" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-rose-500">
+        <i class="fa-solid fa-wallet text-lg"></i>
+        <span class="text-[10px]">我的錢包</span>
+      </button>
+
+      <!-- Center Floating Plus Action -->
+      <button onclick="openWishModal()" class="w-12 h-12 bg-rose-500 hover:bg-rose-600 active:scale-90 text-white rounded-full flex items-center justify-center text-xl shadow-lg shadow-rose-300 -mt-5 border-4 border-white transition">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+
+      <button onclick="switchPage('page-wishes')" id="nav-wishes" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-rose-500">
+        <i class="fa-solid fa-star text-lg"></i>
+        <span class="text-[10px]">我的願望</span>
+      </button>
+
+      <button onclick="switchPage('page-settings')" id="nav-settings" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-rose-500">
+        <i class="fa-regular fa-user text-lg"></i>
+        <span class="text-[10px]">我的設定</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ================= MODALS & POPUPS ================= -->
+
+  <!-- Modal 0: Learning Center Feature Placeholder Notice -->
+  <div id="modal-learning-notice" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-xs p-5 text-center space-y-3 shadow-2xl">
+      <div class="w-12 h-12 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-xl">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
+      <h3 class="font-bold text-slate-800 text-base" id="notice-module-title">學習中心模組</h3>
+      <p class="text-xs text-slate-500">本功能屬於學習中心主模組（非「許願達成」範疇），目前集中於前台許願達成互動原型展示。</p>
+      <div class="pt-2">
+        <button onclick="closeModal('modal-learning-notice')" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs py-2 rounded-xl">
+          返回許願達成
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 1: Add / Edit Wish Modal -->
+  <div id="modal-wish" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-rose-100 pb-2">
+        <h3 class="font-bold text-slate-800 text-base" id="wish-modal-title">新增願望</h3>
+        <button onclick="closeModal('modal-wish')" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="wish-form" onsubmit="handleWishSubmit(event)" class="space-y-3">
+        <input type="hidden" id="wish-id">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">願望名稱 *</label>
+          <input type="text" id="wish-name" required placeholder="例如：彩色自動筆、故事書" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-rose-400 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">目標金額 ($) *</label>
+            <input type="number" id="wish-target" min="1" required placeholder="100" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-rose-400 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">已累積金額 ($)</label>
+            <input type="number" id="wish-current" min="0" value="0" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-rose-400 focus:outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">選擇圖示或風格</label>
+          <div class="flex gap-2 text-xl py-1">
+            <button type="button" onclick="selectWishIcon('✏️')" class="icon-opt p-2 border rounded-xl hover:bg-rose-50">✏️</button>
+            <button type="button" onclick="selectWishIcon('📖')" class="icon-opt p-2 border rounded-xl hover:bg-rose-50">📖</button>
+            <button type="button" onclick="selectWishIcon('🎨')" class="icon-opt p-2 border rounded-xl hover:bg-rose-50">🎨</button>
+            <button type="button" onclick="selectWishIcon('🧸')" class="icon-opt p-2 border rounded-xl hover:bg-rose-50">🧸</button>
+            <button type="button" onclick="selectWishIcon('🎮')" class="icon-opt p-2 border rounded-xl hover:bg-rose-50">🎮</button>
+          </div>
+          <input type="hidden" id="wish-icon" value="✏️">
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs py-2.5 rounded-xl transition">
+            儲存願望
+          </button>
+          <button type="button" onclick="closeModal('modal-wish')" class="px-4 bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl">
+            取消
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Add / Edit Ledger Transaction -->
+  <div id="modal-ledger" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-rose-100 pb-2">
+        <h3 class="font-bold text-slate-800 text-base" id="ledger-modal-title">新增交易紀錄</h3>
+        <button onclick="closeModal('modal-ledger')" class="text-slate-400 hover:text-slate-600 text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form id="ledger-form" onsubmit="handleLedgerSubmit(event)" class="space-y-3">
+        <input type="hidden" id="ledger-id">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">交易類型</label>
+            <select id="ledger-type" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-rose-400 focus:outline-none">
+              <option value="income">收入 (+)</option>
+              <option value="expense">支出 (-)</option>
+              <option value="initial_funding">初始建帳</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">金額 ($) *</label>
+            <input type="number" id="ledger-amount" min="1" required placeholder="50" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-rose-400 focus:outline-none">
+          </div>
+        </div>
+
+        <div id="ledger-category-wrap" hidden>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">商品分類 *</label>
+          <select id="ledger-category" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-rose-400 focus:outline-none">
+            <option value="snack_food">零食飲料</option>
+            <option value="non_food">非食品（生活／學習／興趣用品）</option>
+          </select>
+        </div>
+        <div id="ledger-allocation-wrap" class="space-y-2" hidden>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">資金分配（可混合扣款；總額須等於交易金額）</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="text-[11px] text-slate-600">零食金<input id="ledger-alloc-snack" type="number" min="0" value="0" inputmode="numeric" class="mt-1 w-full min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-right"></label>
+            <label class="text-[11px] text-slate-600">一般累積金<input id="ledger-alloc-general" type="number" min="0" value="0" inputmode="numeric" class="mt-1 w-full min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-right"></label>
+            <label class="text-[11px] text-slate-600">零用金<input id="ledger-alloc-allowance" type="number" min="0" value="0" inputmode="numeric" class="mt-1 w-full min-w-0 rounded-lg border border-slate-200 px-2 py-2 text-right"></label>
+          </div>
+        </div>
+        <p id="ledger-income-hint" class="rounded-xl bg-emerald-50 px-3 py-2 text-[11px] text-emerald-700">初始現金及額外現金收入依正式規則全額存入「零用金」。</p>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">備註說明 *</label>
+          <input type="text" id="ledger-note" required placeholder="例如：完成數學作業獎勵" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-rose-400 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">交易日期</label>
+          <input type="date" id="ledger-date" required class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-rose-400 focus:outline-none">
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs py-2.5 rounded-xl transition">
+            儲存紀錄
+          </button>
+          <button type="button" onclick="closeModal('modal-ledger')" class="px-4 bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl">
+            取消
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Confirm Delete Modal (二次確認) -->
+  <div id="modal-confirm" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-xs p-5 text-center space-y-3 shadow-2xl">
+      <div class="w-12 h-12 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 class="font-bold text-slate-800 text-base" id="confirm-title">確認刪除？</h3>
+      <p class="text-xs text-slate-500" id="confirm-msg">此操作無法復原，您確定要刪除這筆項目嗎？</p>
+      <div class="flex gap-2 pt-2">
+        <button id="confirm-btn-yes" class="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs py-2 rounded-xl">
+          確定刪除
+        </button>
+        <button onclick="closeModal('modal-confirm')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold py-2 rounded-xl">
+          取消
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Fulfill Wish Confirm Popup (願望兌換扣款試算) -->
+  <div id="modal-fulfill-action" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+      <div class="text-center space-y-1 border-b border-rose-100 pb-3">
+        <div class="text-4xl mb-1" id="fulfill-target-icon">🎁</div>
+        <h3 class="font-bold text-slate-800 text-base" id="fulfill-target-name">願望名稱</h3>
+        <p class="text-xs text-rose-500 font-bold">所需扣除總金額：<span id="fulfill-target-cost">$0</span></p>
+      </div>
+
+      <div class="space-y-2 text-xs">
+        <p class="font-semibold text-slate-700">選擇資金扣款來源與分配：</p>
+        <div class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-600">🎓 學習獎金 (餘額: $<span id="ff-bal-1">0</span>)</span>
+            <input type="number" id="ff-deduct-1" min="0" value="0" class="w-20 px-2 py-1 border rounded-lg text-right font-bold" oninput="recalcFulfillDeduction()">
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-600">🍬 零用錢 (餘額: $<span id="ff-bal-2">0</span>)</span>
+            <input type="number" id="ff-deduct-2" min="0" value="0" class="w-20 px-2 py-1 border rounded-lg text-right font-bold" oninput="recalcFulfillDeduction()">
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-600">✨ 夢想基金 (餘額: $<span id="ff-bal-3">0</span>)</span>
+            <input type="number" id="ff-deduct-3" min="0" value="0" class="w-20 px-2 py-1 border rounded-lg text-right font-bold" oninput="recalcFulfillDeduction()">
+          </div>
+        </div>
+
+        <div class="text-[11px] space-y-1 pt-1">
+          <div class="flex justify-between text-slate-500">
+            <span>指定扣款合計:</span>
+            <span id="ff-sum-deduct" class="font-bold text-slate-800">$0</span>
+          </div>
+          <div id="ff-error-msg" class="text-rose-500 font-bold hidden">
+            ⚠️ 扣款金額不符目標金額或資金餘額不足！
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button id="ff-confirm-btn" onclick="executeFulfillWish()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs py-2.5 rounded-xl transition shadow">
+          確認扣款並實現願望
+        </button>
+        <button onclick="closeModal('modal-fulfill-action')" class="px-4 bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl">
+          取消
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Alert -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-800/90 text-white text-xs px-4 py-2.5 rounded-full shadow-lg z-50 hidden flex items-center gap-2 transition duration-300">
+    <i class="fa-solid fa-circle-info text-rose-400"></i>
+    <span id="toast-msg">通知訊息</span>
+  </div>
+
+  <!-- ================= JAVASCRIPT LOGIC & MOCK DATA ================= -->
+  <script>
+    /**
+     * Initial Mock Data setup matching UI screenshot values
+     */
+    const DEFAULT_DATA = {
+      user: {
+        name: "小莓寶寶",
+        avatar: "🍓",
+        notifyWish: true,
+        notifyAsset: true
+      },
+      funds: {
+        learning: 500,   // 學習獎金
+        allowance: 450,   // 零用錢
+        dream: 300       // 夢想基金
+      },
+      wishes: [
+        {
+          id: 'w1',
+          name: '彩色自動筆',
+          target: 150,
+          current: 100,
+          icon: '✏️',
+          status: 'pending',
+          priority: 1
+        },
+        {
+          id: 'w2',
+          name: '故事書',
+          target: 200,
+          current: 200,
+          icon: '📖',
+          status: 'achieved',
+          priority: 2,
+          achievedDate: '2026-11-10'
+        },
+        {
+          id: 'w3',
+          name: '兒童色鉛筆組',
+          target: 350,
+          current: 150,
+          icon: '🎨',
+          status: 'pending',
+          priority: 3
+        }
+      ],
+      ledger: [
+        {
+          id: 't1',
+          type: 'income',
+          amount: 500,
+          fund: '學習獎金',
+          note: '國語期中考100分獎勵',
+          date: '2026-11-01'
+        },
+        {
+          id: 't2',
+          type: 'income',
+          amount: 450,
+          fund: '零用錢',
+          note: '11月每週幫忙掃地零用錢',
+          date: '2026-11-05'
+        },
+        {
+          id: 't3',
+          type: 'income',
+          amount: 300,
+          fund: '夢想基金',
+          note: '阿公給的獎學金紅包',
+          date: '2026-11-08'
+        },
+        {
+          id: 't4',
+          type: 'expense',
+          amount: 200,
+          fund: '零用錢',
+          note: '購買願望：故事書',
+          date: '2026-11-10'
+        }
+      ]
+    };
+
+    // Global State
+    let appData = {};
+    let activeFulfillWishId = null;
+    let walletFilter = 'all';
+
+    // Application Initialization
+    window.onload = function() {
+      loadData();
+      renderAllPages();
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('ledger-date').value = today;
+    };
+
+    // Load from LocalStorage or Default
+    function loadData() {
+      const stored = localStorage.getItem('berry_wishing_app_data');
+      if (stored) {
+        try {
+          appData = JSON.parse(stored);
+        } catch (e) {
+          appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+      } else {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        saveData();
+      }
+    }
+
+    // Save state to LocalStorage
+    function saveData() {
+      localStorage.setItem('berry_wishing_app_data', JSON.stringify(appData));
+      renderAllPages();
+    }
+
+    // Reset Data
+    function resetDataToDefault() {
+      appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      saveData();
+      toggleToast('資料已重置為預設狀態！');
+    }
+
+    // Calculate Total Assets
+    function getTotalAsset() {
+      return appData.funds.learning + appData.funds.allowance + appData.funds.dream;
+    }
+
+    // Render All UI Views Component Breakdown
+    function renderAllPages() {
+      renderDashboard();
+      renderWallet();
+      renderWishes();
+      renderFulfill();
+      renderLedger();
+      renderSettings();
+    }
+
+    // Switch Page View with Nav Correction
+    function switchPage(pageId) {
+      document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(pageId);
+      if (target) target.classList.remove('hidden');
+
+      const navMap = {
+        'page-dashboard': 'nav-dashboard',
+        'page-wallet': 'nav-wallet',
+        'page-wishes': 'nav-wishes',
+        'page-settings': 'nav-settings'
+      };
+
+      document.querySelectorAll('nav button').forEach(btn => {
+        btn.classList.remove('text-rose-500', 'font-bold');
+        btn.classList.add('text-slate-400');
+      });
+
+      if (navMap[pageId]) {
+        const activeNav = document.getElementById(navMap[pageId]);
+        if (activeNav) {
+          activeNav.classList.remove('text-slate-400');
+          activeNav.classList.add('text-rose-500', 'font-bold');
+        }
+      }
+    }
+
+    function showModuleNotice(name) {
+      document.getElementById('notice-module-title').textContent = `${name} (外部模組)`;
+      document.getElementById('modal-learning-notice').classList.remove('hidden');
+    }
+
+    /* ================= 01. DASHBOARD LOGIC ================= */
+    function renderDashboard() {
+      const total = getTotalAsset();
+      document.getElementById('dash-total-asset').textContent = `$ ${total.toLocaleString()}`;
+
+      const pending = appData.wishes.filter(w => w.status === 'pending');
+      const achieved = appData.wishes.filter(w => w.status === 'achieved');
+
+      document.getElementById('dash-pending-wishes').textContent = `${pending.length} 項`;
+      document.getElementById('dash-achieved-wishes').textContent = `${achieved.length} 項`;
+
+      const recentContainer = document.getElementById('dash-recent-wishes');
+      recentContainer.innerHTML = '';
+
+      appData.wishes.slice(0, 3).forEach(w => {
+        const pct = Math.min(100, Math.round((w.current / w.target) * 100));
+        const isAchieved = w.status === 'achieved' || pct >= 100;
+
+        const itemHTML = `
+          <div onclick="switchPage('page-wishes')" class="flex items-center justify-between p-2.5 bg-slate-50/70 hover:bg-rose-50/50 rounded-xl cursor-pointer transition">
+            <div class="flex items-center gap-2.5 w-1/3">
+              <span class="text-xl p-1 bg-white rounded-lg shadow-sm">${w.icon}</span>
+              <span class="font-bold text-xs text-slate-700 truncate">${w.name}</span>
+            </div>
+
+            <div class="flex-1 mx-3 flex items-center gap-2">
+              <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                <div class="${isAchieved ? 'bg-emerald-500' : 'bg-rose-400'} h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+              </div>
+              <span class="text-[10px] font-bold text-slate-500 w-8 text-right">${pct}%</span>
+            </div>
+
+            <div>
+              ${isAchieved ?
+                `<span class="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <i class="fa-solid fa-circle-check"></i> 已達成
+                </span>` :
+                `<span class="bg-sky-100 text-sky-600 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                  存錢中
+                </span>`
+              }
+            </div>
+          </div>
+        `;
+        recentContainer.innerHTML += itemHTML;
+      });
+
+      const dashTxContainer = document.getElementById('dash-recent-transactions');
+      dashTxContainer.innerHTML = '';
+      appData.ledger.slice(-3).reverse().forEach(t => {
+        dashTxContainer.innerHTML += `
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-50">
+            <div>
+              <p class="font-semibold text-slate-700">${t.note}</p>
+              <p class="text-[10px] text-slate-400">${t.date} · ${t.fund}</p>
+            </div>
+            <span class="font-extrabold ${t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}">
+              ${t.type === 'income' ? '+' : '-'}$${t.amount}
+            </span>
+          </div>
+        `;
+      });
+    }
+
+    /* ================= 02. WALLET LOGIC ================= */
+    function renderWallet() {
+      const total = getTotalAsset();
+      document.getElementById('wallet-total-balance').textContent = `$ ${total.toLocaleString()}`;
+      document.getElementById('fund-snack').textContent = `$ ${appData.funds.learning.toLocaleString()}`;
+      document.getElementById('fund-allowance').textContent = `$ ${appData.funds.allowance.toLocaleString()}`;
+      document.getElementById('fund-general').textContent = `$ ${appData.funds.dream.toLocaleString()}`;
+
+      let inc = 0, exp = 0;
+      appData.ledger.forEach(t => {
+        if (t.type === 'income') inc += t.amount;
+        else exp += t.amount;
+      });
+      document.getElementById('wallet-month-income').textContent = `+$${inc}`;
+      document.getElementById('wallet-month-expense').textContent = `-$${exp}`;
+
+      const logContainer = document.getElementById('wallet-logs-list');
+      logContainer.innerHTML = '';
+
+      const filtered = appData.ledger.filter(t => {
+        if (walletFilter === 'all') return true;
+        return t.type === walletFilter;
+      });
+
+      if (filtered.length === 0) {
+        logContainer.innerHTML = `<div class="text-center py-4 text-slate-400">尚無相關交易明細</div>`;
+        return;
+      }
+
+      filtered.slice().reverse().forEach(t => {
+        logContainer.innerHTML += `
+          <div class="py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full ${t.type==='income'?'bg-emerald-100 text-emerald-600':'bg-rose-100 text-rose-600'} flex items-center justify-center font-bold text-xs">
+                ${t.type === 'income' ? '↓' : '↑'}
+              </div>
+              <div>
+                <p class="font-bold text-slate-700">${t.note}</p>
+                <p class="text-[10px] text-slate-400">${t.date} · 帳戶: ${t.fund}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-extrabold text-sm ${t.type==='income'?'text-emerald-500':'text-rose-500'}">
+                ${t.type==='income'?'+':'-'}$${t.amount}              </p>
+              <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">成功</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function filterWalletLogs(type) {
+      walletFilter = type;
+      ['all', 'income', 'expense'].forEach(t => {
+        const btn = document.getElementById(`w-filter-${t}`);
+        if (t === type) {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-rose-500 text-white font-medium';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-medium';
+        }
+      });
+      renderWallet();
+    }
+
+    /* ================= 03. WISHES LOGIC ================= */
+    function renderWishes() {
+      const container = document.getElementById('wishes-full-list');
+      container.innerHTML = '';
+
+      if (appData.wishes.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-slate-400">目前尚無許願項目，快點擊「新增願望」吧！</div>`;
+        return;
+      }
+
+      appData.wishes.forEach(w => {
+        const pct = Math.min(100, Math.round((w.current / w.target) * 100));
+        const isAchieved = w.status === 'achieved' || pct >= 100;
+
+        container.innerHTML += `
+          <div class="bg-white p-4 rounded-2xl border border-rose-100 custom-shadow space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl bg-rose-50 p-2 rounded-2xl border border-rose-100">${w.icon}</span>
+                <div>
+                  <h4 class="font-bold text-slate-800 text-sm">${w.name}</h4>
+                  <p class="text-xs text-slate-400">目標: $${w.target} | 已存: $${w.current}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <button onclick="editWish('${w.id}')" class="text-slate-400 hover:text-sky-500 p-1.5 text-xs" title="編輯">
+                  <i class="fa-solid fa-pen"></i>
+                </button>
+                <button onclick="confirmDeleteWish('${w.id}')" class="text-slate-400 hover:text-rose-500 p-1.5 text-xs" title="刪除">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex justify-between text-[11px] font-semibold">
+                <span class="text-slate-500">進度狀態</span>
+                <span class="${isAchieved?'text-emerald-500':'text-rose-500'}">${pct}%</span>
+              </div>
+              <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                <div class="${isAchieved?'bg-emerald-500':'bg-rose-400'} h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-1">
+              ${isAchieved ?
+                `<span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full flex items-center gap-1">
+                  <i class="fa-solid fa-trophy"></i> 已達成此願望
+                </span>` :
+                `<span class="text-xs text-slate-400">還差 $${Math.max(0, w.target - w.current)}</span>`
+              }
+              ${!isAchieved ? `
+                <button onclick="openFulfillModal('${w.id}')" class="bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm transition">
+                  兌換解鎖
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function openWishModal(id = null) {
+      document.getElementById('wish-id').value = id || '';
+      if (id) {
+        const w = appData.wishes.find(item => item.id === id);
+        document.getElementById('wish-modal-title').textContent = '編輯願望';
+        document.getElementById('wish-name').value = w.name;
+        document.getElementById('wish-target').value = w.target;
+        document.getElementById('wish-current').value = w.current;
+        document.getElementById('wish-icon').value = w.icon;
+      } else {
+        document.getElementById('wish-modal-title').textContent = '新增願望';
+        document.getElementById('wish-form').reset();
+        document.getElementById('wish-id').value = '';
+        document.getElementById('wish-icon').value = '✏️';
+      }
+      document.getElementById('modal-wish').classList.remove('hidden');
+    }
+
+    function selectWishIcon(iconStr) {
+      document.getElementById('wish-icon').value = iconStr;
+      toggleToast(`已選擇圖示: ${iconStr}`);
+    }
+
+    function handleWishSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('wish-id').value;
+      const name = document.getElementById('wish-name').value.trim();
+      const target = parseInt(document.getElementById('wish-target').value);
+      const current = parseInt(document.getElementById('wish-current').value) || 0;
+      const icon = document.getElementById('wish-icon').value || '✏️';
+
+      if (id) {
+        const w = appData.wishes.find(item => item.id === id);
+        if (w) {
+          w.name = name;
+          w.target = target;
+          w.current = current;
+          w.icon = icon;
+          if (w.current >= w.target) w.status = 'achieved';
+        }
+        toggleToast('願望資料修改成功！');
+      } else {
+        const newWish = {
+          id: 'w_' + Date.now(),
+          name,
+          target,
+          current,
+          icon,
+          status: current >= target ? 'achieved' : 'pending',
+          priority: appData.wishes.length + 1
+        };
+        appData.wishes.push(newWish);
+        toggleToast('成功新增願望！');
+      }
+
+      saveData();
+      closeModal('modal-wish');
+    }
+
+    function editWish(id) {
+      openWishModal(id);
+    }
+
+    function confirmDeleteWish(id) {
+      const w = appData.wishes.find(item => item.id === id);
+      if (!w) return;
+
+      document.getElementById('confirm-title').textContent = '確認刪除願望？';
+      document.getElementById('confirm-msg').textContent = `確定要移除「${w.name}」嗎？這項動作無法還原。`;
+
+      const yesBtn = document.getElementById('confirm-btn-yes');
+      yesBtn.onclick = function() {
+        appData.wishes = appData.wishes.filter(item => item.id !== id);
+        saveData();
+        closeModal('modal-confirm');
+        toggleToast('已刪除願望。');
+      };
+
+      document.getElementById('modal-confirm').classList.remove('hidden');
+    }
+
+    /* ================= 04. WISH FULFILLMENT LOGIC ================= */
+    let activeFulfillTab = 'pending';
+
+    function renderFulfill() {
+      const total = getTotalAsset();
+      document.getElementById('fulfill-available-balance').textContent = `$ ${total.toLocaleString()}`;
+
+      const pending = appData.wishes.filter(w => w.status === 'pending');
+      const achieved = appData.wishes.filter(w => w.status === 'achieved');
+
+      document.getElementById('fulfill-pending-count').textContent = pending.length;
+      document.getElementById('fulfill-achieved-count').textContent = achieved.length;
+
+      const container = document.getElementById('fulfill-items-container');
+      container.innerHTML = '';
+
+      const list = activeFulfillTab === 'pending' ? pending : achieved;
+
+      if (list.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-slate-400">目前沒有${activeFulfillTab === 'pending' ? '待實現' : '已達成'}的願望</div>`;
+        return;
+      }
+
+      list.forEach(w => {
+        const canAfford = total >= w.target;
+        container.innerHTML += `
+          <div class="bg-white p-4 rounded-2xl border border-rose-100 custom-shadow flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">${w.icon}</span>
+              <div>
+                <h4 class="font-bold text-slate-800 text-sm">${w.name}</h4>
+                <p class="text-xs text-rose-500 font-bold">所需金額: $${w.target}</p>
+              </div>
+            </div>
+
+            <div>
+              ${activeFulfillTab === 'pending' ? `
+                <button onclick="openFulfillModal('${w.id}')" ${!canAfford ? 'disabled' : ''} class="${canAfford ? 'bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} font-bold text-xs px-3.5 py-2 rounded-xl transition">
+                  ${canAfford ? '兌換達成' : '餘額不足'}
+                </button>
+              ` : `
+                <span class="bg-emerald-100 text-emerald-600 font-bold text-xs px-3 py-1 rounded-full">
+                  ✓ 已完成
+                </span>
+              `}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function switchFulfillTab(tab) {
+      activeFulfillTab = tab;
+      const t1 = document.getElementById('tab-fulfill-pending');
+      const t2 = document.getElementById('tab-fulfill-achieved');
+
+      if (tab === 'pending') {
+        t1.className = 'flex-1 pb-2 text-rose-600 border-b-2 border-rose-500 text-center font-bold';
+        t2.className = 'flex-1 pb-2 text-slate-400 text-center';
+      } else {
+        t2.className = 'flex-1 pb-2 text-emerald-600 border-b-2 border-emerald-500 text-center font-bold';
+        t1.className = 'flex-1 pb-2 text-slate-400 text-center';
+      }
+      renderFulfill();
+    }
+
+    function openFulfillModal(wishId) {
+      const w = appData.wishes.find(item => item.id === wishId);
+      if (!w) return;
+
+      const totalAsset = getTotalAsset();
+      if (totalAsset < w.target) {
+        toggleToast('⚠️ 總資產不足以兌換此願望！');
+        return;
+      }
+
+      activeFulfillWishId = wishId;
+      document.getElementById('fulfill-target-icon').textContent = w.icon;
+      document.getElementById('fulfill-target-name').textContent = w.name;
+      document.getElementById('fulfill-target-cost').textContent = `$${w.target}`;
+
+      document.getElementById('ff-bal-1').textContent = appData.funds.learning;
+      document.getElementById('ff-bal-2').textContent = appData.funds.allowance;
+      document.getElementById('ff-bal-3').textContent = appData.funds.dream;
+
+      let remainToDeduct = w.target;
+      let d1 = Math.min(appData.funds.learning, remainToDeduct);
+      remainToDeduct -= d1;
+      let d2 = Math.min(appData.funds.allowance, remainToDeduct);
+      remainToDeduct -= d2;
+      let d3 = Math.min(appData.funds.dream, remainToDeduct);
+
+      document.getElementById('ff-deduct-1').value = d1;
+      document.getElementById('ff-deduct-2').value = d2;
+      document.getElementById('ff-deduct-3').value = d3;
+
+      recalcFulfillDeduction();
+      document.getElementById('modal-fulfill-action').classList.remove('hidden');
+    }
+
+    function recalcFulfillDeduction() {
+      const w = appData.wishes.find(item => item.id === activeFulfillWishId);
+      if (!w) return;
+
+      const d1 = parseInt(document.getElementById('ff-deduct-1').value) || 0;
+      const d2 = parseInt(document.getElementById('ff-deduct-2').value) || 0;
+      const d3 = parseInt(document.getElementById('ff-deduct-3').value) || 0;
+
+      const sum = d1 + d2 + d3;
+      document.getElementById('ff-sum-deduct').textContent = `$${sum} / 目標 $${w.target}`;
+
+      const errBox = document.getElementById('ff-error-msg');
+      const confirmBtn = document.getElementById('ff-confirm-btn');
+
+      const isEnoughBalance = (d1 <= appData.funds.learning) && (d2 <= appData.funds.allowance) && (d3 <= appData.funds.dream);
+      const isExactCost = sum === w.target;
+
+      if (isExactCost && isEnoughBalance) {
+        errBox.classList.add('hidden');
+        confirmBtn.disabled = false;
+        confirmBtn.className = 'flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs py-2.5 rounded-xl transition shadow';
+      } else {
+        errBox.classList.remove('hidden');
+        confirmBtn.disabled = true;
+        confirmBtn.className = 'flex-1 bg-slate-300 text-slate-500 font-bold text-xs py-2.5 rounded-xl cursor-not-allowed';
+      }
+    }
+
+    function executeFulfillWish() {
+      const w = appData.wishes.find(item => item.id === activeFulfillWishId);
+      if (!w) return;
+
+      const d1 = parseInt(document.getElementById('ff-deduct-1').value) || 0;
+      const d2 = parseInt(document.getElementById('ff-deduct-2').value) || 0;
+      const d3 = parseInt(document.getElementById('ff-deduct-3').value) || 0;
+
+      appData.funds.learning -= d1;
+      appData.funds.allowance -= d2;
+      appData.funds.dream -= d3;
+
+      w.status = 'achieved';
+      w.current = w.target;
+      w.achievedDate = new Date().toISOString().split('T')[0];
+
+      appData.ledger.push({
+        id: 't_' + Date.now(),
+        type: 'expense',
+        amount: w.target,
+        fund: d1 > 0 ? '學習獎金' : (d2 > 0 ? '零用錢' : '夢想基金'),
+        note: `實現願望：${w.name}`,
+        date: new Date().toISOString().split('T')[0]
+      });
+
+      saveData();
+      closeModal('modal-fulfill-action');
+
+      try {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      } catch (e) {}
+
+      toggleToast(`🎉 恭喜！成功解鎖實現「${w.name}」！`);
+    }
+
+    /* ================= 05. LEDGER LOGIC ================= */
+    function renderLedger() {
+      const searchKey = document.getElementById('ledger-search-input').value.toLowerCase().trim();
+      const fundFilter = document.getElementById('ledger-filter-fund').value;
+      const typeFilter = document.getElementById('ledger-filter-type').value;
+
+      const container = document.getElementById('ledger-records-container');
+      container.innerHTML = '';
+
+      const filtered = appData.ledger.filter(t => {
+        const matchesKey = t.note.toLowerCase().includes(searchKey);
+        const matchesFund = fundFilter === 'all' || t.fund === fundFilter;
+        const matchesType = typeFilter === 'all' || t.type === typeFilter;
+        return matchesKey && matchesFund && matchesType;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center py-6 text-slate-400">查無對應的收支明細</div>`;
+        return;
+      }
+
+      filtered.slice().reverse().forEach(t => {
+        container.innerHTML += `
+          <div class="p-3 flex items-center justify-between hover:bg-rose-50/40 transition">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full ${t.type==='income'?'bg-emerald-100 text-emerald-600':'bg-rose-100 text-rose-600'} flex items-center justify-center font-bold">
+                ${t.type==='income'?'+':'-'}
+              </div>
+              <div>
+                <p class="font-bold text-slate-800 text-xs">${t.note}</p>
+                <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                  <span>${t.date}</span>
+                  <span>•</span>
+                  <span class="bg-slate-100 px-1.5 py-0.2 rounded text-slate-600">${t.fund}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span class="font-black text-sm ${t.type==='income'?'text-emerald-500':'text-rose-500'}">
+                ${t.type==='income'?'+':'-'}$${t.amount}
+              </span>
+              <button onclick="confirmDeleteLedger('${t.id}')" class="text-slate-300 hover:text-rose-500 text-xs">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function openLedgerModal(type = 'income') {
+      document.getElementById('ledger-form').reset();
+      document.getElementById('ledger-type').value = type;
+      document.getElementById('ledger-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('modal-ledger').classList.remove('hidden');
+    }
+
+    function handleLedgerSubmit(e) {
+      e.preventDefault();
+      const type = document.getElementById('ledger-type').value;
+      const amount = parseInt(document.getElementById('ledger-amount').value);
+      const fund = document.getElementById('ledger-fund').value;
+      const note = document.getElementById('ledger-note').value.trim();
+      const date = document.getElementById('ledger-date').value;
+
+      if (type === 'expense') {
+        const fundKey = fund === '學習獎金' ? 'learning' : (fund === '零用錢' ? 'allowance' : 'dream');
+        if (appData.funds[fundKey] < amount) {
+          toggleToast(`⚠️ ${fund} 餘額不足以支付此筆支出！`);
+          return;
+        }
+        appData.funds[fundKey] -= amount;
+      } else {
+        const fundKey = fund === '學習獎金' ? 'learning' : (fund === '零用錢' ? 'allowance' : 'dream');
+        appData.funds[fundKey] += amount;
+      }
+
+      appData.ledger.push({
+        id: 't_' + Date.now(),
+        type,
+        amount,
+        fund,
+        note,
+        date
+      });
+
+      saveData();
+      closeModal('modal-ledger');
+      toggleToast('成功記錄收支明細！');
+    }
+
+    function confirmDeleteLedger(id) {
+      document.getElementById('confirm-title').textContent = '刪除明細紀錄？';
+      document.getElementById('confirm-msg').textContent = '注意：單純刪除明細紀錄不會自動補回或退還資金金額。';
+
+      const yesBtn = document.getElementById('confirm-btn-yes');
+      yesBtn.onclick = function() {
+        appData.ledger = appData.ledger.filter(item => item.id !== id);
+        saveData();
+        closeModal('modal-confirm');
+        toggleToast('明細已移除。');
+      };
+
+      document.getElementById('modal-confirm').classList.remove('hidden');
+    }
+
+    /* ================= 06. SETTINGS LOGIC ================= */
+    const AVATARS = ['🍓', '🍰', '🧸', '⭐', '🚀'];
+    let currentAvatarIdx = 0;
+
+    function renderSettings() {
+      document.getElementById('setting-username').value = appData.user.name;
+      document.getElementById('profile-avatar-preview').textContent = appData.user.avatar || '🍓';
+      document.getElementById('setting-notify-wish').checked = appData.user.notifyWish;
+      document.getElementById('setting-notify-asset').checked = appData.user.notifyAsset;
+    }
+
+    function cycleAvatar() {
+      currentAvatarIdx = (currentAvatarIdx + 1) % AVATARS.length;
+      const nextIcon = AVATARS[currentAvatarIdx];
+      document.getElementById('profile-avatar-preview').textContent = nextIcon;
+      document.getElementById('avatar-label').textContent = `${nextIcon} 風格`;
+    }
+
+    function saveSettings(e) {
+      e.preventDefault();
+      appData.user.name = document.getElementById('setting-username').value.trim();
+      appData.user.avatar = document.getElementById('profile-avatar-preview').textContent;
+      appData.user.notifyWish = document.getElementById('setting-notify-wish').checked;
+      appData.user.notifyAsset = document.getElementById('setting-notify-asset').checked;
+
+      saveData();
+      toggleToast('個人設定保存成功！');
+    }
+
+    /* ================= UTILITY & MODALS ================= */
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function openSearchModal() {
+      switchPage('page-ledger');
+      document.getElementById('ledger-search-input').focus();
+    }
+
+    function toggleToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = message;
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 2500);
+    }
+  </script>
+  <script src="./supabase-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
+  <script src="./wallet-core.js"></script>
+  <script src="./wallet-ui-adapter.js"></script>
+  <script src="./wallet-app.js"></script>
+</body>
+</html>
