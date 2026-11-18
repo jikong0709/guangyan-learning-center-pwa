@@ -283,9 +283,10 @@
       async getEffectiveTransaction(id) {
         const r=await supabase.from('wallet_transactions').select('*').eq('id',id).single();
         if(r.error)throw r.error;
-        const entries=await this.getEntries([id]);
+        const entriesResult=await supabase.from('wallet_entries').select('fund_type,amount_delta').eq('transaction_id',id);
+        if(entriesResult.error)throw entriesResult.error;
         const allocations={};
-        entries.forEach(e=>{allocations[e.fund_type]=Number(e.amount_delta);});
+        (entriesResult.data||[]).forEach(e=>{allocations[e.fund_type]=Number(e.amount_delta);});
         const effective={amount:Number(r.data.amount),category:r.data.category,note:r.data.note,
           occurredAt:r.data.occurred_at,fundAllocations:allocations};
         const events=await this.getCorrectionEvents([id]);
