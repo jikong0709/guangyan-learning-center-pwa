@@ -45,7 +45,7 @@
   function validateCorrectedAllocation(type, category, amount, allocation) {
     const rows=Object.entries(allocation);
     const positive=rows.filter(([,v])=>v>0), negative=rows.filter(([,v])=>v<0);
-    assert(allocationTotal(allocation)===amount,'ALLOCATION_TOTAL_MISMATCH','修正後資金分配總額必須等於修正後金額。');
+    if(type!=='transfer') assert(allocationTotal(allocation)===amount,'ALLOCATION_TOTAL_MISMATCH','修正後資金分配總額必須等於修正後金額。');
     if(type==='expense'){
       validateExpenseAllocation(category,allocation);
       assert(rows.length>0&&positive.length===0,'INVALID_ALLOCATION','支出分配必須全部為負數。');
