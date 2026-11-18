@@ -403,6 +403,8 @@ begin
       for v_key in select jsonb_object_keys(v_after->'fund_allocations')
       loop
         v_new := (v_after->'fund_allocations'->>v_key)::bigint;
+        v_old := coalesce((v_before->'fund_allocations'->>v_key)::bigint,0);
+        if v_old<=0 then raise exception 'refund correction cannot introduce a fund not used by this refund'; end if;
         v_old := coalesce((v_original_snapshot->'fund_allocations'->>v_key)::bigint,0);
         if v_new>abs(v_old) then raise exception 'refund correction exceeds original fund allocation'; end if;
         select coalesce(sum((snap->'fund_allocations'->>v_key)::bigint),0) into v_other_refund_fund
