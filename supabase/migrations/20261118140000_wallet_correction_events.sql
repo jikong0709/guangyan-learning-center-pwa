@@ -42,7 +42,8 @@ as $$
 begin
   raise exception 'wallet correction events are append-only';
 end;
-$$;
+$;
+revoke all on function public.wallet_reject_correction_event_mutation() from public, anon, authenticated;
 drop trigger if exists wallet_correction_events_immutable on public.wallet_correction_events;
 create trigger wallet_correction_events_immutable
   before update or delete on public.wallet_correction_events
@@ -61,7 +62,8 @@ begin
   end if;
   return new;
 end;
-$$;
+$;
+revoke all on function public.wallet_guard_special_transaction_insert() from public, anon, authenticated;
 drop trigger if exists wallet_transactions_special_write_guard on public.wallet_transactions;
 create trigger wallet_transactions_special_write_guard
   before insert on public.wallet_transactions
