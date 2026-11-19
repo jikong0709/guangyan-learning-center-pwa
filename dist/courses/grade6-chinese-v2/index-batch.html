@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="../../icon.svg" type="image/svg+xml">
+  <title>國語六上12課｜候選驗證頁｜莓好學習區</title>
+  <link rel="stylesheet" href="../../exam-engine/exam.css">
+</head>
+<body class="ex-body">
+  <header class="ex-topbar"><div class="ex-topbar-in"><div class="ex-brand">莓好學習區<small>國語（康軒版）六年級上冊</small></div></div></header>
+  <div class="ex-main"><a class="ex-back" href="../../">← 返回教材中心</a></div>
+  <main class="ex-main"><div id="exam-root" aria-live="off"><p style="text-align:center;color:#786f78">載入題庫中…</p></div><noscript><p>需要開啟 JavaScript。</p></noscript></main>
+  <footer class="ex-footer"><p>候選驗證頁：第2～12課題庫尚待115版生字語詞逐題查核與獨立驗收，不得作正式考卷。</p><p id="curriculum-source"></p></footer>
+  <script src="../../exam-engine/kit.js"></script>
+  <script src="../../exam-engine/engine.js"></script>
+  <script src="./config.js"></script>
+  <script src="./banks/bank-kx-6a-01.js"></script>
+  <script src="./config-batch-extension.js"></script>
+  <script src="./banks/bank-kx-6a-02.js"></script>
+  <script src="./banks/bank-kx-6a-02-skills.js"></script>
+  <script src="./banks/bank-kx-6a-03.js"></script>
+  <script src="./banks/bank-kx-6a-03-skills.js"></script>
+  <script src="./banks/bank-kx-6a-04.js"></script>
+  <script src="./banks/bank-kx-6a-04-skills.js"></script>
+  <script src="./banks/bank-kx-6a-05.js"></script>
+  <script src="./banks/bank-kx-6a-05-skills.js"></script>
+  <script src="./banks/bank-kx-6a-06.js"></script>
+  <script src="./banks/bank-kx-6a-06-skills.js"></script>
+  <script src="./banks/bank-kx-6a-07.js"></script>
+  <script src="./banks/bank-kx-6a-07-skills.js"></script>
+  <script src="./banks/bank-kx-6a-08.js"></script>
+  <script src="./banks/bank-kx-6a-08-skills.js"></script>
+  <script src="./banks/bank-kx-6a-09.js"></script>
+  <script src="./banks/bank-kx-6a-09-skills.js"></script>
+  <script src="./banks/bank-kx-6a-10.js"></script>
+  <script src="./banks/bank-kx-6a-10-skills.js"></script>
+  <script src="./banks/bank-kx-6a-11.js"></script>
+  <script src="./banks/bank-kx-6a-11-skills.js"></script>
+  <script src="./banks/bank-kx-6a-12.js"></script>
+  <script src="./banks/bank-kx-6a-12-skills.js"></script>
+  <script src="../../exam-engine/ui.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var cfg = window.ExamConfig;
+    var storeKey = cfg.storagePrefix + cfg.defaultVersion;
+    try {
+      if (!window.localStorage.getItem(storeKey)) {
+        window.localStorage.setItem(storeKey, JSON.stringify({ unitIds: ["六上-1"], types: cfg.defaultTypes, level: "all", mode: "score" }));
+      }
+    } catch (e) { /* localStorage 不可用時，由共用 UI 使用其預設值。 */ }
+    var engine = window.ExamEngine.create(cfg, window.ExamBank);
+    window.ExamUI.start({ engine: engine, config: cfg, root: document.getElementById("exam-root"), version: cfg.defaultVersion });
+    /* 同一底層題池的填寫版／選擇版互斥，避免同卷用不同形式洩漏答案。 */
+    [["charphonetic", "charphonetic_mc"], ["vocab", "vocab_mc"]].forEach(function (pair) {
+      var a = document.querySelector('input[name="type"][value="' + pair[0] + '"]');
+      var b = document.querySelector('input[name="type"][value="' + pair[1] + '"]');
+      if (!a || !b) return;
+      function bind(self, other) {
+        self.addEventListener("change", function () {
+          if (self.checked && other.checked) {
+            other.checked = false;
+            other.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        });
+      }
+      bind(a, b); bind(b, a);
+      if (a.checked && b.checked) { b.checked = false; b.dispatchEvent(new Event("change", { bubbles: true })); }
+    });
+  })();
+  </script>
+</body>
+</html>
