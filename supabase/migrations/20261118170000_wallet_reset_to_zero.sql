@@ -15,7 +15,8 @@ begin
   end if;
   raise exception 'wallet correction events are append-only';
 end;
-$$;
+$;
+revoke all on function public.wallet_reject_correction_event_mutation() from public, anon, authenticated;
 
 create or replace function public.wallet_reset_account()
 returns jsonb
