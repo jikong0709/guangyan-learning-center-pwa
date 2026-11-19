@@ -6,7 +6,7 @@ create or replace function public.wallet_reject_correction_event_mutation()
 returns trigger
 language plpgsql
 set search_path = ''
-as $$
+as $p4$
 begin
   if tg_op = 'DELETE'
      and coalesce(current_setting('app.wallet_reset', true), '') = 'on'
@@ -15,7 +15,7 @@ begin
   end if;
   raise exception 'wallet correction events are append-only';
 end;
-$;
+$p4$;
 revoke all on function public.wallet_reject_correction_event_mutation() from public, anon, authenticated;
 
 create or replace function public.wallet_reset_account()
