@@ -54,7 +54,7 @@ create or replace function public.wallet_guard_special_transaction_insert()
 returns trigger
 language plpgsql
 set search_path = ''
-as $$
+as $p4$
 begin
   if new.transaction_type in ('refund','correction')
      and coalesce(current_setting('app.wallet_special_write',true),'') <> 'on' then
@@ -62,7 +62,7 @@ begin
   end if;
   return new;
 end;
-$;
+$p4$;
 revoke all on function public.wallet_guard_special_transaction_insert() from public, anon, authenticated;
 drop trigger if exists wallet_transactions_special_write_guard on public.wallet_transactions;
 create trigger wallet_transactions_special_write_guard
