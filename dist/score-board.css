@@ -93,3 +93,28 @@
   .today-btn{font-size:10px;padding:6px}
   .berry-progress-nav a{font-size:9px}
 }
+
+/* P2：手機觸控與彈窗可用性校正 */
+button, a, input, select, textarea { touch-action: manipulation; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline:3px solid #f64d80; outline-offset:2px; }
+button:disabled { cursor:not-allowed; opacity:.72; }
+.day-record button { min-width:44px; min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
+.modal { max-height:min(88dvh,720px); overflow-y:auto; overscroll-behavior:contain; }
+.modal input, .modal select, .modal textarea { min-height:44px; }
+.modal-actions button { min-height:44px; }
+@media(max-width:620px) {
+ .date-nav { grid-template-columns:40px minmax(0,1fr) 40px; }
+ .date-nav .today-btn { grid-column:1 / -1; width:100%; }
+ .berry-progress-nav { display:flex; overflow-x:auto; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
+ .berry-progress-nav a { flex:0 0 auto; min-width:76px; min-height:44px; padding:8px 10px; font-size:11px; }
+ .shortcut-actions button, .category-card button { min-height:44px; }
+ #calendarGrid.week-grid .day-record button { min-width:44px; min-height:44px; }
+ .modal-backdrop { padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom)); align-items:end; }
+ .modal { width:100%; max-height:min(88dvh,720px); padding:18px 16px calc(18px + env(safe-area-inset-bottom)); border-radius:18px 18px 12px 12px; }
+ .modal-actions { position:sticky; bottom:calc(-18px - env(safe-area-inset-bottom)); padding:10px 0 calc(8px + env(safe-area-inset-bottom)); background:#fff; }
+}
+@media(max-width:380px) { .date-nav { grid-template-columns:44px minmax(0,1fr) 44px; } .date-nav .today-btn { grid-column:1 / -1; } }
+@media(max-width:620px) { .icon-btn,.today-btn,.view-switch button { min-height:44px; } .date-nav .icon-btn { min-width:44px; } }
+
+/* P2：累計積分操作按鈕觸控尺寸統一 */
+.deduct-btn,.reward-btn { min-height:44px; }
