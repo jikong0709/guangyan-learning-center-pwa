@@ -26,7 +26,7 @@ test('reset-in-flight blocks click mutations and modal submission', () => {
   assert.match(source, /if\(resetPending\)\{toast\('雲端重置進行中，請稍候。'\);return\}/);
   assert.match(source, /if\(resetPending\)\{toast\('雲端重置進行中，請稍候。'\);return\}if\(!accountReady/);
   assert.match(source, /resetPending=true;accountReady=false;render\(\)/);
-  assert.match(source, /finally\(\)=>\{resetPending=false/);
+  assert.match(source, /finally\(\(\)=>\{resetPending=false/);
 });
 
 test('migration serializes save/reset and rejects stale revision', async () => {
