@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');
+const api=require('./scoreboard-mutation-v2.js');
+const syncFactory=require('./scoreboard-v2-sync.test-helper.cjs');
+const storageMap=new Map();const storage={getItem:k=>storageMap.get(k)||null,setItem:(k,v)=>storageMap.set(k,v)};
+const store=api.createStore(storage);
+const m=store.createMutation('acctA',{mutationId:'same',entityType:'record',entityId:'r1',operation:'add',payload:{points:5}});
+assert.equal(store.createMutation('acctA',{mutationId:'same',entityType:'record',entityId:'r1',operation:'add',payload:{points:5}}).mutationId,m.mutationId);
+assert.throws(()=>store.createMutation('acctA',{mutationId:'same',entityType:'record',operation:'add',payload:{points:9}}),/different payload/);
+assert.equal(store.getPending('acctB').length,0);
+store.markUnknown('acctA','same');assert.equal(store.read('acctA').mutations[0].status,'UNKNOWN');
+store.acknowledge('acctA',['same']);assert.equal(store.read('acctA').mutations[0].status,'ACKNOWLEDGED');
+const pre=store.createMutation('acctA',{mutationId:'pre-reset',entityType:'ledger',operation:'add',payload:{points:10}});
+const reset=store.startReset('acctA','stable-reset-1');assert.equal(store.startReset('acctA','stable-reset-1').resetRequestId,reset.resetRequestId);
+store.confirmReset('acctA','stable-reset-1');assert.equal(store.read('acctA').epoch,1);assert.equal(store.read('acctA').mutations.find(x=>x.mutationId==='pre-reset').status,'RECOVERY_REQUIRED');
+const post=store.createMutation('acctA',{mutationId:'post-reset',entityType:'record',operation:'add',payload:{points:3}});assert.equal(post.resetEpoch,1);
+console.log('Scoreboard V2 integration regression tests: PASS');
