@@ -14,7 +14,7 @@ assert.deepEqual(Array.from(q.acknowledge([one.mutationId])),[one.mutationId]);a
 q.markUnknown([two.mutationId]);assert.equal(q.retryUnknown([two.mutationId]).length,1,'UNKNOWN is retryable');
 q.setAccount('userB');assert.equal(q.batch(),null,'account B cannot see account A batch');
 q.setAccount('userA');assert.equal(q.pending().length,2,'account A pending remains isolated');
-const reset=q.resetIntent();assert.equal(q.resetIntent,undefined);assert.equal(reset.targetEpoch,1);
+const reset=q.resetIntent();assert.equal(reset.targetEpoch,1);
 assert.throws(()=>q.resetIntent(),/Reset already pending/);
 q.confirmReset(reset.resetRequestId);assert.equal(q.read().epoch,1);assert.equal(q.pending().length,0);
 q.enqueue('add','record','new',{points:1});assert.equal(q.pending()[0].resetEpoch,1);
