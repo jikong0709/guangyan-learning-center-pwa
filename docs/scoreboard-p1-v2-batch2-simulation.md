@@ -1,9 +1,16 @@
-# Scoreboard P1 V2 Batch 2 — RPC Simulation
+# Scoreboard P1 V2 Batch 2 RPC simulation & draft migration
 
-This isolated Node mock models the server RPC contract without connecting to Supabase.
+## Isolated mock
+Run on Node 18+:
+```sh
+node --test tests/scoreboard-rpc-batch2/scoreboard-rpc.test.cjs
+```
+Coverage includes batch acceptance/revision, replay receipt, mutation-ID payload conflict, stale revision with zero ACK, account isolation, UNKNOWN reconciliation, reset replay, and epoch fence.
 
-Run: `node --test tests/scoreboard-rpc-batch2/scoreboard-rpc.test.cjs`
 
-Coverage: atomic mutation batches, batch receipt replay, mutation ID/payload idempotency conflict, revision conflict with zero ACK, account scope, mutation reconciliation for uncertain outcomes, reset receipt replay, and reset-epoch fencing.
+## Migration draft
+`supabase/migrations/20261123090000_scoreboard_v2_rpc.sql` creates account heads, mutation ledger, batch/reset receipts and RPCs: head, batch, reconcile, reset. This is a draft and has NOT been executed against PostgreSQL. It records mutation JSON/idempotency metadata but does not yet apply scoreboard payloads to the existing learning_progress/scoreboard data model. SQL syntax, race behavior, auth/RLS/security-definer review, dependency validation, reset fencing, and real DB tests remain required before integration.
 
-The mock is a contract simulator, not a database concurrency test. Production SQL must be reviewed and exercised in an isolated Supabase test project before enabling the client transport. No production database or deployment is part of Batch 2.
+
+## Scope & safety
+No formal Supabase, production data, deployment, or main-branch merge was touched. Passing mock tests do not certify PostgreSQL RPC correctness.
