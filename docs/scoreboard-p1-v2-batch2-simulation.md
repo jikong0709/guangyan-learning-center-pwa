@@ -1,16 +1,13 @@
-# Scoreboard P1 V2 Batch 2 RPC simulation & draft migration
+# Scoreboard P1 V2 Batch 2A — RPC draft validation
 
-## Isolated mock
-Run on Node 18+:
-```sh
-node --test tests/scoreboard-rpc-batch2/scoreboard-rpc.test.cjs
-```
-Coverage includes batch acceptance/revision, replay receipt, mutation-ID payload conflict, stale revision with zero ACK, account isolation, UNKNOWN reconciliation, reset replay, and epoch fence.
+## Actual local test results
+- Node isolated mock suite: **8/8 passed** (Node v22.16.0).
+- PostgreSQL executable/service: **not available in current environment**; no SQL execution or DB-level concurrency test was performed.
+- A broad `node --test` run from the environment root was also attempted; it picked up unrelated system tests and failed 7 unrelated tests due missing Playwright modules/CodeMirror fixtures. The scoped scoreboard mock suite was separately run and passed.
 
+## Draft migration
+`supabase/migrations/20261123090000_scoreboard_v2_rpc.sql` is still **NOT production-ready** and was not applied.
+The draft adds account-scoped mutation dependencies and batch/reset receipt checks under an account head lock, plus dependency/idempotency validation before writes. It still only records mutation ledger data; it does not apply mutations to the app's canonical learning progress/scoreboard data. Reset only advances the server epoch/revision and does not clear the canonical scoreboard. SQL parsing, PostgreSQL transaction behavior, security review, race tests, and integration with the actual app data model remain unverified.
 
-## Migration draft
-`supabase/migrations/20261123090000_scoreboard_v2_rpc.sql` creates account heads, mutation ledger, batch/reset receipts and RPCs: head, batch, reconcile, reset. This is a draft and has NOT been executed against PostgreSQL. It records mutation JSON/idempotency metadata but does not yet apply scoreboard payloads to the existing learning_progress/scoreboard data model. SQL syntax, race behavior, auth/RLS/security-definer review, dependency validation, reset fencing, and real DB tests remain required before integration.
-
-
-## Scope & safety
-No formal Supabase, production data, deployment, or main-branch merge was touched. Passing mock tests do not certify PostgreSQL RPC correctness.
+## Safety
+No formal Supabase access, production data operations, deployment, or main merge. Changes are committed only to the feature branch.
