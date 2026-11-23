@@ -54,7 +54,7 @@ create or replace function public.scoreboard_mutation_reconcile(p_user_id uuid,p
 declare h public.scoreboard_v2_head%rowtype; begin
  if auth.uid() is null or auth.uid()<>p_user_id then raise exception 'ACCOUNT_SCOPE'; end if;
  select * into h from scoreboard_v2_head where user_id=p_user_id;
- return jsonb_build_object('revision',coalesce(h.revision,0),'reset_epoch',coalesce(h.reset_epoch,0),'results',(select coalesce(jsonb_agg(jsonb_build_object('mutation_id',i,'accepted',m.mutation_id is not null,'accepted_revision',m.accepted_revision,'reset_epoch',m.reset_epoch),'[]') from unnest(coalesce(p_ids,'{}')) i left join scoreboard_v2_mutation m on m.user_id=p_user_id and m.mutation_id=i));
+ return jsonb_build_object('revision',coalesce(h.revision,0),'reset_epoch',coalesce(h.reset_epoch,0),'results',(select coalesce(jsonb_agg(jsonb_build_object('mutation_id',i,'accepted',m.mutation_id is not null,'accepted_revision',m.accepted_revision,'reset_epoch',m.reset_epoch)),'[]'::jsonb) from unnest(coalesce(p_ids,'{}')) i left join scoreboard_v2_mutation m on m.user_id=p_user_id and m.mutation_id=i));
 end $$;
 create or replace function public.scoreboard_reset(p_user_id uuid,p_reset_request_id text,p_expected_epoch bigint) returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
 declare h public.scoreboard_v2_head%rowtype; prior jsonb; begin
