@@ -5,7 +5,7 @@ const API=root.ScoreboardMutationV2;
 const STORE=API.createStore(root.localStorage);
 let account='guest',activeBatch=null;
 const clone=x=>JSON.parse(JSON.stringify(x));
-function setAccount(userId){account=userId||'guest';activeBatch=null;return account}
+function setAccount(userId){const next=userId||'guest';if(next!==account){account=next;activeBatch=null}return account}
 function enqueue(op,type,id,payload,dependencies){return STORE.createMutation(account,{entityType:type,entityId:id,operation:op,payload:clone(payload),dependencyIds:dependencies||[]})}
 function batch(){if(activeBatch){if(activeBatch.userId!==account)throw new Error('Account changed; batch quarantined');return activeBatch}const pending=STORE.getPending(account).slice().sort((a,b)=>a.sequence-b.sequence);if(!pending.length)return null;const batchId='batch-'+(root.crypto&&root.crypto.randomUUID?root.crypto.randomUUID():Date.now());activeBatch={userId:account,batchId,resetEpoch:STORE.read(account).epoch,mutationIds:pending.map(x=>x.mutationId),mutations:clone(pending),createdAt:new Date().toISOString()};return activeBatch}
 function acknowledge(ids){if(!activeBatch)throw new Error('No active batch');if(activeBatch.userId!==account)throw new Error('Account mismatch; ACK rejected');const accepted=Array.from(new Set(ids||[])).filter(id=>activeBatch.mutationIds.includes(id));STORE.acknowledge(account,accepted);const remaining=activeBatch.mutationIds.filter(id=>!accepted.includes(id));if(remaining.length){const saved=activeBatch;activeBatch={...saved,mutationIds:remaining,mutations:saved.mutations.filter(m=>remaining.includes(m.mutationId)),createdAt:saved.createdAt};}else activeBatch=null;return accepted}
