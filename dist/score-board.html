@@ -5,7 +5,7 @@
 <meta name="theme-color" content="#ff4b7d"><meta name="description" content="莓好學習區周計分板：每週加扣分、50分與100分結算、長期累計與獎勵兌換。">
 <title>周計分板｜莓好學習區</title>
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./styles.css?v=27"><link rel="stylesheet" href="./learning-navigation.css?v=27"><link rel="stylesheet" href="./score-board.css?v=27">
+<link rel="stylesheet" href="./styles.css?v=27"><link rel="stylesheet" href="./learning-navigation.css?v=27"><link rel="stylesheet" href="./score-board.css?v=28">
 </head>
 <body>
 <header class="topbar"><div class="shell topbar-inner">
@@ -26,29 +26,29 @@
 <div class="section-heading"><div><h2>快捷登記分數</h2><p>登記日期：<strong id="entryDate"></strong></p></div><div class="shortcut-actions"><button class="soft-btn" data-action="custom-add" type="button">自訂加分</button><button class="soft-btn danger" data-action="custom-sub" type="button">自訂扣分</button></div></div>
 <div class="shortcut-groups">
 <div><h3 class="positive-title">＋ 加分項目</h3><div class="shortcut-grid">
-<button data-points="5" data-reason="當週評量進度完成">當週評量進度完成 <b>+5</b></button>
-<button data-points="5" data-reason="學校：數學作業全對">學校：數學作業全對 <b>+5</b></button>
-<button data-points="5" data-reason="學校：國語作業全對">學校：國語作業全對 <b>+5</b></button>
-<button data-points="5" data-reason="學校：考卷全對">學校：考卷全對 <b>+5</b></button>
-<button data-points="10" data-reason="學校：期中／期末100分">期中／期末100分 <b>+10</b></button>
-<button data-points="5" data-reason="安親班：小考全對">安親班：小考全對 <b>+5</b></button>
-<button data-points="5" data-reason="安親班：考卷全對">安親班：考卷全對 <b>+5</b></button>
-<button data-points="5" data-reason="安親班：國語評量全對">安親班：國語評量全對 <b>+5</b></button>
-<button data-points="5" data-reason="安親班：數學評量全對">安親班：數學評量全對 <b>+5</b></button>
-<button data-points="5" data-reason="安親班：社會評量全對">安親班：社會評量全對 <b>+5</b></button>
-<button data-points="5" data-reason="安親班：自然評量全對">安親班：自然評量全對 <b>+5</b></button>
-<button data-points="5" data-reason="家長表現隨機加分">家長表現隨機加分 <b>+5</b></button>
+<button type="button" data-points="5" data-reason="當週評量進度完成">當週評量進度完成 <b>+5</b></button>
+<button type="button" data-points="5" data-reason="學校：數學作業全對">學校：數學作業全對 <b>+5</b></button>
+<button type="button" data-points="5" data-reason="學校：國語作業全對">學校：國語作業全對 <b>+5</b></button>
+<button type="button" data-points="5" data-reason="學校：考卷全對">學校：考卷全對 <b>+5</b></button>
+<button type="button" data-points="10" data-reason="學校：期中／期末100分">期中／期末100分 <b>+10</b></button>
+<button type="button" data-points="5" data-reason="安親班：小考全對">安親班：小考全對 <b>+5</b></button>
+<button type="button" data-points="5" data-reason="安親班：考卷全對">安親班：考卷全對 <b>+5</b></button>
+<button type="button" data-points="5" data-reason="安親班：國語評量全對">安親班：國語評量全對 <b>+5</b></button>
+<button type="button" data-points="5" data-reason="安親班：數學評量全對">安親班：數學評量全對 <b>+5</b></button>
+<button type="button" data-points="5" data-reason="安親班：社會評量全對">安親班：社會評量全對 <b>+5</b></button>
+<button type="button" data-points="5" data-reason="安親班：自然評量全對">安親班：自然評量全對 <b>+5</b></button>
+<button type="button" data-points="5" data-reason="家長表現隨機加分">家長表現隨機加分 <b>+5</b></button>
 </div></div>
 <div><h3 class="negative-title">－ 扣分項目</h3><div class="shortcut-grid negative-grid">
-<button data-points="-5" data-reason="學校：數學作業有錯">學校：數學作業有錯 <b>−5</b></button>
-<button data-points="-5" data-reason="學校：國語作業有錯">學校：國語作業有錯 <b>−5</b></button>
-<button data-points="-5" data-reason="安親班：小考有錯">安親班：小考有錯 <b>−5</b></button>
-<button data-points="-5" data-reason="安親班：考卷有錯">安親班：考卷有錯 <b>−5</b></button>
-<button data-points="0" data-reason="安親班：國語評量有錯（不扣分，僅紀錄）">安親班：國語評量有錯 <b>0</b></button>
-<button data-points="0" data-reason="安親班：數學評量有錯（不扣分，僅紀錄）">安親班：數學評量有錯 <b>0</b></button>
-<button data-points="0" data-reason="安親班：社會評量有錯（不扣分，僅紀錄）">安親班：社會評量有錯 <b>0</b></button>
-<button data-points="0" data-reason="安親班：自然評量有錯（不扣分，僅紀錄）">安親班：自然評量有錯 <b>0</b></button>
-<button data-points="-5" data-reason="家長表現隨機扣分">家長表現隨機扣分 <b>−5</b></button>
+<button type="button" data-points="-5" data-reason="學校：數學作業有錯">學校：數學作業有錯 <b>−5</b></button>
+<button type="button" data-points="-5" data-reason="學校：國語作業有錯">學校：國語作業有錯 <b>−5</b></button>
+<button type="button" data-points="-5" data-reason="安親班：小考有錯">安親班：小考有錯 <b>−5</b></button>
+<button type="button" data-points="-5" data-reason="安親班：考卷有錯">安親班：考卷有錯 <b>−5</b></button>
+<button type="button" data-points="0" data-reason="安親班：國語評量有錯（不扣分，僅紀錄）">安親班：國語評量有錯 <b>0</b></button>
+<button type="button" data-points="0" data-reason="安親班：數學評量有錯（不扣分，僅紀錄）">安親班：數學評量有錯 <b>0</b></button>
+<button type="button" data-points="0" data-reason="安親班：社會評量有錯（不扣分，僅紀錄）">安親班：社會評量有錯 <b>0</b></button>
+<button type="button" data-points="0" data-reason="安親班：自然評量有錯（不扣分，僅紀錄）">安親班：自然評量有錯 <b>0</b></button>
+<button type="button" data-points="-5" data-reason="家長表現隨機扣分">家長表現隨機扣分 <b>−5</b></button>
 </div></div></div>
 </section>
 <section class="panel cumulative" id="cumulativePanel">
@@ -64,5 +64,5 @@
 <section class="panel rules-panel"><div class="section-heading"><div><h2>計分規則</h2><p>依原始計分本設定，逾期結算自動扣20分。</p></div><div class="shortcut-actions"><button class="soft-btn" data-action="edit-rules" type="button">編輯規則</button><button class="soft-btn danger" data-action="reset" type="button">重置全部資料</button></div></div><ol id="rulesList"></ol></section>
 </main>
 <div id="modalRoot"></div><div id="toast" class="toast" role="status" aria-live="polite"></div>
-<script src="./supabase-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script><script src="./score-board.js?v=27"></script>
+<script src="./supabase-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script><script src="./score-board.js?v=28"></script>
 </body></html>
